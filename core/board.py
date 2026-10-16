@@ -1,7 +1,7 @@
 import json
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
-from block import Coordinates
+from core.block import Coordinates
 
 class TileType(Enum):
     VOID = "."         
