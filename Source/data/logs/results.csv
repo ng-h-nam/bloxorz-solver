@@ -1,0 +1,5 @@
+timestamp,map_name,algorithm,success,execution_time,peak_memory,expanded_nodes,solution_length
+2026-10-16 10:15:30,level_01_basic.json,BFS,True,0.0234,4.12,142,16
+2026-10-16 10:15:31,level_01_basic.json,DFS,True,0.0891,2.85,380,42
+2026-10-16 10:15:32,level_01_basic.json,UCS,True,0.0261,4.25,145,16
+2026-10-16 10:15:33,level_01_basic.json,A*,True,0.0082,1.94,36,16
