@@ -4,30 +4,17 @@ from typing import Dict, List, Optional, Set, Tuple
 from block import Coordinates
 
 class TileType(Enum):
-    VOID = 0          
-    FLOOR = 1         
-    GOAL = 2         
-    FRAGILE = 3       
-    BRIDGE = 4       
-    SOFT_SWITCH = 5   
-    HEAVY_SWITCH = 6 
-    SPLIT_SWITCH = 7
+    VOID = "."         
+    FLOOR = "#"       
+    GOAL = "G"         
+    FRAGILE = "F"     
+    BRIDGE = "="     
+    SOFT_SWITCH = "O" 
+    HEAVY_SWITCH = "X"
+    SPLIT_SWITCH = "U"
 
     # nếu còn yếu tố in_game nào khác thì ae feedback nhé, t chơi gà quá ms tới màn 10 à :(
 
-CHAR_TO_TILE: Dict[str, TileType] = {
-    ".": TileType.VOID,
-    "0": TileType.VOID,
-    "#": TileType.FLOOR,
-    "1": TileType.FLOOR,
-    "S": TileType.FLOOR,
-    "G": TileType.GOAL,
-    "F": TileType.FRAGILE,
-    "B": TileType.BRIDGE,
-    "O": TileType.SOFT_SWITCH,
-    "X": TileType.HEAVY_SWITCH,
-    "U": TileType.SPLIT_SWITCH,
-}
 
 class Board:
     """
@@ -81,11 +68,15 @@ class Board:
             for c, char in enumerate(line.strip()):
                 if char == "S":
                     start_pos = (r, c)
-                elif char == "G":
-                    end_pos = (r, c)
-                tile = CHAR_TO_TILE.get(char, TileType.VOID)
-
-                row_tiles.append(tile)
+                    row_tiles.append(TileType.FLOOR)
+                else:
+                    if char == "G":
+                        end_pos = (r, c)
+                    try:
+                        tile = TileType(char)
+                    except ValueError:
+                        tile = TileType.VOID
+                    row_tiles.append(tile)
             grid.append(row_tiles)
 
         if start_pos is None or end_pos is None:
@@ -104,4 +95,12 @@ class Board:
                 tuple(coordinates) for coordinates in data["initial_bridges"]
             )
         return board
+
+    def __str__(self) -> str:
+        """In bản đồ ra màn hình console bằng chính các dấu trong TileType."""
+        return "\n".join(
+            "".join(tile.value for tile in row) for row in self.grid
+        )
+
+    
 
