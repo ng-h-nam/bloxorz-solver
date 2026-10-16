@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from state import Coordinates, Orientation, State
+from core.state import Coordinates, Orientation, State
 
 
 class Direction(Enum):
