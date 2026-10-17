@@ -36,7 +36,7 @@ def is_valid_state(board: Board, state: State) -> bool:
 
     if state.orientation == Orientation.STANDING:
         r, c = occupied[0]
-        if board.get_tile(r, c) == TileType.FRAGILE:
+        if board.get_tile(r, c) == TileType.FALLING:
             return False
 
     return True

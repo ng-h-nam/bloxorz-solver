@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any
+from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any, Iterable
 from core.state import Coordinates
 
 class TileType(Enum):
@@ -53,43 +53,36 @@ class Board:
     Lưu trữ cấu trúc của màn chơi, bao gồm: layout, điểm xuất phát, điểm đích, vị trí cầu.
     """
     def __init__(
-        self, 
+        self,
         grid: List[List[TileType]],
+        symbols: List[List[str]],
         start_pos: Coordinates,
-        end_pos: Coordinates,
-        initial_active_bridges: Optional[FrozenSet[Coordinates]] = None, 
-        switches: Optional[Dict[Coordinates, List[BridgeAction]]] = None,
-        splits: Optional[Dict[Coordinates, Tuple[Coordinates, Coordinates]]] = None,
-        level_id: str = "custom",
-        passcode: int = 0,
-        raw_tiles: Optional[List[str]] = None,
-
+        goal_pos: Coordinates,
+        initial_active_bridges: Optional[Iterable[Coordinates]] = None,
     ):
         self.grid = grid
+        self.symbols = symbols
         self.rows = len(grid)
         self.cols = len(grid[0]) if self.rows > 0 else 0
         self.start_pos = start_pos
-        self.end_pos = end_pos
-        self.initial_active_bridges: FrozenSet[Coordinates] = (
-            initial_active_bridges or FrozenSet()
+        self.goal_pos = goal_pos
+        self.initial_active_bridges: FrozenSet[Coordinates] = frozenset(
+            initial_active_bridges or ()
         )
 
-        self.switches: Dict[Coordinates, List[BridgeAction]] = switches or {}
-        self.splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = splits or {}
-        self.level_id = level_id
-        self.passcode = passcode
-        self.raw_tiles = raw_tiles or []
-
-
     def in_board(self, r: int, c: int) -> bool:
-        """Kiểm tra tọa độ (r, c) có nằm trong phạm vi lưới hay không."""
+        """Kiểm tra tọa độ (r, c) có nằm trong lưới hay không."""
         return 0 <= r < self.rows and 0 <= c < self.cols
 
     def get_tile(self, r: int, c: int) -> TileType:
-        """Trả về loại ô tại vị trí (r, c). Nếu không trong cuộc chơi, đã tính là rơi xuống the void."""
+        """Trả về loại ô tại (r, c). Ngoài lưới được coi là VOID."""
         if not self.in_board(r, c):
             return TileType.VOID
         return self.grid[r][c]
+
+    def get_symbol(self, r: int, c: int) -> str:
+        """Trả về ký hiệu gốc trong file map, ví dụ 'A' hoặc 'c'."""
+        return self.symbols[r][c]
 
     def apply_switch(
         self, switch_pos: Coordinates, current_bridges: FrozenSet[Coordinates]
