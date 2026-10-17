@@ -2,17 +2,17 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any
-from core.state import Coordinates
+from state import Coordinates
 
 class TileType(Enum):
     VOID = " "         
-    FLOOR = "b"       
-    GOAL = "e"         
-    FRAGILE = "f"     
+    FLOOR = "F"       
+    GOAL = "T"         
+    FRAGILE = "W"     
     BRIDGE = "="     
-    SOFT_SWITCH = "s" 
-    HEAVY_SWITCH = "h"
-    SPLIT_SWITCH = "v"
+    SOFT_SWITCH = "O" 
+    HEAVY_SWITCH = "X"
+    SPLIT_SWITCH = "U"
 
 class BridgeMode(Enum):
     TOGGLE = "onoff"    # Đảo trạng thái đóng <-> mở
@@ -23,28 +23,42 @@ class BridgeMode(Enum):
 @dataclass(frozen=True)
 class BridgeAction:
     """Mô tả tác động của một công tắc lên 1 ô cầu cụ thể."""
-    target_pos: Coordinates   # Tọa độ (r, c) của ô cầu
-    mode: BridgeMode    # Chế độ: onoff (toggle), on (mở), off (đóng)
+    target_pos: Coordinates   
+    mode: BridgeMode  
 
-    # nếu còn yếu tố in_game nào khác thì ae feedback nhé, t chơi gà quá ms tới màn 10 à :(
+TXT_CHAR_TO_TILE: Dict[str, TileType] = {
+    ".": TileType.VOID,
+    "0": TileType.VOID,
+    "F": TileType.FLOOR,     
+    "#": TileType.FLOOR,
+    "1": TileType.FLOOR,
+    "S": TileType.FLOOR,     
+    "T": TileType.GOAL,      
+    "G": TileType.GOAL,
+    "W": TileType.FRAGILE,   
+    "=": TileType.BRIDGE,
+    "B": TileType.BRIDGE,
+    "O": TileType.SOFT_SWITCH,
+    "X": TileType.HEAVY_SWITCH,
+    "U": TileType.SPLIT_SWITCH,
 
+}
+
+# 2. Bảng ánh xạ riêng cho file levels.json (33 màn Coolmath Games)
 JSON_CHAR_TO_TILE: Dict[str, TileType] = {
     " ": TileType.VOID,
     "b": TileType.FLOOR,
     "e": TileType.GOAL,
-    "G": TileType.GOAL,
     "f": TileType.FRAGILE,
     "s": TileType.SOFT_SWITCH,
     "h": TileType.HEAVY_SWITCH,
     "v": TileType.SPLIT_SWITCH,
-    # 4 ký hiệu cầu trong levels.json đều quy về TileType.BRIDGE:
-    "l": TileType.BRIDGE,    # Cầu đóng (trái)
-    "r": TileType.BRIDGE,    # Cầu đóng (phải)
-    "k": TileType.BRIDGE,    # Cầu MỞ   (trái)
-    "q": TileType.BRIDGE,    # Cầu MỞ   (phải)
+    "l": TileType.BRIDGE,
+    "r": TileType.BRIDGE,
+    "k": TileType.BRIDGE,
+    "q": TileType.BRIDGE,
 }
 
-# Các ký tự đại diện cho cầu ĐANG MỞ SẴN khi bắt đầu màn chơi
 INITIAL_OPEN_BRIDGE_CHARS = {"k", "q"}
 
 
@@ -60,9 +74,7 @@ class Board:
         initial_active_bridges: Optional[FrozenSet[Coordinates]] = None, 
         switches: Optional[Dict[Coordinates, List[BridgeAction]]] = None,
         splits: Optional[Dict[Coordinates, Tuple[Coordinates, Coordinates]]] = None,
-        level_id: str = "custom",
-        passcode: int = 0,
-        raw_tiles: Optional[List[str]] = None,
+        level_id: str = "level0"
 
     ):
         self.grid = grid
@@ -77,8 +89,6 @@ class Board:
         self.switches: Dict[Coordinates, List[BridgeAction]] = switches or {}
         self.splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = splits or {}
         self.level_id = level_id
-        self.passcode = passcode
-        self.raw_tiles = raw_tiles or []
 
 
     def in_board(self, r: int, c: int) -> bool:
@@ -115,6 +125,45 @@ class Board:
                     active_set.add(bridge_coord)
 
         return frozenset(active_set)
+
+    @classmethod
+    def from_str_grid(cls, lines: List[str], level_id: str = "txt_map") -> "Board":
+        """
+        Khởi tạo Board từ danh sách chuỗi theo chuẩn level0.txt:
+          '.' : VOID
+          'F' : FLOOR
+          'S' : Start (FLOOR)
+          'T' : Target / GOAL
+        """
+        grid: List[List[TileType]] = []
+        start_pos: Optional[Coordinates] = None
+        goal_pos: Optional[Coordinates] = None
+
+        # Lọc bỏ các dòng trống ở cuối file txt (nếu có)
+        clean_lines = [line.strip() for line in lines if line.strip()]
+
+        for r, line in enumerate(clean_lines):
+            row_tiles: List[TileType] = []
+            for c, ch in enumerate(line):
+                if ch == "S":
+                    start_pos = (r, c)
+                elif ch in ("T", "G"):
+                    goal_pos = (r, c)
+                tile = TXT_CHAR_TO_TILE.get(ch, TileType.VOID)
+                row_tiles.append(tile)
+            grid.append(row_tiles)
+
+        if start_pos is None or goal_pos is None:
+            raise ValueError("File map TXT phải có vị trí xuất phát 'S' và đích 'T' (hoặc 'G').")
+
+        return cls(grid=grid, start_pos=start_pos, goal_pos=goal_pos, level_id=level_id)
+
+    @classmethod
+    def from_txt(cls, filepath: str) -> "Board":
+        """Đọc trực tiếp file .txt (ví dụ: level0.txt)."""
+        with open(filepath, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        return cls.from_string_grid(lines, level_id=filepath)
 
     @staticmethod
     def _decode_packed_coord(key_str: str) -> Coordinates:
