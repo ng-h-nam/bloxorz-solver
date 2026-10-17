@@ -1,10 +1,10 @@
 from typing import Dict, List, Optional, Tuple, Union
-from block import Direction
-from board import Board, TileType
-from state import Coordinates, Orientation, State
+from core.block import Direction
+from core.board import Board, TileType
+from core.state import Coordinates, Orientation, State
 
 ActionInput = Union[Direction, str]
-
+_CURRENT_BOARD: Optional[Board] = None
 # Lưu ý, nếu muốn chỉ sử dụng các phím mũi tên để di chuyển giống game gốc thì xóa mấy khúc WASD đi.
 ACTION_ALIAS_MAP: Dict[str, Direction] = {
     "UP": Direction.UP,
@@ -40,6 +40,71 @@ TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientatio
     (Orientation.VERTICAL, Direction.LEFT):  ( 0, -1, Orientation.VERTICAL),
     (Orientation.VERTICAL, Direction.RIGHT): ( 0,  1, Orientation.VERTICAL),
 }
+
+def set_active_board(board: Board) -> None:
+    global _CURRENT_BOARD
+    _CURRENT_BOARD = board
+
+def _resolve_board_and_state(
+    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+) -> Tuple[Board, State]:
+    """
+    Hỗ trợ linh hoạt cả 3 cách gọi từ các thành viên trong nhóm:
+      1. func(state)          -> dùng _CURRENT_BOARD đã đăng ký
+      2. func(state, board)   -> truyền state trước, board sau
+      3. func(board, state)   -> truyền board trước, state sau
+    """
+    if isinstance(arg1, State) and isinstance(arg2, Board):
+        return arg2, arg1
+    if isinstance(arg1, Board) and isinstance(arg2, State):
+        return arg1, arg2
+    if isinstance(arg1, State) and arg2 is None:
+        if _CURRENT_BOARD is None:
+            raise ValueError(
+                "Cần truyền `board` hoặc gọi `set_active_board(board)` trước khi gọi với 1 tham số `state`."
+            )
+        return _CURRENT_BOARD, arg1
+    raise TypeError(f"Tham số không hợp lệ: ({type(arg1)}, {type(arg2)})")
+
+def is_out_of_bounds(
+    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+) -> bool:
+    """Kiểm tra block có nằm ngoài phạm vi board hay không."""
+    board, state = _resolve_board_and_state(arg1, arg2)
+    return board.is_out_of_bounds(state)
+
+def is_on_void(
+    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+) -> bool:
+    """Kiểm tra block có đè lên ô trống (VOID) hay không."""
+    board, state = _resolve_board_and_state(arg1, arg2)
+    return board.is_on_void(state)
+
+
+def is_valid_move(
+    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+) -> bool:
+    """
+    Output chuẩn ngày 18/10: Kiểm tra trạng thái/nước đi của block có hợp lệ không
+    (không ra ngoài board, không nằm trên void, nằm trên các tile hợp lệ).
+    """
+    board, state = _resolve_board_and_state(arg1, arg2)
+    return board.is_valid_move(state)
+
+
+# Giữ tên is_valid_state tương đương với is_valid_move để tương thích ngược với code ngày 16-17/10
+is_valid_state = is_valid_move
+
+
+def is_goal_state(
+    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+) -> bool:
+    """
+    Output chuẩn ngày 18/10: Kiểm tra điều kiện thắng
+    (block phải đứng thẳng STANDING tại đúng ô đích).
+    """
+    board, state = _resolve_board_and_state(arg1, arg2)
+    return board.is_goal_state(state)
 
 def standardize_action(action: ActionInput) -> Direction:
     """
