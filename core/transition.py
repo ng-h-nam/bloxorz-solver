@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Tuple
-from block import Direction
-from board import Board, TileType
-from state import Orientation, State
+from core.block import Direction
+from core.board import Board, TileType
+from core.state import Orientation, State
 
 TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientation]] = {
     # 1. STANDING
