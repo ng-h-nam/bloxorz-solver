@@ -43,7 +43,7 @@ def is_valid_state(board: Board, state: State) -> bool:
 
 def is_goal_state(board: Board, state: State) -> bool:
     """Kiểm tra khối đã đứng thẳng vào đúng ô đích G hay chưa."""
-    return state.is_standing_at(board.goal_pos)
+    return state.is_standing_at(board.end_pos)
 
 
 def get_next_state(board: Board, state: State, direction: Direction) -> Optional[State]:
@@ -70,3 +70,5 @@ def get_successors(board: Board, state: State) -> List[Tuple[Direction, State]]:
         if next_state is not None:
             successors.append((direction, next_state))
     return successors
+
+
