@@ -5,13 +5,14 @@ from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any
 from state import Coordinates
 
 class TileType(Enum):
-    VOID = " "         
+    VOID = "."         
     FLOOR = "F"       
     GOAL = "T"         
-    FRAGILE = "W"     
-    BRIDGE = "="     
-    SOFT_SWITCH = "O" 
-    HEAVY_SWITCH = "X"
+    FRAGILE = "O"     
+    FALLING = "O"
+    BRIDGE = "a"     
+    SOFT_SWITCH = "A" 
+    HEAVY_SWITCH = "0"
     SPLIT_SWITCH = "U"
 
 class BridgeMode(Enum):
@@ -24,7 +25,7 @@ class BridgeMode(Enum):
 class BridgeAction:
     """Mô tả tác động của một công tắc lên 1 ô cầu cụ thể."""
     target_pos: Coordinates   
-    mode: BridgeMode  
+    mode: BridgeMode = BridgeMode.TOGGLE
 
 TXT_CHAR_TO_TILE: Dict[str, TileType] = {
     ".": TileType.VOID,
@@ -69,12 +70,12 @@ class Board:
     def __init__(
         self, 
         grid: List[List[TileType]],
-        start_pos: Coordinates,
-        end_pos: Coordinates,
+        symbols: Optional[List[List[str]]] = None,
+        start_pos: Coordinates = (0, 0),
+        end_pos: Coordinates = (0, 0),
         initial_active_bridges: Optional[FrozenSet[Coordinates]] = None, 
         switches: Optional[Dict[Coordinates, List[BridgeAction]]] = None,
         splits: Optional[Dict[Coordinates, Tuple[Coordinates, Coordinates]]] = None,
-        level_id: str = "level0"
 
     ):
         self.grid = grid
@@ -82,19 +83,49 @@ class Board:
         self.cols = len(grid[0]) if self.rows > 0 else 0
         self.start_pos = start_pos
         self.end_pos = end_pos
+        self.symbols = symbols
         self.initial_active_bridges: FrozenSet[Coordinates] = (
             initial_active_bridges or FrozenSet()
         )
 
         self.switches: Dict[Coordinates, List[BridgeAction]] = switches or {}
         self.splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = splits or {}
-        self.level_id = level_id
+        
+    def _auto_bind_switches_from_symbols(self) -> Dict[Coordinates, List[BridgeAction]]:
+        """
+        Tự động liên kết công tắc ('A'-'Z') với các ô cầu ('a'-'z') có cùng chữ cái
+        dựa trên ma trận symbols do map_loader.py cung cấp.
+        """
+        bridges_by_char: Dict[str, List[Coordinates]] = {}
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if self.grid[r][c] == TileType.BRIDGE:
+                    ch = self.symbols[r][c].lower()
+                    bridges_by_char.setdefault(ch, []).append((r, c))
 
-
+        auto_switches: Dict[Coordinates, List[BridgeAction]] = {}
+        for r in range(self.rows):
+            for c in range(self.cols):
+                tile = self.grid[r][c]
+                if tile in (TileType.SOFT_SWITCH, TileType.HEAVY_SWITCH):
+                    ch = self.symbols[r][c]
+                    target_char = ch.lower()
+                    if target_char in bridges_by_char:
+                        auto_switches[(r, c)] = [
+                            BridgeAction(target_pos=pos, mode=BridgeMode.TOGGLE)
+                            for pos in bridges_by_char[target_char]
+                        ]
+        return auto_switches
     def in_board(self, r: int, c: int) -> bool:
         """Kiểm tra tọa độ (r, c) có nằm trong phạm vi lưới hay không."""
         return 0 <= r < self.rows and 0 <= c < self.cols
 
+    def get_symbol(self, r: int, c: int) -> str:
+        """Trả về ký tự gốc trong file map tại (r, c)."""
+        if not self.in_bounds(r, c):
+            return "."
+        return self.symbols[r][c]
+    
     def get_tile(self, r: int, c: int) -> TileType:
         """Trả về loại ô tại vị trí (r, c). Nếu không trong cuộc chơi, đã tính là rơi xuống the void."""
         if not self.in_board(r, c):
@@ -125,135 +156,6 @@ class Board:
                     active_set.add(bridge_coord)
 
         return frozenset(active_set)
-
-    @classmethod
-    def from_str_grid(cls, lines: List[str], level_id: str = "txt_map") -> "Board":
-        """
-        Khởi tạo Board từ danh sách chuỗi theo chuẩn level0.txt:
-          '.' : VOID
-          'F' : FLOOR
-          'S' : Start (FLOOR)
-          'T' : Target / GOAL
-        """
-        grid: List[List[TileType]] = []
-        start_pos: Optional[Coordinates] = None
-        goal_pos: Optional[Coordinates] = None
-
-        # Lọc bỏ các dòng trống ở cuối file txt (nếu có)
-        clean_lines = [line.strip() for line in lines if line.strip()]
-
-        for r, line in enumerate(clean_lines):
-            row_tiles: List[TileType] = []
-            for c, ch in enumerate(line):
-                if ch == "S":
-                    start_pos = (r, c)
-                elif ch in ("T", "G"):
-                    goal_pos = (r, c)
-                tile = TXT_CHAR_TO_TILE.get(ch, TileType.VOID)
-                row_tiles.append(tile)
-            grid.append(row_tiles)
-
-        if start_pos is None or goal_pos is None:
-            raise ValueError("File map TXT phải có vị trí xuất phát 'S' và đích 'T' (hoặc 'G').")
-
-        return cls(grid=grid, start_pos=start_pos, goal_pos=goal_pos, level_id=level_id)
-
-    @classmethod
-    def from_txt(cls, filepath: str) -> "Board":
-        """Đọc trực tiếp file .txt (ví dụ: level0.txt)."""
-        with open(filepath, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        return cls.from_string_grid(lines, level_id=filepath)
-
-    @staticmethod
-    def _decode_packed_coord(key_str: str) -> Coordinates:
-        """
-        Tọa độ của file được tính từ công thức: key = x * 10 + y.
-        """
-        packed = int(key_str)
-        c = packed // 10  # x (cột)
-        r = packed % 10   # y (dòng)
-        return (r, c)
-
-    @classmethod
-    def from_level_dict(cls, data: Dict[str, Any]) -> "Board":
-        """Khởi tạo đối tượng Board từ 1 dictionary màn chơi trong levels.json."""
-        raw_tiles: List[str] = data["tiles"]
-        grid: List[List[TileType]] = []
-        end_pos: Optional[Coordinates] = None
-        open_bridges = set()
-
-
-        for r, line in enumerate(raw_tiles):
-            row_tiles: List[TileType] = []
-            for c, char in enumerate(line):
-                if char == "e":
-                    end_pos = (r, c)
-                elif char in INITIAL_OPEN_BRIDGE_CHARS:
-                    open_bridges.add((r, c))
-                tile = JSON_CHAR_TO_TILE.get(char, TileType.VOID)
-                row_tiles.append(tile)
-            grid.append(row_tiles)
-
-        spawn_x, spawn_y = data["spawn"]
-        start_pos: Coordinates = (spawn_y, spawn_x)
-
-        if end_pos is None:
-            raise ValueError(f"Level '{data.get('id')}' không có ô đích 'e'.")
-
-        switches: Dict[Coordinates, List[BridgeAction]] = {}
-        for key_str, action_list in data.get("switches", {}).items():
-            switch_pos = cls._decode_packed_coord(key_str)
-            actions: List[BridgeAction] = []
-            for bx, by, mode_str in action_list:
-                actions.append(
-                    BridgeAction(target_pos=(by, bx), mode=BridgeMode(mode_str))
-                )
-            switches[switch_pos] = actions
-
-        splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = {}
-        for key_str, coords in data.get("splits", {}).items():
-            split_pos = cls._decode_packed_coord(key_str)
-            x1, y1, x2, y2 = coords
-            splits[split_pos] = ((y1, x1), (y2, x2))
-
-        return cls(
-            grid=grid,
-            start_pos=start_pos,
-            end_pos=end_pos,
-            initial_active_bridges=frozenset(open_bridges),
-            switches=switches,
-            splits=splits,
-            level_id=data.get("id", "unknown"),
-            passcode=data.get("code", 0),
-            raw_tiles=raw_tiles,
-        )
-
-    @classmethod
-    def from_levels_json(
-        cls, filepath: str, selector: Union[int, str] = 0
-    ) -> "Board":
-        """Nạp bản đồ từ file JSON theo chuẩn."""
-        with open(filepath, "r", encoding="utf-8") as f:
-            all_data = json.load(f)
-
-        levels = all_data["levels"]
-
-        if isinstance(selector, str):
-            for lvl in levels:
-                if lvl.get("id") == selector:
-                    return cls.from_level_dict(lvl)
-            raise ValueError(f"Không tìm thấy màn chơi có id='{selector}'.")
-
-        # Tìm theo chỉ số index (0..32) hoặc theo passcode (ví dụ: 780464)
-        if 0 <= selector < len(levels):
-            return cls.from_level_dict(levels[selector])
-
-        for lvl in levels:
-            if lvl.get("code") == selector:
-                return cls.from_level_dict(lvl)
-
-        raise ValueError(f"Không tìm thấy màn chơi ứng với selector={selector}.")
 
     def __str__(self) -> str:
         """In bản đồ ra màn hình console bằng chính các dấu trong TileType."""
