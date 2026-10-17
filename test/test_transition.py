@@ -1,9 +1,9 @@
 # test_transition.py
 import unittest
-from block import Block, Direction
-from board import Board
-from state import Orientation, State
-from transition import (
+from core.block import Block, Direction
+from core.board import Board
+from core.state import Orientation, State
+from core.transition import (
     TRANSITION_TABLE,
     get_next_state,
     get_successors,
