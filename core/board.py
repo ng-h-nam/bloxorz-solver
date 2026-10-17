@@ -60,8 +60,8 @@ class Board:
         """
 
         grid: List[List[TileType]] = []
-        start_pos = Optional[Coordinates] = None
-        end_pos = Optional[Coordinates] = None
+        start_pos: Optional[Coordinates] = None
+        end_pos: Optional[Coordinates] = None
 
         for r, line in enumerate(lines):
             row_tiles: List[TileType] = []
@@ -89,7 +89,7 @@ class Board:
         """Nạp bản đồ từ file JSON theo chuẩn."""
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
-        board = cls.from_string_grid(data["layout"])
+        board = cls.from_str_grid(data["layout"])
         if "initial_bridges" in data:
             board.initial_active_bridges = frozenset(
                 tuple(coordinates) for coordinates in data["initial_bridges"]
