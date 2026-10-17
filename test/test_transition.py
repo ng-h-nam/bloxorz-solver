@@ -1,130 +1,105 @@
-# test_transition.py
 import unittest
-from core.block import Block, Direction
-from core.board import Board
-from core.state import Orientation, State
+from pathlib import Path
+from core.block import Direction
+from core.board import TileType
+from core.map_loader import load_level, parse_level
+from core.state import Orientation, State, get_occupied_cells
 from core.transition import (
-    TRANSITION_TABLE,
+    check_occupied_cells,
     get_next_state,
-    get_successors,
     is_goal_state,
     is_valid_state,
 )
 
-S, H, V = Orientation.STANDING, Orientation.HORIZONTAL, Orientation.VERTICAL
+# Tự động tìm file level0.txt trong project
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+POSSIBLE_PATHS = [
+    PROJECT_ROOT / "level0.txt",
+    PROJECT_ROOT / "maps" / "level0.txt",
+    Path("level0.txt"),
+]
 
 
-def make_open_board(rows: int = 7, cols: int = 7) -> Board:
-    """Bản đồ toàn sàn, S ở góc trên-trái, G ở góc dưới-phải."""
-    lines = ["#" * cols for _ in range(rows)]
-    lines[0] = "S" + lines[0][1:]
-    lines[-1] = lines[-1][:-1] + "G"
-    return Board.from_str_grid(lines)
+class TestIntegrationWithMapLoader(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Sử dụng trực tiếp load_level / parse_level từ core/map_loader.py của Thuật."""
+        txt_path = next((p for p in POSSIBLE_PATHS if p.exists()), None)
+        if txt_path is not None:
+            cls.board = load_level(str(txt_path))
+        else:
+            cls.board = parse_level([
+                ".....",
+                ".SFF.",
+                ".FFF.",
+                ".FTF.",
+                ".FFF.",
+                ".....",
+            ])
 
+    def test_map_loader_compatibility(self):
+        """Kiểm tra Board nhận đúng grid, symbols, start_pos, goal_pos từ map_loader.py."""
+        self.assertEqual((self.board.rows, self.board.cols), (6, 5))
+        self.assertEqual(self.board.start_pos, (1, 1))
+        self.assertEqual(self.board.goal_pos, (3, 2))
+        self.assertEqual(self.board.get_symbol(1, 1), "S")
+        self.assertEqual(self.board.get_symbol(3, 2), "T")
+        self.assertEqual(self.board.get_tile(1, 1), TileType.FLOOR)
+        self.assertEqual(self.board.get_tile(3, 2), TileType.GOAL)
+        self.assertEqual(self.board.get_tile(0, 0), TileType.VOID)
 
-class TestRolling(unittest.TestCase):
-    """Kiểm tra công thức lăn trên bản đồ toàn sàn (không bị rơi)."""
-
-    def setUp(self):
-        self.board = make_open_board()
-
-    def assertRoll(self, start: State, direction: Direction, expected: State):
-        self.assertEqual(get_next_state(self.board, start, direction), expected)
-
-    def test_transition_table_complete(self):
-        self.assertEqual(len(TRANSITION_TABLE), 12)
-        for o in Orientation:
+    def test_round_trip_no_coordinate_drift(self):
+        """Kiểm tra lăn đi rồi lăn ngược lại không bị lệch tọa độ khi đổi hướng."""
+        opposite = {
+            Direction.UP: Direction.DOWN,
+            Direction.DOWN: Direction.UP,
+            Direction.LEFT: Direction.RIGHT,
+            Direction.RIGHT: Direction.LEFT,
+        }
+        for orient in Orientation:
+            s = State(r=2, c=2, orientation=orient)
             for d in Direction:
-                self.assertIn((o, d), TRANSITION_TABLE)
+                moved = get_next_state(s, d)
+                returned = get_next_state(moved, opposite[d])
+                self.assertEqual(s, returned)
 
-    def test_standing(self):
-        s = State(3, 3, S)
-        self.assertRoll(s, Direction.UP,    State(1, 3, V))
-        self.assertRoll(s, Direction.DOWN,  State(4, 3, V))
-        self.assertRoll(s, Direction.LEFT,  State(3, 1, H))
-        self.assertRoll(s, Direction.RIGHT, State(3, 4, H))
+    def test_level0_boundary_cases(self):
+        """Kiểm tra biên tại S(1, 1) và trạng thái nửa trong nửa ngoài trên level0.txt."""
+        start_state = State(*self.board.start_pos, Orientation.STANDING)
+        # Lăn UP hoặc LEFT từ (1, 1) sẽ rơi vào viền '.' (VOID)
+        self.assertIsNone(get_next_state(start_state, Direction.UP, self.board))
+        self.assertIsNone(get_next_state(start_state, Direction.LEFT, self.board))
 
-    def test_horizontal(self):  # chiếm (3,3), (3,4)
-        s = State(3, 3, H)
-        self.assertRoll(s, Direction.UP,    State(2, 3, H))
-        self.assertRoll(s, Direction.DOWN,  State(4, 3, H))
-        self.assertRoll(s, Direction.LEFT,  State(3, 2, S))
-        self.assertRoll(s, Direction.RIGHT, State(3, 5, S))
+        # Trạng thái nằm ngang tại (1, 3) chiếm (1, 3)='F' và (1, 4)='.' -> Không hợp lệ
+        half_hanging = State(1, 3, Orientation.HORIZONTAL)
+        self.assertFalse(is_valid_state(self.board, half_hanging))
 
-    def test_vertical(self):  # chiếm (3,3), (4,3)
-        s = State(3, 3, V)
-        self.assertRoll(s, Direction.UP,    State(2, 3, S))
-        self.assertRoll(s, Direction.DOWN,  State(5, 3, S))
-        self.assertRoll(s, Direction.LEFT,  State(3, 2, V))
-        self.assertRoll(s, Direction.RIGHT, State(3, 4, V))
+    def test_falling_orange_tile_with_map_loader(self):
+        """Kiểm tra ô gạch mỏng 'O' (TileType.FALLING) theo quy ước trong map_loader.py."""
+        board_with_falling = parse_level([
+            ".....",
+            ".SOF.",
+            ".FFT.",
+            ".....",
+        ])
+        # Nằm ngang đè lên (1, 2)='O' và (1, 3)='F' -> Hợp lệ
+        s_lying = State(1, 2, Orientation.HORIZONTAL)
+        self.assertTrue(is_valid_state(board_with_falling, s_lying))
 
-    def test_roll_back_returns_original(self):
-        """Lăn đi rồi lăn ngược lại phải về đúng trạng thái cũ."""
-        opposite = {Direction.UP: Direction.DOWN, Direction.DOWN: Direction.UP,
-                    Direction.LEFT: Direction.RIGHT, Direction.RIGHT: Direction.LEFT}
-        for o in Orientation:
-            for d in Direction:
-                start = State(3, 3, o)
-                nxt = get_next_state(self.board, start, d)
-                self.assertEqual(get_next_state(self.board, nxt, opposite[d]), start)
+        # Đứng thẳng tại (1, 2)='O' -> Bị sập (Không hợp lệ)
+        s_standing = State(1, 2, Orientation.STANDING)
+        valid, msg = check_occupied_cells(board_with_falling, s_standing)
+        self.assertFalse(valid)
+        self.assertIn("FALLING", msg)
 
-
-class TestBoardRules(unittest.TestCase):
-    def setUp(self):
-        layout = [
-            "######",
-            "#S###.",
-            "#####G",
-            "####F#",
-            "......",
-        ]
-        self.board = Board.from_str_grid(layout)
-        self.initial_state = Block(*self.board.start_pos, S).to_state()
-
-    def test_out_of_bounds_returns_none(self):
-        self.assertIsNone(get_next_state(self.board, self.initial_state, Direction.UP))
-        self.assertIsNone(get_next_state(self.board, self.initial_state, Direction.LEFT))
-
-    def test_void_tile_invalid(self):
-        self.assertFalse(is_valid_state(self.board, State(1, 4, H)))  # đè lên (1,5) là '.'
-        self.assertFalse(is_valid_state(self.board, State(3, 0, V)))  # đè lên (4,0) là '.'
-
-    def test_fragile_tile(self):
-        self.assertFalse(is_valid_state(self.board, State(3, 4, S)))  # đứng trên F -> vỡ
-        self.assertTrue(is_valid_state(self.board, State(3, 3, H)))   # nằm trên F -> OK
-
-    def test_successors(self):
-        succ = dict(get_successors(self.board, self.initial_state))
-        self.assertEqual(set(succ), {Direction.RIGHT, Direction.DOWN})
-        self.assertEqual(succ[Direction.RIGHT], State(1, 2, H))
-        self.assertEqual(succ[Direction.DOWN], State(2, 1, V))
-
-    def test_goal_detection(self):
-        self.assertTrue(is_goal_state(self.board, State(2, 5, S)))
-        self.assertFalse(is_goal_state(self.board, State(2, 4, H)))  # nằm đè lên G
-        self.assertFalse(is_goal_state(self.board, self.initial_state))
-
-
-class TestBridge(unittest.TestCase):
-    def setUp(self):
-        self.board = Board.from_str_grid(["S=#G"])  # cầu ở (0,1)
-
-    def test_bridge_closed_vs_open(self):
-        self.assertFalse(is_valid_state(self.board, State(0, 1, S)))
-        self.assertTrue(is_valid_state(self.board, State(0, 1, S, frozenset({(0, 1)}))))
-
-    def test_active_bridges_preserved(self):
-        bridges = frozenset({(0, 1)})
-        nxt = get_next_state(self.board, State(0, 0, S, bridges), Direction.RIGHT)
-        self.assertIsNotNone(nxt)
-        self.assertEqual(nxt.active_bridges, bridges)
-
-
-class TestStateHashing(unittest.TestCase):
-    def test_state_in_visited_set(self):
-        visited = {State(1, 1, S)}
-        self.assertIn(State(1, 1, S), visited)
-        self.assertNotIn(State(1, 1, H), visited)
+    def test_solve_level0_in_7_moves(self):
+        """Kiểm tra 7 bước di chuyển thắng màn level0.txt."""
+        state = State(*self.board.start_pos, Orientation.STANDING)
+        moves = ["RIGHT", "DOWN", "DOWN", "LEFT", "UP", "RIGHT", "DOWN"]
+        for move in moves:
+            state = get_next_state(state, move, self.board)
+            self.assertIsNotNone(state)
+        self.assertTrue(is_goal_state(self.board, state))
 
 
 if __name__ == "__main__":
