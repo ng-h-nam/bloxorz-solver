@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any
-from state import Coordinates
+from state import Coordinates, State
 
 class TileType(Enum):
     VOID = "."         
@@ -156,6 +156,65 @@ class Board:
                     active_set.add(bridge_coord)
 
         return frozenset(active_set)
+
+    def is_out_of_bounds(self, state) -> bool:
+        """
+        Kiểm tra xem block có nằm ngoài map hay không?
+        Trả về True nếu có, còn False nếu ngược lại."""
+
+        for r, c in state.get_occupied_cells():
+            if not self.in_bounds(r, c):
+                return True
+        return False
+
+    def is_on_void(self, state) -> bool:
+        """
+        Kiểm tra xem block có nằm trên ô void hay không?
+        (Trong màn chơi sẽ có 2 thứ cần chú ý: biên của game và VOID.)
+        """
+    # Để dễ giải thích, ta xét map chơi là 1 hình chữ nhật với kích thước r * c.
+    # Trong đó, ngoài các ô floor, start, end,.. ra thì có các ô void nữa.
+    # Nên ta cần kiểm tra sự tồn tại của cả 2 cái.
+        
+        for r, c in state.get_occupied_cells():
+            if self.in_board(r, c) and self.grid[r][c] == TileType.VOID:
+                return True
+        return False
+
+    def is_on_valid_tiles(self, state) -> bool:
+        """
+        Kiểm tra xem block có nằm trên các tile hợp lệ hay không?
+        - Cơ bản là gộp cả 2 cái trên, tuy nhiên thêm 2 yếu tố nữa:
+        1. Nếu đi qua Bridge thì nó phải đang mở.
+        2. Nếu đang STANDING + đứng trên ô gạch mỏng thì cũng không được.
+        Nếu vi phạm thì trả về False.
+        """
+
+        if self.is_out_of_bounds(state) or self.is_on_void(state):
+            return False
+        from core.state import Orientation
+        occupied = state.get_occupied_cells()
+
+        for r, c in occupied:
+            tile = self.grid[r][c]
+            if tile == TileType.BRIDGE and (r, c) not in state.active_bridges:
+                return False
+
+        if state.orientation == Orientation.STANDING:
+            r, c = occupied[0]
+            if self.grid[r][c] == TileType.FALLING:
+                return False
+        return True
+
+    def is_valid_move(self, state) -> bool:
+        """Kiểm tra tất thảy các điều kiện đó luôn."""
+        return self.is_on_valid_tiles(state)
+
+    def is_goal_state(self, state) -> bool:
+        return State.is_standing_at(state, self.end_pos)
+        
+
+    
 
     def __str__(self) -> str:
         """In bản đồ ra màn hình console bằng chính các dấu trong TileType."""
