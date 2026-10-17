@@ -47,19 +47,35 @@ def is_goal_state(board: Board, state: State) -> bool:
 
 
 def get_next_state(board: Board, state: State, direction: Direction) -> Optional[State]:
-    """Tính trạng thái kế tiếp khi lăn theo hướng direction. Trả về None nếu rơi."""
+    """Tính trạng thái kế tiếp khi lăn theo hướng direction và kích hoạt công tắc nếu có."""
     dr, dc, new_orientation = TRANSITION_TABLE[(state.orientation, direction)]
-    candidate_state = State(
-        r=state.r + dr,
-        c=state.c + dc,
+    next_r = state.r + dr
+    next_c = state.c + dc
+
+    temp_state = State(
+        r=next_r,
+        c=next_c,
         orientation=new_orientation,
         active_bridges=state.active_bridges,
     )
 
-    if not is_valid_state(board, candidate_state):
+    if not is_valid_state(board, temp_state):
         return None
 
-    return candidate_state
+    new_bridges = state.active_bridges
+    for cell_r, cell_c in temp_state.get_occupied_cells():
+        tile = board.get_tile(cell_r, cell_c)
+        if tile == TileType.SOFT_SWITCH:
+            new_bridges = board.apply_switch((cell_r, cell_c), new_bridges)
+        elif tile == TileType.HEAVY_SWITCH and new_orientation == Orientation.STANDING:
+            new_bridges = board.apply_switch((cell_r, cell_c), new_bridges)
+
+    return State(
+        r=next_r,
+        c=next_c,
+        orientation=new_orientation,
+        active_bridges=new_bridges,
+    )
 
 
 def get_successors(board: Board, state: State) -> List[Tuple[Direction, State]]:
