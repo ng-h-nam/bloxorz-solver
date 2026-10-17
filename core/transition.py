@@ -1,7 +1,25 @@
-from typing import Dict, List, Optional, Tuple
-from core.block import Direction
-from core.board import Board, TileType
-from core.state import Orientation, State
+from typing import Dict, List, Optional, Tuple, Union
+from block import Direction
+from board import Board, TileType
+from state import Coordinates, Orientation, State
+
+ActionInput = Union[Direction, str]
+
+# Lưu ý, nếu muốn chỉ sử dụng các phím mũi tên để di chuyển giống game gốc thì xóa mấy khúc WASD đi.
+ACTION_ALIAS_MAP: Dict[str, Direction] = {
+    "UP": Direction.UP,
+    "W": Direction.UP,
+    "ARROW_UP": Direction.UP,
+    "DOWN": Direction.DOWN,
+    "S": Direction.DOWN,
+    "ARROW_DOWN": Direction.DOWN,
+    "LEFT": Direction.LEFT,
+    "A": Direction.LEFT,
+    "ARROW_LEFT": Direction.LEFT,
+    "RIGHT": Direction.RIGHT,
+    "D": Direction.RIGHT,
+    "ARROW_RIGHT": Direction.RIGHT,
+}
 
 TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientation]] = {
     # 1. STANDING
@@ -23,30 +41,55 @@ TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientatio
     (Orientation.VERTICAL, Direction.RIGHT): ( 0,  1, Orientation.VERTICAL),
 }
 
-def is_valid_state(board: Board, state: State) -> bool:
-    """Kiểm tra trạng thái có hợp lệ trên bàn cờ hay không."""
-    occupied = state.get_occupied_cells()
+def standardize_action(action: ActionInput) -> Direction:
+    """
+    Chuẩn hóa hành động của người chơi về đúng kiểu Direction trong game.
+    """
+    if isinstance(action, Direction):
+        return action
+    if isinstance(action, str):
+        key = action.strip().upper()
+        if key in ACTION_ALIAS_MAP:
+            return ACTION_ALIAS_MAP[key]
+    raise ValueError(f"Hành động không hợp lệ: {action}")
+
+def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
+    """
+    Kiểm tra chi tiết từng ô mà block chiếm giữ trên bàn cờ.
+    Trả về: (Hợp_lệ: bool, Lý_do: str).
+    """
+    occupied: List[Coordinates] = state.get_occupied_cells()
 
     for r, c in occupied:
+        if not board.in_board(r, c):
+            return False
         tile = board.get_tile(r, c)
+
         if tile == TileType.VOID:
             return False
+
         if tile == TileType.BRIDGE and (r, c) not in state.active_bridges:
             return False
 
     if state.orientation == Orientation.STANDING:
         r, c = occupied[0]
-        if board.get_tile(r, c) == TileType.FRAGILE:
-            return False
+        if board.get_tile(r, c) == TileType.FALLING:
+            return False, f"Ô gạch mỏng tại ({r}, {c}) quá yếu để khối đứng thẳng."
 
-    return True
+    return True, "Nước đi hợp lệ."
+
+
+def is_valid_state(board: Board, state: State) -> bool:
+    """Kiểm tra trạng thái có hợp lệ trên bàn cờ hay không."""
+    valid, _ = check_occupied_cells(board, state)
+    return valid
 
 def is_goal_state(board: Board, state: State) -> bool:
     """Kiểm tra khối đã đứng thẳng vào đúng ô đích G hay chưa."""
     return state.is_standing_at(board.end_pos)
 
 
-def get_next_state(board: Board, state: State, direction: Direction) -> Optional[State]:
+def get_next_state(state: State, direction: Direction, board=None) -> Optional[State]:
     """Tính trạng thái kế tiếp khi lăn theo hướng direction và kích hoạt công tắc nếu có."""
     dr, dc, new_orientation = TRANSITION_TABLE[(state.orientation, direction)]
     next_r = state.r + dr
