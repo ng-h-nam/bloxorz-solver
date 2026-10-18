@@ -14,10 +14,9 @@ TILE_HEIGHT = 0.2
 TILE_COLORS = {
     TileType.FLOOR: (0.85, 0.85, 0.75),
     TileType.GOAL: (0.3, 0.9, 0.4),
-    TileType.FRAGILE: (0.9, 0.6, 0.4),
+    TileType.FALLING: (0.9, 0.6, 0.4),
     TileType.SOFT_SWITCH: (0.6, 0.6, 0.9),
     TileType.HEAVY_SWITCH: (0.9, 0.4, 0.8),
-    TileType.SPLIT_SWITCH: (0.4, 0.9, 0.9),
 }
 BRIDGE_COLOR = (0.5, 0.5, 0.95)
 BLOCK_COLOR = (0.95, 0.55, 0.1)

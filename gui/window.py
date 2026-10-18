@@ -1,24 +1,34 @@
 import pygame
-from pygame.locals import DOUBLEBUF, OPENGL, QUIT, KEYDOWN, K_UP, K_DOWN, K_LEFT, K_RIGHT
+from pygame.locals import (
+    DOUBLEBUF, OPENGL, QUIT, KEYDOWN, MOUSEBUTTONDOWN,
+    K_UP, K_DOWN, K_LEFT, K_RIGHT, K_w, K_a, K_s, K_d, K_r,
+)
 from OpenGL.GL import glEnable, glMatrixMode, glLoadIdentity, GL_DEPTH_TEST, GL_PROJECTION, GL_MODELVIEW
 from OpenGL.GLU import gluPerspective
 
 from core.block import Direction
-from core.transition import get_next_state
+from core.game import GameStatus
+from core.transition import MoveResult
+from gui.control_panel import ControlPanel
 from gui.renderer import Renderer
 
 KEY_TO_DIRECTION = {
-    K_UP: Direction.UP,
-    K_DOWN: Direction.DOWN,
-    K_LEFT: Direction.LEFT,
-    K_RIGHT: Direction.RIGHT,
+    K_UP: Direction.UP, K_w: Direction.UP,
+    K_DOWN: Direction.DOWN, K_s: Direction.DOWN,
+    K_LEFT: Direction.LEFT, K_a: Direction.LEFT,
+    K_RIGHT: Direction.RIGHT, K_d: Direction.RIGHT,
 }
+
+MSG_FALL = "Nước đi không hợp lệ: khối đã rơi. Nhấn R hoặc Restart để chơi lại."
+MSG_WIN = "Hoàn thành màn chơi!"
+MSG_ENDED = "Ván đã kết thúc. Nhấn R để chơi lại."
 
 
 class Window:
-    def __init__(self, board, state, width=1024, height=768):
-        self.board = board
-        self.state = state
+    def __init__(self, game, level_name="", width=1024, height=768):
+        self.game = game
+        self.level_name = level_name
+        self.message = ""
 
         pygame.init()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
@@ -30,7 +40,9 @@ class Window:
         gluPerspective(45, width / height, 0.1, 100)
         glMatrixMode(GL_MODELVIEW)
 
-        self.renderer = Renderer(board)
+        # Tạo sau set_mode vì cần ngữ cảnh OpenGL
+        self.renderer = Renderer(game.board)
+        self.panel = ControlPanel(width, height)
         self.clock = pygame.time.Clock()
 
     def run(self):
@@ -41,18 +53,42 @@ class Window:
                     running = False
                 elif event.type == KEYDOWN:
                     self.handle_key(event.key)
+                elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+                    self.handle_click(event.pos)
 
-            self.renderer.draw(self.state)
+            self.draw()
             pygame.display.flip()
             self.clock.tick(60)
 
         pygame.quit()
 
+    def draw(self):
+        self.renderer.draw(self.game.state)
+        self.panel.draw(self.game, self.level_name, self.message)
+
     def handle_key(self, key):
+        if key == K_r:
+            self.restart()
+            return
+
         direction = KEY_TO_DIRECTION.get(key)
         if direction is None:
             return
-        next_state = get_next_state(self.board, self.state, direction)
-        if next_state is not None:
-            self.state = next_state
-        # Nếu next_state là None, khối rơi: sẽ xử lý game over ở bước sau
+
+        outcome = self.game.move(direction)
+        if outcome is None:
+            self.message = MSG_ENDED
+        elif outcome.result == MoveResult.FALL:
+            self.message = MSG_FALL
+        elif self.game.status == GameStatus.WON:
+            self.message = MSG_WIN
+        else:
+            self.message = ""
+
+    def handle_click(self, pos):
+        if self.panel.handle_click(pos) == "restart":
+            self.restart()
+
+    def restart(self):
+        self.game.restart()
+        self.message = ""
