@@ -1,0 +1,14 @@
+{
+    "_comment": "Mức 1 - Rẽ nhánh: Bản đồ có nhiều lối đi song song và vòng lặp (loop), thử nghiệm khả năng chọn đường ngắn nhất của BFS so với DFS.",
+    "name": "Level 1 - Branching",
+    "description": "Grid with multiple parallel paths and loops",
+    "grid": [
+        [3, 3, 3, 3, 3],
+        [3, 0, 0, 0, 3],
+        [3, 3, 3, 0, 3],
+        [0, 0, 3, 3, 3],
+        [3, 3, 3, 0, 4]
+    ],
+    "start_pos": [0, 0],
+    "start_orientation": "standing"
+}

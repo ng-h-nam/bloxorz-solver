@@ -9,8 +9,6 @@ from datetime import datetime
 Script tự động chạy thực nghiệm (Batch Testing) cho dự án Bloxorz Solver.
 Tự động duyệt qua tất cả các file bản đồ trong thư mục data/maps/,
 chạy 4 thuật toán tìm kiếm (BFS, DFS, UCS, A*), đo lường chỉ số và ghi log vào CSV.
-
-Phụ trách: TV5 - Experiment Lead
 """
 
 # Import giả định các Solvers từ gói algorithms nếu chạy trong dự án

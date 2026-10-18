@@ -1,0 +1,12 @@
+{
+    "_comment": "Mức 1 - Cơ bản: Bản đồ nhỏ với đường đi đơn giản, dùng để kiểm tra tính đúng đắn ban đầu của BFS và DFS.",
+    "name": "Level 1 - Basic",
+    "description": "Small grid with a simple, direct path to the goal",
+    "grid": [
+        [3, 3, 3],
+        [0, 0, 3],
+        [0, 0, 4]
+    ],
+    "start_pos": [0, 0],
+    "start_orientation": "standing"
+}
