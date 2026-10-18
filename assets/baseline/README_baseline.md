@@ -4,7 +4,8 @@ Tài liệu này giải thích cách đọc các sơ đồ baseline, những quy
 
 ## 1. Các sơ đồ trong baseline
 
-Có năm sơ đồ chính. 
+Có năm sơ đồ Mermaid. Dán từng khối vào https://mermaid.live để xem.
+
 | Sơ đồ | Trả lời câu hỏi |
 |---|---|
 | Sơ đồ lớp | Có những class nào, thuộc nhóm nào, quan hệ với nhau ra sao |
@@ -50,12 +51,12 @@ bloxorz-solver/
     ├── README.md
     ├── core/                       TV1
     │   ├── __init__.py
-    │   ├── board.py                [CHỈNH SỬA] thêm symbols, bridge_cells, goal_pos
+    │   ├── board.py                [CHỈNH SỬA] thêm symbols, goal_pos, switch_group, bridge_cells, bridge_groups
     │   ├── state.py                [CHỈNH SỬA] Orientation là IntEnum, bỏ order=True
     │   ├── block.py                [THU GỌN] chỉ còn Direction, bỏ class Block
-    │   ├── transition.py           [CHỈNH SỬA] thêm switch_group, apply_move; bỏ get_next_state
+    │   ├── transition.py           [CHỈNH SỬA] thêm pressed_switches, apply_move; bỏ get_next_state; switch_group đã chuyển sang board.py
     │   ├── game.py                 [MỚI] trạng thái ván: state, moves, status, history
-    │   └── map_loader.py           [CHỈNH SỬA] đọc map txt, phân loại ký hiệu
+    │   └── map_loader.py           [CHỈNH SỬA] đọc map txt, phân loại ký hiệu, kiểm tra liên kết công tắc và cầu
     ├── gui/                        TV2
     │   ├── __init__.py
     │   ├── window.py               [CHỈNH SỬA] vòng lặp sự kiện, gọi Game, không chứa luật
@@ -104,12 +105,12 @@ Các điểm dưới đây đã được giải quyết trong baseline. Nếu nh
 
 | Vấn đề | Quyết định | Lý do |
 |---|---|---|
-| Công tắc điều khiển cầu nào | Công tắc chữ hoa `X` điều khiển nhóm cầu chữ thường `x`. Công tắc số `d` điều khiển nhóm cầu chữ thứ `d` (`0` là `a`, ..., `9` là `j`) | Quy tắc đơn giản, nhìn map là biết. Phần số là quy ước cần nhóm xác nhận |
+| Công tắc điều khiển cầu nào | Công tắc chữ hoa `X` điều khiển nhóm cầu chữ thường `x`. Công tắc số `d` điều khiển nhóm cầu chữ thứ `d` (`0` là `a`, ..., `9` là `j`) | ĐÃ CHỐT. Quy tắc đơn giản, nhìn map là biết. Đã kiểm chứng trên 8 map có công tắc, tất cả đều khớp. Loader kiểm tra hai chiều, không cần file metadata riêng |
 | Khi nào công tắc kích hoạt | Khi khối vừa chạm vào ô công tắc, không phải khi khối đang đứng yên trên đó. Soft kích hoạt ở mọi tư thế. Heavy chỉ kích hoạt khi khối đứng thẳng | Không cần lưu trạng thái công tắc trong `State`, nên trạng thái vẫn so sánh và băm được cho solver |
 | Mỗi lần kích hoạt thì làm gì | Lật (toggle) trạng thái mọi cầu trong nhóm | Khớp với cách chơi gốc |
 | Cầu lúc bắt đầu | Tất cả cầu đều đóng | Map txt chưa có chỗ khai báo cầu mở. Cần xác nhận, xem mục 9 |
 | Khối rơi khi nào | Ra ngoài lưới, đứng thẳng trên ô `O`, hoặc nằm trên cầu đang đóng sau khi cầu được lật | Chỉ có một hàm `is_valid_state` quyết định, không rải luật ở nơi khác |
-| Split switch | Chưa đưa vào phạm vi chính thức, để làm mở rộng nếu còn thời gian | Phải đổi `State` từ một khối thành nhiều khối, ảnh hưởng toàn bộ code. Bảng ký hiệu cũng chưa có ký hiệu cho nó |
+| Split switch | ĐÃ CHỐT: làm ở mốc 5 như tùy chọn, chỉ sau khi mốc 1 đến 4 ổn định | Phải đổi `State` từ một khối thành nhiều khối, ảnh hưởng toàn bộ code. Bảng ký hiệu cũng chưa có ký hiệu cho nó |
 | Class `Block` | Xóa. `Direction` giữ trong `block.py` | `Block` trùng với `State`, làm có hai nguồn sự thật |
 | `Orientation` | Dùng `IntEnum` và bỏ `order=True` khỏi `State` | Enum thường không so sánh được, dẫn đến lỗi khi UCS và A* dùng `heapq` |
 | Kết quả nước đi | `MoveResult` chỉ có `OK` và `FALL`. Thắng được suy ra từ `is_goal_state` sau nước `OK` | Ít trạng thái, không trùng lặp |
@@ -118,6 +119,8 @@ Các điểm dưới đây đã được giải quyết trong baseline. Nếu nh
 | Đo bộ nhớ | `tracemalloc` của thư viện chuẩn, không dùng `psutil` | Đo đúng bộ nhớ Python, ổn định giữa các lần chạy |
 | Giới hạn tìm kiếm | `node_limit` trong `BaseSolver` | Tránh chạy vô hạn trên map khó |
 | Định dạng map | `.txt`, bỏ JSON | Khớp với file `level0.txt` đã có |
+| Liên kết công tắc và cầu | Đọc theo quy tắc: chữ hoa `X` điều khiển `x`, số `d` điều khiển chữ thứ `d`. Không dùng file metadata riêng. Loader kiểm tra hai chiều và báo lỗi khi lệch | Lỗi được phát hiện ngay khi nạp map, không đợi đến lúc chạy |
+| Số lượng map | 25 map: 13 map riêng và 12 map tách từ `zlevel120.txt` (đang chờ tách file) | Đủ cho thực nghiệm, có cả map đơn giản và map có nhiều công tắc |
 | `requirements.txt` | Bỏ `customtkinter` | Không dùng |
 
 ## 5. Ý tưởng kỹ thuật cần nắm
@@ -147,11 +150,7 @@ Mã tham khảo cho TV1:
 ```python
 # core/transition.py
 
-def switch_group(symbol: str) -> str:
-    """Nhóm cầu mà một công tắc điều khiển. 'A' -> 'a', công tắc số d -> chữ thứ d."""
-    if "A" <= symbol <= "Z":
-        return symbol.lower()
-    return chr(ord("a") + int(symbol))  # '0' -> 'a', ..., '9' -> 'j'
+# switch_group nằm trong core/board.py, xem phần ghi chú dưới đây
 
 
 def pressed_switches(board, state) -> frozenset:
@@ -183,7 +182,11 @@ def apply_move(board, state, direction) -> MoveOutcome:
     return MoveOutcome(MoveResult.FALL, final)  # final vẫn dùng để vẽ hoạt cảnh rơi
 ```
 
+Lưu ý: `switch_group` không nằm trong `transition.py` mà nằm trong `board.py`, vì `map_loader` cũng cần dùng để kiểm tra liên kết công tắc và cầu. `transition.py` chỉ import từ đó.
+
 Lưu ý: `is_valid_state` nhận `final` đã có cầu mới. Vì vậy nếu nước đi làm một cầu đóng ngay dưới khối, khối sẽ rơi. Đây là hành vi đúng của game.
+
+Trường hợp hai công tắc cùng điều khiển một nhóm cầu (level 8 và level 11) vẫn chưa được nhóm xác nhận. Nếu có, nhấn cả hai sẽ lật cầu hai lần, và cầu trở về trạng thái cũ. Xem mục 9.
 
 ### 5.4. Trạng thái ván và animation
 
@@ -249,18 +252,18 @@ Manhattan chia cho 2 chỉ là một đề xuất, TV4 phải chứng minh hoặ
 | Mốc | Nội dung | Người phụ trách | Hoàn thành khi |
 |---|---|---|---|
 | 0 | Chốt thiết kế | Cả nhóm | Không còn câu hỏi nào trong mục 4 và 9 chưa có người quyết |
-| 1 | Core: map loader, transition, game | TV1 | `test_map_loader`, `test_transition`, `test_game` pass. Nạp được mọi map txt |
+| 1 | Core: map loader, transition, game | TV1 | `test_map_loader`, `test_transition`, `test_game` pass. Nạp được mọi map txt, liên kết công tắc và cầu hợp lệ trên 25 map |
 | 2 | GUI cơ bản: renderer, camera, primitives | TV2 | Vẽ được map, khối, di chuyển bằng phím. Chạy ổn định ở 60 FPS trên map cỡ 15 x 10 |
-| 3 | Solver: BFS, DFS, UCS, A*, heuristic | TV3 và TV4 | Giải được `level0` và ít nhất ba map khác. `test_solvers` pass, kiểm tra admissible pass |
+| 3 | Solver: BFS, DFS, UCS, A*, heuristic | TV3 và TV4 | Giải được `level0` và ít nhất ba map khác, trong đó có ít nhất một map có công tắc. UCS dùng chi phí do TV3 quyết định, xem mục 9. `test_solvers` pass, kiểm tra admissible pass |
 | 4 | Animation, replayer, HUD, control panel | TV2 | Lăn, rơi, thắng, thua đều có màn hình. Replay lời giải của solver chạy đúng |
-| 5 | Thực nghiệm | TV5 | Có CSV và bốn biểu đồ cho ít nhất bốn map |
+| 5 | Thực nghiệm trên 25 map. Split switch là tùy chọn | TV5, và TV1 nếu làm split | Có CSV và bốn biểu đồ cho 25 map. Split chỉ làm khi mốc 1 đến 4 đã ổn định, và không làm hỏng kết quả của các map cũ |
 | 6 | Hoàn thiện | Cả nhóm | Report, video demo, README chạy được trên máy sạch |
 
 Mốc 3 có thể bắt đầu song song với mốc 2, vì solver chỉ cần `core`.
 
 ## 7. Kiểm thử tối thiểu
 
-- `test_map_loader.py`: ký tự lạ báo lỗi, thiếu S hoặc T báo lỗi, dòng lệch độ dài báo lỗi, map hợp lệ thì parse đúng.
+- `test_map_loader.py`: ký tự lạ báo lỗi, thiếu S hoặc T báo lỗi, dòng lệch độ dài báo lỗi, map hợp lệ thì parse đúng. Công tắc không có cầu hoặc cầu không có công tắc báo lỗi. Công tắc chữ và công tắc số khớp đúng nhóm cầu.
 - `test_transition.py`: lăn đúng ở mọi hướng, rơi khi ra ngoài lưới, rơi khi đứng thẳng trên `O`, heavy chỉ kích hoạt khi đứng thẳng, soft kích hoạt ở mọi tư thế, lật cầu đúng nhóm, rơi khi cầu đóng dưới khối.
 - `test_game.py`: nước `OK` tăng `moves`, nước `FALL` không tăng `moves` và đặt `LOST`, đến đích thì `WON`, sau `WON` hoặc `LOST` thì nước đi bị bỏ qua, `restart` đưa về trạng thái đầu.
 - `test_solvers.py`: lời giải của mỗi solver khi áp dụng lên map thì đến đích. Heuristic chấp nhận được.
@@ -275,12 +278,3 @@ Khi đổi một quyết định:
 4. Báo cả nhóm trước khi merge.
 
 Không sửa code của người khác mà không báo. Nếu cần đổi `core`, báo TV1, vì mọi nhóm đều phụ thuộc vào đó.
-
-## 9. Các câu hỏi cần nhóm chốt
-
-1. **Quy ước số cho công tắc.** Hiện đề xuất công tắc `d` điều khiển nhóm `d`-th (`0` là `a`). Có cách nào tự nhiên hơn không?
-2. **Cầu lúc bắt đầu.** Có level nào cần cầu mở sẵn không? Nếu có, cần thêm quy ước, ví dụ chữ hoa cho cầu mở.
-3. **Split switch.** Có làm không? Nếu làm, đó là mở rộng sau mốc 6, và cần thiết kế lại `State`.
-4. **Chi phí cho UCS.** Đề xuất: nước thường có chi phí 1, nước kích hoạt công tắc có chi phí 2. Vì chi phí không đồng nhất, đây là lý do chính để dùng UCS. Nhóm có muốn cách khác không?
-5. **Số lượng map.** Mục tiêu là bao nhiêu map cho thực nghiệm, và độ khó tăng dần thế nào?
-6. **Thư viện.** Xác nhận với giảng viên là dùng pygame và PyOpenGL.
