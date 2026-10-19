@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any
-from state import Coordinates, State
+from core.state import Coordinates, State
 
 class TileType(Enum):
     VOID = "."         
