@@ -20,6 +20,12 @@ ACTION_ALIAS_MAP: Dict[str, Direction] = {
     "D": Direction.RIGHT,
     "ARROW_RIGHT": Direction.RIGHT,
 }
+SINGLE_CUBE_DELTA: Dict[Direction, Tuple[int, int]] = {
+    Direction.UP:    (-1,  0),
+    Direction.DOWN:  ( 1,  0),
+    Direction.LEFT:  ( 0, -1),
+    Direction.RIGHT: ( 0,  1),
+}
 
 TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientation]] = {
     # 1. STANDING
@@ -144,7 +150,7 @@ def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
     return True, "Nước đi hợp lệ."
 
 
-def is_valid_state(board: Board, state: State) -> bool:
+def is_validstate(board: Board, state: State) -> bool:
     """Kiểm tra trạng thái có hợp lệ trên bàn cờ hay không."""
     valid, _ = check_occupied_cells(board, state)
     return valid
@@ -167,7 +173,7 @@ def get_next_state(state: State, direction: Direction, board=None) -> Optional[S
         active_bridges=state.active_bridges,
     )
 
-    if not is_valid_state(board, temp_state):
+    if not is_validstate(board, temp_state):
         return None
 
     new_bridges = state.active_bridges
@@ -194,5 +200,125 @@ def get_successors(board: Board, state: State) -> List[Tuple[Direction, State]]:
         if next_state is not None:
             successors.append((direction, next_state))
     return successors
+
+def get_next_state(
+    state: State,
+    action: ActionInput,
+    board: Optional[Board] = None,
+) -> Optional[State]:
+    """
+    Tính trạng thái kế tiếp sau hành động `action`:
+      - Hỗ trợ đổi khối đơn đang điều khiển khi truyền action="SPACE".
+      - Hỗ trợ di chuyển tuần tự từng khối đơn khi đang ở trạng thái SPLIT và tự động gộp khối khi kề nhau.
+      - Hỗ trợ tự động chia đôi khối khi STANDING trên ô SPLIT_SWITCH ('U').
+    """
+    if board is None and _CURRENT_BOARD is not None:
+        board = _CURRENT_BOARD
+
+    # 1. Xử lý hành động chuyển đổi quyền điều khiển giữa 2 khối đơn (Spacebar / Switch Cube)
+    if isinstance(action, str) and action.strip().upper() in ("SPACE", "SWITCH", "TAB"):
+        if not state.is_split():
+            return None
+        return state.switch_active_cube()
+
+    direction = standardize_action(action)
+
+    # 2. Trường hợp khối đang bị chia đôi (Orientation.SPLIT): điều khiển khối đơn active_cube
+    if state.is_split():
+        dr, dc = SINGLE_CUBE_DELTA[direction]
+        r1, c1 = state.r, state.c
+        r2, c2 = state.split_pos  # type: ignore
+
+        if state.active_cube == 0:
+            moved_cell = (r1 + dr, c1 + dc)
+            new_r, new_c = moved_cell
+            new_split_pos = (r2, c2)
+        else:
+            moved_cell = (r2 + dr, c2 + dc)
+            new_r, new_c = r1, c1
+            new_split_pos = moved_cell
+
+        candidate_split = State(
+            r=new_r,
+            c=new_c,
+            orientation=Orientation.SPLIT,
+            active_bridges=state.active_bridges,
+            split_pos=new_split_pos,
+            active_cube=state.active_cube,
+        )
+
+        # Kiểm tra nếu 2 khối đơn tiến lại sát cạnh nhau thì tự động gộp thành khối 1x1x2
+        candidate_state = candidate_split.normalize_or_merge()
+
+        if board is None:
+            return candidate_state
+
+        if not board.is_valid_move(candidate_state):
+            return None
+
+        # Khối đơn 1x1x1 chỉ kích hoạt được Soft Switch thôi.
+        new_bridges = state.active_bridges
+        if board.get_tile(*moved_cell) == TileType.SOFT_SWITCH:
+            new_bridges = board.apply_switch(moved_cell, new_bridges)
+
+        return State(
+            r=candidate_state.r,
+            c=candidate_state.c,
+            orientation=candidate_state.orientation,
+            active_bridges=new_bridges,
+            split_pos=candidate_state.split_pos,
+            active_cube=candidate_state.active_cube,
+        )
+
+    # 3. Trường hợp khối nguyên 1x1x2.
+    dr, dc, new_orientation = TRANSITION_TABLE[(state.orientation, direction)]
+    candidate_state = State(
+        r=state.r + dr,
+        c=state.c + dc,
+        orientation=new_orientation,
+        active_bridges=state.active_bridges,
+    )
+
+    if board is None:
+        return candidate_state
+
+    if not board.is_valid_move(candidate_state):
+        return None
+
+    # Kiểm tra khả năng kích hoạt công tắc
+    new_bridges = state.active_bridges
+    for cell_r, cell_c in candidate_state.get_occupied_cells():
+        tile = board.get_tile(cell_r, cell_c)
+        if tile == TileType.SOFT_SWITCH:
+            new_bridges = board.apply_switch((cell_r, cell_c), new_bridges)
+        elif tile == TileType.HEAVY_SWITCH and new_orientation == Orientation.STANDING:
+            new_bridges = board.apply_switch((cell_r, cell_c), new_bridges)
+        elif tile == TileType.SPLIT_SWITCH and new_orientation == Orientation.STANDING:
+            # Khi đứng thẳng trên SPLIT_SWITCH -> Tự động tách thành 2 khối đơn 1x1x1!
+            if (cell_r, cell_c) in board.splits:
+                pos1, pos2 = board.splits[(cell_r, cell_c)]
+            else:
+                # Fallback nếu map không khai báo tọa độ đáp: tách sang 2 ô bên cạnh
+                pos1, pos2 = (cell_r, cell_c - 1), (cell_r, cell_c + 1)
+
+            split_state = State(
+                r=pos1[0],
+                c=pos1[1],
+                orientation=Orientation.SPLIT,
+                active_bridges=new_bridges,
+                split_pos=pos2,
+                active_cube=0,
+            ).normalize_or_merge()
+
+            if not board.is_valid_move(split_state):
+                return None
+            return split_state
+
+    return State(
+        r=candidate_state.r,
+        c=candidate_state.c,
+        orientation=new_orientation,
+        active_bridges=new_bridges,
+    )
 
 
