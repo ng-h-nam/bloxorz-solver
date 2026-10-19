@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 from OpenGL.GL import (
     glBegin, glEnd, glColor3f, glVertex3f, GL_QUADS,
     glClearColor, glClear, glLoadIdentity,
@@ -6,26 +8,36 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluLookAt
 
-from core.board import TileType
-from core.state import Orientation
+from core.board import Board, TileType
+from core.state import Orientation, State
 
-TILE_HEIGHT = 0.2
+# Màu RGB, mỗi kênh trong [0, 1]
+Color = Tuple[float, float, float]
+# Hộp bao (x0, x1, y0, y1, z0, z1): x = cột, y = chiều cao, z = hàng
+Bounds = Tuple[int, int, int, int, int, int]
 
-TILE_COLORS = {
+TILE_HEIGHT: float = 0.2
+
+TILE_COLORS: Dict[TileType, Color] = {
     TileType.FLOOR: (0.85, 0.85, 0.75),
     TileType.GOAL: (0.3, 0.9, 0.4),
     TileType.FALLING: (0.9, 0.6, 0.4),
     TileType.SOFT_SWITCH: (0.6, 0.6, 0.9),
     TileType.HEAVY_SWITCH: (0.9, 0.4, 0.8),
 }
-BRIDGE_COLOR = (0.5, 0.5, 0.95)
-BLOCK_COLOR = (0.95, 0.55, 0.1)
+BRIDGE_COLOR: Color = (0.5, 0.5, 0.95)
+BLOCK_COLOR: Color = (0.95, 0.55, 0.1)
 
 # VOID là khoảng trống; BRIDGE chỉ vẽ khi đang mở (lấy từ state.active_bridges)
-SKIPPED_TILES = (TileType.VOID, TileType.BRIDGE)
+SKIPPED_TILES: Tuple[TileType, ...] = (TileType.VOID, TileType.BRIDGE)
 
 
-def draw_box(x0, x1, y0, y1, z0, z1, color):
+def draw_box(
+    x0: float, x1: float,
+    y0: float, y1: float,
+    z0: float, z1: float,
+    color: Color,
+) -> None:
     """Vẽ một hộp chữ nhật với 6 mặt, mỗi mặt là một quad."""
     glColor3f(*color)
     glBegin(GL_QUADS)
@@ -43,7 +55,7 @@ def draw_box(x0, x1, y0, y1, z0, z1, color):
     glEnd()
 
 
-def block_bounds(state):
+def block_bounds(state: State) -> Bounds:
     """Hộp bao của khối, suy ra từ các ô mà core báo là khối đang chiếm."""
     cells = state.get_occupied_cells()
     rs = [r for r, _ in cells]
@@ -53,12 +65,12 @@ def block_bounds(state):
 
 
 class Renderer:
-    def __init__(self, board):
-        self.board = board
+    def __init__(self, board: Board) -> None:
+        self.board: Board = board
         # Gọi sau khi đã tạo cửa sổ OpenGL, vì display list cần context
-        self.map_list = self._build_map_list()
+        self.map_list: int = self._build_map_list()
 
-    def _build_map_list(self):
+    def _build_map_list(self) -> int:
         """Biên dịch nền bản đồ thành một display list, chỉ chạy một lần."""
         map_list = glGenLists(1)
         glNewList(map_list, GL_COMPILE)
@@ -72,7 +84,7 @@ class Renderer:
         glEndList()
         return map_list
 
-    def _setup_camera(self):
+    def _setup_camera(self) -> None:
         cx = self.board.cols / 2
         cz = self.board.rows / 2
         glLoadIdentity()
@@ -82,7 +94,7 @@ class Renderer:
             0, 1, 0,         # hướng "lên" là trục Y
         )
 
-    def draw(self, state):
+    def draw(self, state: State) -> None:
         glClearColor(0.08, 0.08, 0.12, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._setup_camera()

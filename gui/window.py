@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 import pygame
 from pygame.locals import (
     DOUBLEBUF, OPENGL, QUIT, KEYDOWN, MOUSEBUTTONDOWN,
@@ -7,28 +9,34 @@ from OpenGL.GL import glEnable, glMatrixMode, glLoadIdentity, GL_DEPTH_TEST, GL_
 from OpenGL.GLU import gluPerspective
 
 from core.block import Direction
-from core.game import GameStatus
+from core.game import Game, GameStatus
 from core.transition import MoveResult
 from gui.control_panel import ControlPanel
 from gui.renderer import Renderer
 
-KEY_TO_DIRECTION = {
+KEY_TO_DIRECTION: Dict[int, Direction] = {
     K_UP: Direction.UP, K_w: Direction.UP,
     K_DOWN: Direction.DOWN, K_s: Direction.DOWN,
     K_LEFT: Direction.LEFT, K_a: Direction.LEFT,
     K_RIGHT: Direction.RIGHT, K_d: Direction.RIGHT,
 }
 
-MSG_FALL = "Nước đi không hợp lệ: khối đã rơi. Nhấn R hoặc Restart để chơi lại."
-MSG_WIN = "Hoàn thành màn chơi!"
-MSG_ENDED = "Ván đã kết thúc. Nhấn R để chơi lại."
+MSG_FALL: str = "Nước đi không hợp lệ: khối đã rơi. Nhấn R hoặc Restart để chơi lại."
+MSG_WIN: str = "Hoàn thành màn chơi!"
+MSG_ENDED: str = "Ván đã kết thúc. Nhấn R để chơi lại."
 
 
 class Window:
-    def __init__(self, game, level_name="", width=1024, height=768):
-        self.game = game
-        self.level_name = level_name
-        self.message = ""
+    def __init__(
+        self,
+        game: Game,
+        level_name: str = "",
+        width: int = 1024,
+        height: int = 768,
+    ) -> None:
+        self.game: Game = game
+        self.level_name: str = level_name
+        self.message: str = ""
 
         pygame.init()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
@@ -41,11 +49,11 @@ class Window:
         glMatrixMode(GL_MODELVIEW)
 
         # Tạo sau set_mode vì cần ngữ cảnh OpenGL
-        self.renderer = Renderer(game.board)
-        self.panel = ControlPanel(width, height)
-        self.clock = pygame.time.Clock()
+        self.renderer: Renderer = Renderer(game.board)
+        self.panel: ControlPanel = ControlPanel(width, height)
+        self.clock: pygame.time.Clock = pygame.time.Clock()
 
-    def run(self):
+    def run(self) -> None:
         running = True
         while running:
             for event in pygame.event.get():
@@ -62,11 +70,11 @@ class Window:
 
         pygame.quit()
 
-    def draw(self):
+    def draw(self) -> None:
         self.renderer.draw(self.game.state)
         self.panel.draw(self.game, self.level_name, self.message)
 
-    def handle_key(self, key):
+    def handle_key(self, key: int) -> None:
         if key == K_r:
             self.restart()
             return
@@ -85,10 +93,10 @@ class Window:
         else:
             self.message = ""
 
-    def handle_click(self, pos):
+    def handle_click(self, pos: Tuple[int, int]) -> None:
         if self.panel.handle_click(pos) == "restart":
             self.restart()
 
-    def restart(self):
+    def restart(self) -> None:
         self.game.restart()
         self.message = ""
