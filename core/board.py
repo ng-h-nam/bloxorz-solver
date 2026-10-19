@@ -1,50 +1,104 @@
-import json
-from dataclasses import dataclass
+
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any, Iterable
-from core.state import Coordinates
+from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any
+from core.state import Coordinates, State
 
 class TileType(Enum):
-    VOID = " "         
-    FLOOR = "b"       
-    GOAL = "e"         
-    FRAGILE = "f"     
-    BRIDGE = "="     
-    SOFT_SWITCH = "s" 
-    HEAVY_SWITCH = "h"
-    SPLIT_SWITCH = "v"
+    VOID = "."         
+    FLOOR = "F"       
+    GOAL = "T"         
+    FRAGILE = "O"     
+    FALLING = "O"
+    BRIDGE = "a"     
+    SOFT_SWITCH = "A" 
+    HEAVY_SWITCH = "0"
+    SPLIT_SWITCH = "U"
 
 class BridgeMode(Enum):
     TOGGLE = "onoff"    # Đảo trạng thái đóng <-> mở
     OPEN = "on"         # Luôn mở cầu
     CLOSE = "off"       # Luôn đóng cầu
 
+    @classmethod
+
+    def from_str(cls, text: str) -> "BridgeMode":
+        t = text.strip().lower()
+        if t in ("onoff", "toggle", "switch"):
+            return cls.TOGGLE
+        if t in ("on", "open", "enable"):
+            return cls.OPEN
+        if t in ("off", "close", "disable"):
+            return cls.CLOSE
+        raise ValueError(f"Chế độ cầu không hợp lệ: '{text}'")
+    
 
 @dataclass(frozen=True)
 class BridgeAction:
     """Mô tả tác động của một công tắc lên 1 ô cầu cụ thể."""
-    target_pos: Coordinates   # Tọa độ (r, c) của ô cầu
-    mode: BridgeMode    # Chế độ: onoff (toggle), on (mở), off (đóng)
+    target_pos: Coordinates   
+    mode: BridgeMode = BridgeMode.TOGGLE
+    bridge_id: str = ""
 
-    # nếu còn yếu tố in_game nào khác thì ae feedback nhé, t chơi gà quá ms tới màn 10 à :(
+@dataclass(frozen=True)
+class BridgeMetadata:
+    """Metadata chi tiết cho từng cây cầu (đặc biệt quan trọng với các màn chơi có hơn 2 cây cầu).
+       - bridge_id: Ký hiệu định danh cây cầu (ví dụ: "a", "b", "c").
+       - cells: Danh sách các tọa độ thuộc cây cầu đó.
+       - priority (quan trọng): Độ ưu tiên giải quyết cây cầu đó trước trong thuật toán. (1 -> 2 -> ...)
+       - initial_open: Trạng thái ban đầu (True = mở sẵn, False = đóng sẵn.)
+       - controlled_by: Danh sách tọa độ (r, c) của các công tác điều khiển cây cầu này.
+       - requires: Danh sách bridge_id của các cây cầu bắt buộc phải mở trước cái cầu này.
+    """
 
+    bridge_id: str
+    cells: Tuple[Coordinates, ...]
+    priority: int = 1
+    initial_open: bool = False
+    controlled_by: Tuple[Coordinates, ...] = field(default_factory=tuple)
+    requires: Tuple[str, ...] = field(default_factory=tuple)
+
+@dataclass(frozen=True)
+class SwitchMetadata:
+    """Metadata chi tiết của một công tắc trên bản đồ."""
+    switch_id: str
+    pos: Coordinates
+    switch_type: TileType
+    actions: Tuple[BridgeAction, ...] = field(default_factory=tuple)
+
+TXT_CHAR_TO_TILE: Dict[str, TileType] = {
+    ".": TileType.VOID,
+    "0": TileType.VOID,
+    "F": TileType.FLOOR,     
+    "#": TileType.FLOOR,
+    "1": TileType.FLOOR,
+    "S": TileType.FLOOR,     
+    "T": TileType.GOAL,      
+    "G": TileType.GOAL,
+    "W": TileType.FRAGILE,   
+    "=": TileType.BRIDGE,
+    "B": TileType.BRIDGE,
+    "O": TileType.SOFT_SWITCH,
+    "X": TileType.HEAVY_SWITCH,
+    "U": TileType.SPLIT_SWITCH,
+
+}
+
+# 2. Bảng ánh xạ riêng cho file levels.json
 JSON_CHAR_TO_TILE: Dict[str, TileType] = {
     " ": TileType.VOID,
     "b": TileType.FLOOR,
     "e": TileType.GOAL,
-    "G": TileType.GOAL,
     "f": TileType.FRAGILE,
     "s": TileType.SOFT_SWITCH,
     "h": TileType.HEAVY_SWITCH,
     "v": TileType.SPLIT_SWITCH,
-    # 4 ký hiệu cầu trong levels.json đều quy về TileType.BRIDGE:
-    "l": TileType.BRIDGE,    # Cầu đóng (trái)
-    "r": TileType.BRIDGE,    # Cầu đóng (phải)
-    "k": TileType.BRIDGE,    # Cầu MỞ   (trái)
-    "q": TileType.BRIDGE,    # Cầu MỞ   (phải)
+    "l": TileType.BRIDGE,
+    "r": TileType.BRIDGE,
+    "k": TileType.BRIDGE,
+    "q": TileType.BRIDGE,
 }
 
-# Các ký tự đại diện cho cầu ĐANG MỞ SẴN khi bắt đầu màn chơi
 INITIAL_OPEN_BRIDGE_CHARS = {"k", "q"}
 
 
@@ -55,25 +109,212 @@ class Board:
     def __init__(
         self,
         grid: List[List[TileType]],
-        symbols: List[List[str]],
-        start_pos: Coordinates,
-        goal_pos: Coordinates,
-        initial_active_bridges: Optional[Iterable[Coordinates]] = None,
+        symbols: Optional[List[List[str]]] = None,
+        start_pos: Coordinates = (0, 0),
+        end_pos: Coordinates = (0, 0),
+        initial_active_bridges: Optional[FrozenSet[Coordinates]] = None, 
+        switches: Optional[Dict[Coordinates, List[BridgeAction]]] = None,
+        splits: Optional[Dict[Coordinates, Tuple[Coordinates, Coordinates]]] = None,
+        bridge_metadata: Optional[Dict[str, BridgeMetadata]] = None,
+        switch_metadata: Optional[Dict[Coordinates, SwitchMetadata]] = None,
+        raw_metadata: Optional[Dict[str, Any]] = None,
+
     ):
         self.grid = grid
         self.symbols = symbols
         self.rows = len(grid)
         self.cols = len(grid[0]) if self.rows > 0 else 0
+        self.height = self.rows
+        self.width = self.cols
         self.start_pos = start_pos
-        self.goal_pos = goal_pos
-        self.initial_active_bridges: FrozenSet[Coordinates] = frozenset(
-            initial_active_bridges or ()
+        self.end_pos = end_pos
+
+        if symbols is not None:
+            self.symbols = symbols
+        else:
+            self.symbols = [[tile.value for tile in row] for row in grid]
+
+        self.initial_active_bridges: FrozenSet[Coordinates] = (
+            initial_active_bridges or FrozenSet()
         )
+
+        self.switches: Dict[Coordinates, List[BridgeAction]] = switches or {}
+        self.splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = splits or {}
+        self.raw_metadata: Dict[str, Any] = raw_metadata or {}
+        self.bridge_groups: Dict[str, List[Coordinates]] = self._collect_bridge_groups()
+
+        if switches is not None:
+            self.switches = switches
+        else:
+            self.switches = self._auto_bind_switches_from_symbols()
+
+        if bridge_metadata is not None:
+            self.bridge_metadata = bridge_metadata
+        else:
+            self.bridge_metadata = self._build_default_bridge_metadata(
+                initial_active_bridges
+            )
+
+        if switch_metadata is not None:
+            self.switch_metadata = switch_metadata
+        else:
+            self.switch_metadata = self._build_switch_metadata()
+
+        open_cells = set(initial_active_bridges or frozenset())
+        for b_meta in self.bridge_metadata.values():
+            if b_meta.initial_open:
+                open_cells.update(b_meta.cells)
+        self.initial_active_bridges: FrozenSet[Coordinates] = frozenset(open_cells)
+
+    def _collect_bridge_groups(self) -> Dict[str, List[Coordinates]]:
+        """Gom các tọa độ ô cầu có cùng ký tự định danh ('a'..'z') thành từng cụm cầu."""
+        groups: Dict[str, List[Coordinates]] = {}
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if self.grid[r][c] == TileType.BRIDGE:
+                    char = self.symbols[r][c]
+                    groups.setdefault(char, []).append((r, c))
+        return groups
+
+    
+    def _auto_bind_switches_from_symbols(self) -> Dict[Coordinates, List[BridgeAction]]:
+        """
+        Tự động liên kết công tắc ('A'-'Z') với các ô cầu ('a'-'z') có cùng chữ cái
+        dựa trên ma trận symbols do map_loader.py cung cấp.
+        """
+        bridges_by_char: Dict[str, List[Coordinates]] = {}
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if self.grid[r][c] == TileType.BRIDGE:
+                    ch = self.symbols[r][c].lower()
+                    bridges_by_char.setdefault(ch, []).append((r, c))
+
+        auto_switches: Dict[Coordinates, List[BridgeAction]] = {}
+        for r in range(self.rows):
+            for c in range(self.cols):
+                tile = self.grid[r][c]
+                if tile in (TileType.SOFT_SWITCH, TileType.HEAVY_SWITCH):
+                    ch = self.symbols[r][c]
+                    target_char = ch.lower()
+                    if target_char in bridges_by_char:
+                        auto_switches[(r, c)] = [
+                            BridgeAction(target_pos=pos, mode=BridgeMode.TOGGLE)
+                            for pos in bridges_by_char[target_char]
+                        ]
+        return auto_switches
+
+
+    def _build_default_bridge_metadata(
+        self, initial_open_set: Optional[FrozenSet[Coordinates]] = None
+    ) -> Dict[str, BridgeMetadata]:
+        """
+        Tự động sinh BridgeMetadata và dự đoán thứ tự ưu tiên
+        dựa trên khoảng cách Manhattan?? từ điểm xuất phát tới công tắc điều khiển cầu đó.
+        """
+        open_set = initial_open_set or frozenset()
+        switch_map: Dict[str, List[Coordinates]] = {b_id: [] for b_id in self.bridge_groups}
+
+        for sw_pos, actions in self.switches.items():
+            for act in actions:
+                for b_id, cells in self.bridge_groups.items():
+                    if act.target_pos in cells and sw_pos not in switch_map[b_id]:
+                        switch_map[b_id].append(sw_pos)
+
+        # thứ tự ưu tiên mặc định: cầu nào có công tắc gần điểm xuất phát S hơn sẽ được ưu tiên trước.
+        def estimate_distance(b_id: str) -> Tuple[int, str]:
+            controllers = switch_map.get(b_id, [])
+            if controllers:
+                min_dist = min(
+                    abs(sr - self.start_pos[0]) + abs(sc - self.start_pos[1])
+                    for sr, sc in controllers
+                )
+                return (min_dist, b_id)
+            cells = self.bridge_groups[b_id]
+            min_dist = min(
+                abs(br - self.start_pos[0]) + abs(bc - self.start_pos[1])
+                for br, bc in cells
+            )
+            return (min_dist, b_id)
+
+        ordered_ids = sorted(self.bridge_groups.keys(), key=estimate_distance)
+        metadata_dict: Dict[str, BridgeMetadata] = {}
+
+        for rank, b_id in enumerate(ordered_ids, start=1):
+            cells = tuple(self.bridge_groups[b_id])
+            is_open = all(cell in open_set for cell in cells) if cells else False
+            metadata_dict[b_id] = BridgeMetadata(
+                bridge_id=b_id,
+                cells=cells,
+                priority=rank,
+                initial_open=is_open,
+                controlled_by=tuple(switch_map.get(b_id, [])),
+                requires=(),
+            )
+        return metadata_dict
+
+    def _build_switch_metadata(self) -> Dict[Coordinates, SwitchMetadata]:
+        sw_meta: Dict[Coordinates, SwitchMetadata] = {}
+        for sw_pos, actions in self.switches.items():
+            r, c = sw_pos
+            sw_meta[sw_pos] = SwitchMetadata(
+                switch_id=self.get_symbol(r, c),
+                pos=sw_pos,
+                switch_type=self.get_tile(r, c),
+                actions=tuple(actions),
+            )
+        return sw_meta
+
+    # --- CÁC HÀM TRUY VẤN METADATA CẦU DÀNH CHO SOLVER (BFS / DFS / UCS / A*) ---
+
+    def has_multiple_bridges(self) -> bool:
+        """Kiểm tra màn chơi có từ 2 cây cầu trở lên hay không."""
+        return len(self.bridge_metadata) >= 2
+
+
+    def get_bridges_by_priority(self) -> List[BridgeMetadata]:
+        """
+        Trả về danh sách các cây cầu theo đúng thứ tự ưu tiên cần giải quyết
+        (priority = 1 -> 2 -> 3...).
+        """
+        return sorted(
+            self.bridge_metadata.values(),
+            key=lambda b: (b.priority, b.bridge_id),
+        )
+
+    def is_bridge_open(self, bridge_id: str, state: State) -> bool:
+        """Kiểm tra toàn bộ các ô của cây cầu `bridge_id` đã được mở trong `state` hay chưa."""
+        if bridge_id not in self.bridge_metadata:
+            return False
+        cells = self.bridge_metadata[bridge_id].cells
+        return all(cell in state.active_bridges for cell in cells)
+
+
+    def get_next_priority_bridge(self, state: State) -> Optional[BridgeMetadata]:
+        """
+        Trả về cây cầu có độ ưu tiên cao nhất hiện đang ĐÓNG,
+        mà các cầu điều kiện tiên quyết (requires) của nó đều đã mở. (Quan trọng).
+        """
+        for b_meta in self.get_bridges_by_priority():
+            if not self.is_bridge_open(b_meta.bridge_id, state):
+                # Kiểm tra các cầu điều kiện đã mở hết chưa
+                if all(self.is_bridge_open(req_id, state) for req_id in b_meta.requires):
+                    return b_meta
+        return None
+
+
+    # --- CÁC HÀM KIỂM TRA BÀN CỜ & LUẬT CHƠI CƠ BẢN ---
+
 
     def in_board(self, r: int, c: int) -> bool:
         """Kiểm tra tọa độ (r, c) có nằm trong lưới hay không."""
         return 0 <= r < self.rows and 0 <= c < self.cols
 
+    def get_symbol(self, r: int, c: int) -> str:
+        """Trả về ký tự gốc trong file map tại (r, c)."""
+        if not self.in_bounds(r, c):
+            return "."
+        return self.symbols[r][c]
+    
     def get_tile(self, r: int, c: int) -> TileType:
         """Trả về loại ô tại (r, c). Ngoài lưới được coi là VOID."""
         if not self.in_board(r, c):
@@ -109,95 +350,64 @@ class Board:
 
         return frozenset(active_set)
 
-    @staticmethod
-    def _decode_packed_coord(key_str: str) -> Coordinates:
+    def is_out_of_bounds(self, state) -> bool:
         """
-        Tọa độ của file được tính từ công thức: key = x * 10 + y.
+        Kiểm tra xem block có nằm ngoài map hay không?
+        Trả về True nếu có, còn False nếu ngược lại."""
+
+        for r, c in state.get_occupied_cells():
+            if not self.in_bounds(r, c):
+                return True
+        return False
+
+    def is_on_void(self, state) -> bool:
         """
-        packed = int(key_str)
-        c = packed // 10  # x (cột)
-        r = packed % 10   # y (dòng)
-        return (r, c)
+        Kiểm tra xem block có nằm trên ô void hay không?
+        (Trong màn chơi sẽ có 2 thứ cần chú ý: biên của game và VOID.)
+        """
+    # Để dễ giải thích, ta xét map chơi là 1 hình chữ nhật với kích thước r * c.
+    # Trong đó, ngoài các ô floor, start, end,.. ra thì có các ô void nữa.
+    # Nên ta cần kiểm tra sự tồn tại của cả 2 cái.
+        
+        for r, c in state.get_occupied_cells():
+            if self.in_board(r, c) and self.grid[r][c] == TileType.VOID:
+                return True
+        return False
 
-    @classmethod
-    def from_level_dict(cls, data: Dict[str, Any]) -> "Board":
-        """Khởi tạo đối tượng Board từ 1 dictionary màn chơi trong levels.json."""
-        raw_tiles: List[str] = data["tiles"]
-        grid: List[List[TileType]] = []
-        end_pos: Optional[Coordinates] = None
-        open_bridges = set()
+    def is_on_valid_tiles(self, state) -> bool:
+        """
+        Kiểm tra xem block có nằm trên các tile hợp lệ hay không?
+        - Cơ bản là gộp cả 2 cái trên, tuy nhiên thêm 2 yếu tố nữa:
+        1. Nếu đi qua Bridge thì nó phải đang mở.
+        2. Nếu đang STANDING + đứng trên ô gạch mỏng thì cũng không được.
+        Nếu vi phạm thì trả về False.
+        """
 
+        if self.is_out_of_bounds(state) or self.is_on_void(state):
+            return False
+        from core.state import Orientation
+        occupied = state.get_occupied_cells()
 
-        for r, line in enumerate(raw_tiles):
-            row_tiles: List[TileType] = []
-            for c, char in enumerate(line):
-                if char == "e":
-                    end_pos = (r, c)
-                elif char in INITIAL_OPEN_BRIDGE_CHARS:
-                    open_bridges.add((r, c))
-                tile = JSON_CHAR_TO_TILE.get(char, TileType.VOID)
-                row_tiles.append(tile)
-            grid.append(row_tiles)
+        for r, c in occupied:
+            tile = self.grid[r][c]
+            if tile == TileType.BRIDGE and (r, c) not in state.active_bridges:
+                return False
 
-        spawn_x, spawn_y = data["spawn"]
-        start_pos: Coordinates = (spawn_y, spawn_x)
+        if state.orientation == Orientation.STANDING:
+            r, c = occupied[0]
+            if self.grid[r][c] == TileType.FALLING:
+                return False
+        return True
 
-        if end_pos is None:
-            raise ValueError(f"Level '{data.get('id')}' không có ô đích 'e'.")
+    def is_valid_move(self, state) -> bool:
+        """Kiểm tra tất thảy các điều kiện đó luôn."""
+        return self.is_on_valid_tiles(state)
 
-        switches: Dict[Coordinates, List[BridgeAction]] = {}
-        for key_str, action_list in data.get("switches", {}).items():
-            switch_pos = cls._decode_packed_coord(key_str)
-            actions: List[BridgeAction] = []
-            for bx, by, mode_str in action_list:
-                actions.append(
-                    BridgeAction(target_pos=(by, bx), mode=BridgeMode(mode_str))
-                )
-            switches[switch_pos] = actions
+    def is_goal_state(self, state) -> bool:
+        return State.is_standing_at(state, self.end_pos)
+        
 
-        splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = {}
-        for key_str, coords in data.get("splits", {}).items():
-            split_pos = cls._decode_packed_coord(key_str)
-            x1, y1, x2, y2 = coords
-            splits[split_pos] = ((y1, x1), (y2, x2))
-
-        return cls(
-            grid=grid,
-            start_pos=start_pos,
-            end_pos=end_pos,
-            initial_active_bridges=frozenset(open_bridges),
-            switches=switches,
-            splits=splits,
-            level_id=data.get("id", "unknown"),
-            passcode=data.get("code", 0),
-            raw_tiles=raw_tiles,
-        )
-
-    @classmethod
-    def from_levels_json(
-        cls, filepath: str, selector: Union[int, str] = 0
-    ) -> "Board":
-        """Nạp bản đồ từ file JSON theo chuẩn."""
-        with open(filepath, "r", encoding="utf-8") as f:
-            all_data = json.load(f)
-
-        levels = all_data["levels"]
-
-        if isinstance(selector, str):
-            for lvl in levels:
-                if lvl.get("id") == selector:
-                    return cls.from_level_dict(lvl)
-            raise ValueError(f"Không tìm thấy màn chơi có id='{selector}'.")
-
-        # Tìm theo chỉ số index (0..32) hoặc theo passcode (ví dụ: 780464)
-        if 0 <= selector < len(levels):
-            return cls.from_level_dict(levels[selector])
-
-        for lvl in levels:
-            if lvl.get("code") == selector:
-                return cls.from_level_dict(lvl)
-
-        raise ValueError(f"Không tìm thấy màn chơi ứng với selector={selector}.")
+    
 
     def __str__(self) -> str:
         """In bản đồ ra màn hình console bằng chính các dấu trong TileType."""
