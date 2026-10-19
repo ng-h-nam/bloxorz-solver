@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, FrozenSet, Tuple, Union, Any
-from core.state import Coordinates, State
+from core.state import Coordinates, Orientation, State
 
 class TileType(Enum):
     VOID = "."         
@@ -165,6 +165,15 @@ class Board:
                 open_cells.update(b_meta.cells)
         self.initial_active_bridges: FrozenSet[Coordinates] = frozenset(open_cells)
 
+    @property
+    def goal_pos(self) -> Coordinates:
+        """tương thích ngược cho các module cũ còn gọi board.goal_pos."""
+        return self.end_pos
+
+    @goal_pos.setter
+    def goal_pos(self, value: Coordinates) -> None:
+        self.end_pos = value
+
     def _collect_bridge_groups(self) -> Dict[str, List[Coordinates]]:
         """Gom các tọa độ ô cầu có cùng ký tự định danh ('a'..'z') thành từng cụm cầu."""
         groups: Dict[str, List[Coordinates]] = {}
@@ -310,7 +319,7 @@ class Board:
 
     def get_symbol(self, r: int, c: int) -> str:
         """Trả về ký tự gốc trong file map tại (r, c)."""
-        if not self.in_bounds(r, c):
+        if not self.in_board(r, c):
             return "."
         return self.symbols[r][c]
     
@@ -351,7 +360,7 @@ class Board:
         Trả về True nếu có, còn False nếu ngược lại."""
 
         for r, c in state.get_occupied_cells():
-            if not self.in_bounds(r, c):
+            if not self.in_board(r, c):
                 return True
         return False
 
