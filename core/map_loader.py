@@ -330,6 +330,31 @@ def parse_level(lines: List[str]) -> Board:
 
 
 def load_level(filepath: str) -> Board:
-    """Đọc một file map dạng text và trả về Board."""
+    """Đọc một file map dạng text, tự động đệm đều các hàng và trả về Board."""
     with open(filepath, "r", encoding="utf-8") as f:
-        return parse_level(f.readlines())
+        lines = f.readlines()
+
+    # Tiền xử lý: Tách các dòng map thực tế để tìm chiều dài lớn nhất (max width)
+    raw_map_lines: List[str] = []
+    meta_lines: List[str] = []
+    in_meta = False
+
+    for line in lines:
+        stripped = line.rstrip("\r\n")
+        if not in_meta and stripped == "---":
+            in_meta = True
+            continue
+        if in_meta:
+            meta_lines.append(line)
+        elif stripped.strip() and not stripped.strip().startswith("#"):
+            raw_map_lines.append(stripped)
+
+    if raw_map_lines:
+        max_width = max(len(row) for row in raw_map_lines)
+        # Tự động đệm ký tự '-' vào cuối các hàng ngắn hơn cho đủ chiều dài hình chữ nhật
+        padded_map_lines = [row.ljust(max_width, "-") for row in raw_map_lines]
+        # Ghép lại kèm phần metadata nếu có
+        fixed_lines = padded_map_lines + (["---\n"] + meta_lines if meta_lines else [])
+        return parse_level(fixed_lines)
+
+    return parse_level(lines)
