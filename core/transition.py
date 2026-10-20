@@ -1,9 +1,30 @@
+from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 from core.block import Direction
 from core.board import Board, TileType
 from core.state import Coordinates, Orientation, State, get_occupied_cells
 
 ActionInput = Union[Direction, str]
+
+
+class MoveResult(Enum):
+    """Kết quả của một bước di chuyển."""
+    OK = "OK"
+    FALL = "FALL"
+
+
+@dataclass(frozen=True)
+class MoveOutcome:
+    """
+    Kết quả trả về sau khi thực hiện một nước đi trong Game:
+    - result: MoveResult.OK nếu nước đi hợp lệ, MoveResult.FALL nếu khối bị rơi.
+    - state: Trạng thái mới sau nước đi (nếu FALL thì là trạng thái rơi tạm thời để GUI vẽ hoạt cảnh).
+    - message: Thông báo mô tả chi tiết kết quả nước đi.
+    """
+    result: MoveResult
+    state: State
+    message: str = ""
 
 _CURRENT_BOARD: Optional[Board] = None
 
@@ -102,8 +123,8 @@ def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
 
     if state.orientation == Orientation.STANDING:
         r, c = occupied[0]
-        if board.get_tile(r, c) == TileType.FALLING:
-            return False, f"Ô gạch mỏng (FALLING) tại ({r}, {c}) bị vỡ khi khối đứng thẳng."
+        if board.get_tile(r, c) == TileType.FRAGILE:
+            return False, f"Ô gạch mỏng (FRAGILE / FALLING) tại ({r}, {c}) bị vỡ khi khối đứng thẳng."
 
     return True, "Nước đi hợp lệ."
 
@@ -159,9 +180,19 @@ def get_next_state(
     direction = normalize_action(action)
 
     # 1. Xử lý khi khối đang ở trạng thái SPLIT (điều khiển tuần tự từng khối đơn)
-    if state.is_split():
+    if state.orientation == Orientation.SPLIT:
         if state.split_pos is None:
-            return None
+            if board is not None:
+                return None
+            dr, dc = SINGLE_CUBE_DELTA[direction]
+            return State(
+                r=state.r + dr,
+                c=state.c + dc,
+                orientation=Orientation.SPLIT,
+                active_bridges=state.active_bridges,
+                split_pos=None,
+                active_cube=state.active_cube,
+            )
         dr, dc = SINGLE_CUBE_DELTA[direction]
         r1, c1 = state.r, state.c
         r2, c2 = state.split_pos
@@ -194,7 +225,7 @@ def get_next_state(
         if board.get_tile(*moved_cell) == TileType.SOFT_SWITCH:
             new_bridges = board.apply_switch(moved_cell, new_bridges)
 
-        return State(
+        final_state = State(
             r=candidate_state.r,
             c=candidate_state.c,
             orientation=candidate_state.orientation,
@@ -202,6 +233,9 @@ def get_next_state(
             split_pos=candidate_state.split_pos,
             active_cube=candidate_state.active_cube,
         )
+        if not board.is_valid_move(final_state):
+            return None
+        return final_state
 
     # 2. Xử lý khi khối nguyên 1x1x2 (STANDING, HORIZONTAL, VERTICAL)
     dr, dc, new_orientation = TRANSITION_TABLE[(state.orientation, direction)]
@@ -230,7 +264,7 @@ def get_next_state(
             else:
                 pos1, pos2 = (cell_r, cell_c - 1), (cell_r, cell_c + 1)
 
-            split_state = State(
+            split_initial = State(
                 r=pos1[0],
                 c=pos1[1],
                 orientation=Orientation.SPLIT,
@@ -239,31 +273,50 @@ def get_next_state(
                 active_cube=0,
             ).normalize_or_merge()
 
+            if not board.is_valid_move(split_initial):
+                return None
+
+            for sp_r, sp_c in (pos1, pos2):
+                if board.get_tile(sp_r, sp_c) == TileType.SOFT_SWITCH:
+                    new_bridges = board.apply_switch((sp_r, sp_c), new_bridges)
+
+            split_state = State(
+                r=split_initial.r,
+                c=split_initial.c,
+                orientation=split_initial.orientation,
+                active_bridges=new_bridges,
+                split_pos=split_initial.split_pos,
+                active_cube=split_initial.active_cube,
+            )
             if not board.is_valid_move(split_state):
                 return None
             return split_state
 
-    return State(
+    final_state = State(
         r=candidate_state.r,
         c=candidate_state.c,
         orientation=new_orientation,
         active_bridges=new_bridges,
     )
+    if not board.is_valid_move(final_state):
+        return None
+    return final_state
+
 
 
 def get_successors(
     arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> List[Tuple[str, State]]:
+) -> List[Tuple[Union[Direction, str], State]]:
     """
     Sinh danh sách các nước đi hợp lệ (action, next_state).
     """
     board, state = _resolve_board_and_state(arg1, arg2)
-    successors: List[Tuple[str, State]] = []
+    successors: List[Tuple[Union[Direction, str], State]] = []
 
     for direction in Direction:
         next_state = get_next_state(state, direction, board=board)
         if next_state is not None:
-            successors.append((direction.value, next_state))
+            successors.append((direction, next_state))
 
     # Nếu đang ở trạng thái SPLIT, cho phép thêm hành động đổi khối điều khiển ("SWITCH")
     if state.is_split():

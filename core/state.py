@@ -28,9 +28,6 @@ class State:
     split_pos: Optional[Coordinates] = None
     active_cube: int = 0
 
-    def active_bridge(self) -> FrozenSet[Coordinates]:
-        return self.active_bridges
-
    
     def is_split(self) -> bool:
         """Trả về trạng thái hiện tại xem có đang bị chia đôi hay không?"""
@@ -58,7 +55,7 @@ class State:
 
     def get_inactive_cube_pos(self) -> Optional[Coordinates]:
         """Trả về tọa độ của khối đơn ta đang không điều khiển (ngược lại với cái trên)."""
-        if not self.is_split() and self.split_pos is None:
+        if not self.is_split() or self.split_pos is None:
             return None
         return (self.r, self.c) if self.active_cube == 1 else self.split_pos
 
@@ -72,17 +69,16 @@ class State:
             r=self.r,
             c=self.c,
             orientation=Orientation.SPLIT,
-            active_bridge=self.active_bridges,
+            active_bridges=self.active_bridges,
             split_pos=self.split_pos,
-            active_cube=1-self.active_cube,
-
+            active_cube=1 - self.active_cube,
         )
 
     def normalize_or_merge(self) -> "State":
         """Kiểm tra nếu đang ở trạng thái SPLIT mà 2 khối đơn 1x1x1 nằm ở 2 ô kề cạnh nhau.
         Điều kiện là: (|r1-r2| + |c1-c2| == 1), tự động gộp chúng lại thành khối 1x1x2 chuẩn."""
 
-        if not self.is_split() or self.split_pos in None:
+        if not self.is_split() or self.split_pos is None:
             return self
         r1, c1 = self.r, self.c
         r2, c2 = self.split_pos
@@ -92,7 +88,7 @@ class State:
                 r=r1,
                 c=min(c1, c2),
                 orientation=Orientation.HORIZONTAL,
-                active_bridge=self.active_bridges,
+                active_bridges=self.active_bridges,
                 split_pos=None,
                 active_cube=0,
             )

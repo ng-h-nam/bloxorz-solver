@@ -19,7 +19,7 @@ def classify(ch: str) -> TileType:
     if ch == "T":
         return TileType.GOAL
     if ch == "O":
-        return TileType.FALLING
+        return TileType.FRAGILE
     if ch == "U":
         return TileType.SPLIT_SWITCH
     if "A" <= ch <= "Z":
@@ -216,8 +216,12 @@ def _parse_metadata_section(
             target_id = None
             if ch.isalpha() and ch.lower() in bridge_groups:
                 target_id = ch.lower()
-            elif ch.isdigit() and int(ch) < len(sorted_bridge_ids):
-                target_id = sorted_bridge_ids[int(ch)]
+            elif ch.isdigit():
+                mapped_char = chr(ord("a") + int(ch))
+                if mapped_char in bridge_groups:
+                    target_id = mapped_char
+                elif int(ch) < len(sorted_bridge_ids):
+                    target_id = sorted_bridge_ids[int(ch)]
             if target_id:
                 switches[sc] = [
                     BridgeAction(
@@ -252,23 +256,36 @@ def _parse_metadata_section(
     raw_meta["bridge_count"] = len(final_bridge_meta)
     return switches, splits, final_bridge_meta, raw_meta
 def parse_level(lines: List[str]) -> Board:
-    """Chuyển danh sách dòng chữ thành Board. Báo lỗi nếu map sai định dạng."""
-    rows = [line.strip() for line in lines if line.strip()]
-    if not rows:
+    """Chuyển danh sách dòng chữ thành Board (hỗ trợ cả phần metadata sau '---'). Báo lỗi nếu map sai định dạng."""
+    map_lines: List[str] = []
+    meta_lines: List[str] = []
+    in_metadata = False
+
+    for line in lines:
+        stripped = line.strip()
+        if not in_metadata and stripped == "---":
+            in_metadata = True
+            continue
+        if in_metadata:
+            meta_lines.append(line)
+        elif stripped and not stripped.startswith("#"):
+            map_lines.append(stripped)
+
+    if not map_lines:
         raise ValueError("Map rỗng")
 
-    width = len(rows[0])
-    grid = []
-    symbols = []
-    start_pos = None
-    goal_pos = None
+    width = len(map_lines[0])
+    grid: List[List[TileType]] = []
+    symbols: List[List[str]] = []
+    start_pos: Optional[Coordinates] = None
+    goal_pos: Optional[Coordinates] = None
 
-    for r, row in enumerate(rows):
+    for r, row in enumerate(map_lines):
         if len(row) != width:
             raise ValueError(f"Hàng {r} có độ dài {len(row)}, cần {width}")
 
-        tile_row = []
-        symbol_row = []
+        tile_row: List[TileType] = []
+        symbol_row: List[str] = []
         for c, ch in enumerate(row):
             tile_row.append(classify(ch))
             symbol_row.append(ch)
@@ -289,6 +306,25 @@ def parse_level(lines: List[str]) -> Board:
         raise ValueError("Map thiếu điểm bắt đầu S")
     if goal_pos is None:
         raise ValueError("Map thiếu điểm đích T")
+
+    has_meta = any(line.strip() and not line.strip().startswith("#") for line in meta_lines)
+    if has_meta:
+        switches, splits, bridge_metadata, raw_metadata = _parse_metadata_section(
+            meta_lines=meta_lines,
+            grid=grid,
+            symbols=symbols,
+            start_pos=start_pos,
+        )
+        return Board(
+            grid=grid,
+            symbols=symbols,
+            start_pos=start_pos,
+            goal_pos=goal_pos,
+            switches=switches,
+            splits=splits,
+            bridge_metadata=bridge_metadata,
+            raw_metadata=raw_metadata,
+        )
 
     return Board(grid=grid, symbols=symbols, start_pos=start_pos, goal_pos=goal_pos)
 
