@@ -264,7 +264,7 @@ def get_next_state(
             else:
                 pos1, pos2 = (cell_r, cell_c - 1), (cell_r, cell_c + 1)
 
-            split_state = State(
+            split_initial = State(
                 r=pos1[0],
                 c=pos1[1],
                 orientation=Orientation.SPLIT,
@@ -273,6 +273,21 @@ def get_next_state(
                 active_cube=0,
             ).normalize_or_merge()
 
+            if not board.is_valid_move(split_initial):
+                return None
+
+            for sp_r, sp_c in (pos1, pos2):
+                if board.get_tile(sp_r, sp_c) == TileType.SOFT_SWITCH:
+                    new_bridges = board.apply_switch((sp_r, sp_c), new_bridges)
+
+            split_state = State(
+                r=split_initial.r,
+                c=split_initial.c,
+                orientation=split_initial.orientation,
+                active_bridges=new_bridges,
+                split_pos=split_initial.split_pos,
+                active_cube=split_initial.active_cube,
+            )
             if not board.is_valid_move(split_state):
                 return None
             return split_state
@@ -291,17 +306,17 @@ def get_next_state(
 
 def get_successors(
     arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> List[Tuple[str, State]]:
+) -> List[Tuple[Union[Direction, str], State]]:
     """
     Sinh danh sách các nước đi hợp lệ (action, next_state).
     """
     board, state = _resolve_board_and_state(arg1, arg2)
-    successors: List[Tuple[str, State]] = []
+    successors: List[Tuple[Union[Direction, str], State]] = []
 
     for direction in Direction:
         next_state = get_next_state(state, direction, board=board)
         if next_state is not None:
-            successors.append((direction.value, next_state))
+            successors.append((direction, next_state))
 
     # Nếu đang ở trạng thái SPLIT, cho phép thêm hành động đổi khối điều khiển ("SWITCH")
     if state.is_split():

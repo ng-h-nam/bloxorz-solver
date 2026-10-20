@@ -55,7 +55,7 @@ class State:
 
     def get_inactive_cube_pos(self) -> Optional[Coordinates]:
         """Trả về tọa độ của khối đơn ta đang không điều khiển (ngược lại với cái trên)."""
-        if not self.is_split() and self.split_pos is None:
+        if not self.is_split() or self.split_pos is None:
             return None
         return (self.r, self.c) if self.active_cube == 1 else self.split_pos
 

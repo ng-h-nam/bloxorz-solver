@@ -9,6 +9,7 @@ class TileType(Enum):
     FLOOR = "F"       
     GOAL = "T"         
     FRAGILE = "O"     
+    FALLING = "O"     # Alias tương thích ngược cho GUI / test
     BRIDGE = "a"     
     SOFT_SWITCH = "A" 
     HEAVY_SWITCH = "0"
@@ -98,17 +99,12 @@ class Board:
         else:
             self.symbols = [[tile.value for tile in row] for row in grid]
 
-        self.initial_active_bridges: FrozenSet[Coordinates] = (
-            initial_active_bridges or frozenset()
-        )
-
-        self.switches: Dict[Coordinates, List[BridgeAction]] = switches or {}
         self.splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = splits or {}
         self.raw_metadata: Dict[str, Any] = raw_metadata or {}
         self.bridge_groups: Dict[str, List[Coordinates]] = self._collect_bridge_groups()
 
         if switches is not None:
-            self.switches = switches
+            self.switches: Dict[Coordinates, List[BridgeAction]] = switches
         else:
             self.switches = self._auto_bind_switches_from_symbols()
 
@@ -152,8 +148,9 @@ class Board:
     
     def _auto_bind_switches_from_symbols(self) -> Dict[Coordinates, List[BridgeAction]]:
         """
-        Tự động liên kết công tắc ('A'-'Z') với các ô cầu ('a'-'z') có cùng chữ cái
-        dựa trên ma trận symbols do map_loader.py cung cấp.
+        Tự động liên kết:
+        - Công tắc chữ hoa ('A'-'Z') với nhóm cầu chữ thường ('a'-'z') tương ứng.
+        - Công tắc số ('0'-'9') với nhóm cầu thứ d ('0' -> 'a', '1' -> 'b', ...).
         """
         bridges_by_char: Dict[str, List[Coordinates]] = {}
         for r in range(self.rows):
@@ -162,16 +159,30 @@ class Board:
                     ch = self.symbols[r][c].lower()
                     bridges_by_char.setdefault(ch, []).append((r, c))
 
+        sorted_bridge_ids = sorted(bridges_by_char.keys())
         auto_switches: Dict[Coordinates, List[BridgeAction]] = {}
         for r in range(self.rows):
             for c in range(self.cols):
                 tile = self.grid[r][c]
                 if tile in (TileType.SOFT_SWITCH, TileType.HEAVY_SWITCH):
                     ch = self.symbols[r][c]
-                    target_char = ch.lower()
-                    if target_char in bridges_by_char:
+                    target_char: Optional[str] = None
+                    if ch.isalpha() and ch.lower() in bridges_by_char:
+                        target_char = ch.lower()
+                    elif ch.isdigit():
+                        mapped_char = chr(ord("a") + int(ch))
+                        if mapped_char in bridges_by_char:
+                            target_char = mapped_char
+                        elif int(ch) < len(sorted_bridge_ids):
+                            target_char = sorted_bridge_ids[int(ch)]
+
+                    if target_char is not None:
                         auto_switches[(r, c)] = [
-                            BridgeAction(target_pos=pos, mode=BridgeMode.TOGGLE)
+                            BridgeAction(
+                                target_pos=pos,
+                                mode=BridgeMode.TOGGLE,
+                                bridge_id=target_char,
+                            )
                             for pos in bridges_by_char[target_char]
                         ]
         return auto_switches
@@ -343,22 +354,21 @@ class Board:
                 return True
         return False
 
-    def is_on_valid_tiles(self, state) -> bool:
+    def is_on_valid_tiles(self, state: State) -> bool:
         """
-        Kiểm tra xem block có nằm trên các tile hợp lệ hay không?
-        - Cơ bản là gộp cả 2 cái trên, tuy nhiên thêm 2 yếu tố nữa:
-        1. Nếu đi qua Bridge thì nó phải đang mở.
-        2. Nếu đang STANDING + đứng trên ô gạch mỏng thì cũng không được.
-        Nếu vi phạm thì trả về False.
+        Kiểm tra xem block có nằm trên các tile hợp lệ hay không:
+        1. Không vượt ra ngoài biên bản đồ và không đè lên ô VOID.
+        2. Nếu đi qua Bridge thì cầu phải đang mở.
+        3. Nếu đang STANDING thì không được đứng trên ô gạch mỏng (FRAGILE).
         """
-
-        if self.is_out_of_bounds(state) or self.is_on_void(state):
-            return False
-        from core.state import Orientation
         occupied = state.get_occupied_cells()
 
         for r, c in occupied:
+            if not self.in_board(r, c):
+                return False
             tile = self.grid[r][c]
+            if tile == TileType.VOID:
+                return False
             if tile == TileType.BRIDGE and (r, c) not in state.active_bridges:
                 return False
 
@@ -368,12 +378,12 @@ class Board:
                 return False
         return True
 
-    def is_valid_move(self, state) -> bool:
+    def is_valid_move(self, state: State) -> bool:
         """Kiểm tra tất thảy các điều kiện đó luôn."""
         return self.is_on_valid_tiles(state)
 
-    def is_goal_state(self, state) -> bool:
-        return State.is_standing_at(state, self.end_pos)
+    def is_goal_state(self, state: State) -> bool:
+        return state.is_standing_at(self.end_pos)
         
 
     

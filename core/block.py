@@ -3,7 +3,7 @@ from typing import List, FrozenSet, Optional
 from core.state import Coordinates, Orientation, State
 
 
-class Direction(Enum):
+class Direction(str, Enum):
     UP = "UP"
     DOWN = "DOWN"
     LEFT = "LEFT"
