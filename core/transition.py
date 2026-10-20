@@ -225,7 +225,7 @@ def get_next_state(
         if board.get_tile(*moved_cell) == TileType.SOFT_SWITCH:
             new_bridges = board.apply_switch(moved_cell, new_bridges)
 
-        return State(
+        final_state = State(
             r=candidate_state.r,
             c=candidate_state.c,
             orientation=candidate_state.orientation,
@@ -233,6 +233,9 @@ def get_next_state(
             split_pos=candidate_state.split_pos,
             active_cube=candidate_state.active_cube,
         )
+        if not board.is_valid_move(final_state):
+            return None
+        return final_state
 
     # 2. Xử lý khi khối nguyên 1x1x2 (STANDING, HORIZONTAL, VERTICAL)
     dr, dc, new_orientation = TRANSITION_TABLE[(state.orientation, direction)]
@@ -274,12 +277,16 @@ def get_next_state(
                 return None
             return split_state
 
-    return State(
+    final_state = State(
         r=candidate_state.r,
         c=candidate_state.c,
         orientation=new_orientation,
         active_bridges=new_bridges,
     )
+    if not board.is_valid_move(final_state):
+        return None
+    return final_state
+
 
 
 def get_successors(

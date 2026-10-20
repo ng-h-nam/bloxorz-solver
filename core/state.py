@@ -28,9 +28,6 @@ class State:
     split_pos: Optional[Coordinates] = None
     active_cube: int = 0
 
-    def active_bridge(self) -> FrozenSet[Coordinates]:
-        return self.active_bridges
-
    
     def is_split(self) -> bool:
         """Trả về trạng thái hiện tại xem có đang bị chia đôi hay không?"""

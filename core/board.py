@@ -9,7 +9,6 @@ class TileType(Enum):
     FLOOR = "F"       
     GOAL = "T"         
     FRAGILE = "O"     
-    FALLING = "O"
     BRIDGE = "a"     
     SOFT_SWITCH = "A" 
     HEAVY_SWITCH = "0"
@@ -133,7 +132,7 @@ class Board:
 
     @property
     def goal_pos(self) -> Coordinates:
-        """tương thích ngược cho các module cũ còn gọi board.goal_pos."""
+        """Tương thích ngược cho các module gọi board.goal_pos."""
         return self.end_pos
 
     @goal_pos.setter

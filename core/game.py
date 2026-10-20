@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, Optional, Sequence, Tuple, Union
 
 from core.block import Block, Direction
-from core.board import Board
+from core.board import Board, TileType
 from core.map_loader import load_level, parse_level
 from core.state import Orientation, State
 from core.transition import (
@@ -114,8 +114,29 @@ class Game:
         if candidate is None:
             return self.state, "Nước đi không hợp lệ."
 
-        _, reason = check_occupied_cells(self.board, candidate)
-        return candidate, reason
+        valid, reason = check_occupied_cells(self.board, candidate)
+        if not valid:
+            return candidate, reason
+
+        # Trường hợp khối chạm công tắc làm đóng cầu ngay dưới chân khối
+        new_bridges = candidate.active_bridges
+        for cell_r, cell_c in candidate.get_occupied_cells():
+            tile = self.board.get_tile(cell_r, cell_c)
+            if tile == TileType.SOFT_SWITCH:
+                new_bridges = self.board.apply_switch((cell_r, cell_c), new_bridges)
+            elif tile == TileType.HEAVY_SWITCH and candidate.orientation == Orientation.STANDING:
+                new_bridges = self.board.apply_switch((cell_r, cell_c), new_bridges)
+
+        fallen = State(
+            r=candidate.r,
+            c=candidate.c,
+            orientation=candidate.orientation,
+            active_bridges=new_bridges,
+            split_pos=candidate.split_pos,
+            active_cube=candidate.active_cube,
+        )
+        _, reason = check_occupied_cells(self.board, fallen)
+        return fallen, reason
 
     def move(self, action: ActionInput) -> Optional[MoveOutcome]:
         """
