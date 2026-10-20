@@ -72,17 +72,16 @@ class State:
             r=self.r,
             c=self.c,
             orientation=Orientation.SPLIT,
-            active_bridge=self.active_bridges,
+            active_bridges=self.active_bridges,
             split_pos=self.split_pos,
-            active_cube=1-self.active_cube,
-
+            active_cube=1 - self.active_cube,
         )
 
     def normalize_or_merge(self) -> "State":
         """Kiểm tra nếu đang ở trạng thái SPLIT mà 2 khối đơn 1x1x1 nằm ở 2 ô kề cạnh nhau.
         Điều kiện là: (|r1-r2| + |c1-c2| == 1), tự động gộp chúng lại thành khối 1x1x2 chuẩn."""
 
-        if not self.is_split() or self.split_pos in None:
+        if not self.is_split() or self.split_pos is None:
             return self
         r1, c1 = self.r, self.c
         r2, c2 = self.split_pos
@@ -92,7 +91,7 @@ class State:
                 r=r1,
                 c=min(c1, c2),
                 orientation=Orientation.HORIZONTAL,
-                active_bridge=self.active_bridges,
+                active_bridges=self.active_bridges,
                 split_pos=None,
                 active_cube=0,
             )

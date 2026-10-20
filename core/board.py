@@ -66,41 +66,6 @@ class SwitchMetadata:
     switch_type: TileType
     actions: Tuple[BridgeAction, ...] = field(default_factory=tuple)
 
-TXT_CHAR_TO_TILE: Dict[str, TileType] = {
-    ".": TileType.VOID,
-    "0": TileType.VOID,
-    "F": TileType.FLOOR,     
-    "#": TileType.FLOOR,
-    "1": TileType.FLOOR,
-    "S": TileType.FLOOR,     
-    "T": TileType.GOAL,      
-    "G": TileType.GOAL,
-    "W": TileType.FRAGILE,   
-    "=": TileType.BRIDGE,
-    "B": TileType.BRIDGE,
-    "O": TileType.SOFT_SWITCH,
-    "X": TileType.HEAVY_SWITCH,
-    "U": TileType.SPLIT_SWITCH,
-
-}
-
-# 2. Bảng ánh xạ riêng cho file levels.json
-JSON_CHAR_TO_TILE: Dict[str, TileType] = {
-    " ": TileType.VOID,
-    "b": TileType.FLOOR,
-    "e": TileType.GOAL,
-    "f": TileType.FRAGILE,
-    "s": TileType.SOFT_SWITCH,
-    "h": TileType.HEAVY_SWITCH,
-    "v": TileType.SPLIT_SWITCH,
-    "l": TileType.BRIDGE,
-    "r": TileType.BRIDGE,
-    "k": TileType.BRIDGE,
-    "q": TileType.BRIDGE,
-}
-
-INITIAL_OPEN_BRIDGE_CHARS = {"k", "q"}
-
 
 class Board:
     """
@@ -112,6 +77,7 @@ class Board:
         symbols: Optional[List[List[str]]] = None,
         start_pos: Coordinates = (0, 0),
         end_pos: Coordinates = (0, 0),
+        goal_pos: Optional[Coordinates] = None,
         initial_active_bridges: Optional[FrozenSet[Coordinates]] = None, 
         switches: Optional[Dict[Coordinates, List[BridgeAction]]] = None,
         splits: Optional[Dict[Coordinates, Tuple[Coordinates, Coordinates]]] = None,
@@ -126,7 +92,7 @@ class Board:
         self.height = self.rows
         self.width = self.cols
         self.start_pos = start_pos
-        self.end_pos = end_pos
+        self.end_pos = goal_pos if goal_pos is not None else end_pos
 
         if symbols is not None:
             self.symbols = symbols
@@ -134,7 +100,7 @@ class Board:
             self.symbols = [[tile.value for tile in row] for row in grid]
 
         self.initial_active_bridges: FrozenSet[Coordinates] = (
-            initial_active_bridges or FrozenSet()
+            initial_active_bridges or frozenset()
         )
 
         self.switches: Dict[Coordinates, List[BridgeAction]] = switches or {}
@@ -399,7 +365,7 @@ class Board:
 
         if state.orientation == Orientation.STANDING:
             r, c = occupied[0]
-            if self.grid[r][c] == TileType.FALLING:
+            if self.grid[r][c] == TileType.FRAGILE:
                 return False
         return True
 

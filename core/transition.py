@@ -1,9 +1,30 @@
+from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 from core.block import Direction
 from core.board import Board, TileType
 from core.state import Coordinates, Orientation, State, get_occupied_cells
 
 ActionInput = Union[Direction, str]
+
+
+class MoveResult(Enum):
+    """Kết quả của một bước di chuyển."""
+    OK = "OK"
+    FALL = "FALL"
+
+
+@dataclass(frozen=True)
+class MoveOutcome:
+    """
+    Kết quả trả về sau khi thực hiện một nước đi trong Game:
+    - result: MoveResult.OK nếu nước đi hợp lệ, MoveResult.FALL nếu khối bị rơi.
+    - state: Trạng thái mới sau nước đi (nếu FALL thì là trạng thái rơi tạm thời để GUI vẽ hoạt cảnh).
+    - message: Thông báo mô tả chi tiết kết quả nước đi.
+    """
+    result: MoveResult
+    state: State
+    message: str = ""
 
 _CURRENT_BOARD: Optional[Board] = None
 
@@ -102,8 +123,8 @@ def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
 
     if state.orientation == Orientation.STANDING:
         r, c = occupied[0]
-        if board.get_tile(r, c) == TileType.FALLING:
-            return False, f"Ô gạch mỏng (FALLING) tại ({r}, {c}) bị vỡ khi khối đứng thẳng."
+        if board.get_tile(r, c) == TileType.FRAGILE:
+            return False, f"Ô gạch mỏng (FRAGILE / FALLING) tại ({r}, {c}) bị vỡ khi khối đứng thẳng."
 
     return True, "Nước đi hợp lệ."
 
@@ -159,9 +180,19 @@ def get_next_state(
     direction = normalize_action(action)
 
     # 1. Xử lý khi khối đang ở trạng thái SPLIT (điều khiển tuần tự từng khối đơn)
-    if state.is_split():
+    if state.orientation == Orientation.SPLIT:
         if state.split_pos is None:
-            return None
+            if board is not None:
+                return None
+            dr, dc = SINGLE_CUBE_DELTA[direction]
+            return State(
+                r=state.r + dr,
+                c=state.c + dc,
+                orientation=Orientation.SPLIT,
+                active_bridges=state.active_bridges,
+                split_pos=None,
+                active_cube=state.active_cube,
+            )
         dr, dc = SINGLE_CUBE_DELTA[direction]
         r1, c1 = state.r, state.c
         r2, c2 = state.split_pos

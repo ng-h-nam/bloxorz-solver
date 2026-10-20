@@ -19,7 +19,7 @@ def classify(ch: str) -> TileType:
     if ch == "T":
         return TileType.GOAL
     if ch == "O":
-        return TileType.FALLING
+        return TileType.FRAGILE
     if ch == "U":
         return TileType.SPLIT_SWITCH
     if "A" <= ch <= "Z":
