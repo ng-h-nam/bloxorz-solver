@@ -8,9 +8,9 @@ class Orientation(Enum):
     STANDING = "STANDING"
     HORIZONTAL = "HORIZONTAL"
     VERTICAL = "VERTICAL"
-    SPLIT = "SPLIT" # thêm trạng thái khi bị chia đôi nè
+    SPLIT = "SPLIT"
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class State:
     """
     Trạng thái của trò chơi Bloxorz:
@@ -21,14 +21,17 @@ class State:
     - active_cube: chỉ trị số của khối đơn (0 hoặc 1) đang điều khiển. Mặc định khi mới SPLIT là 0.
     """
 
-    r: int # hàng
-    c: int # cột
+    r: int
+    c: int
     orientation: Orientation = Orientation.STANDING
     active_bridges: FrozenSet[Coordinates] = field(default_factory=frozenset)
     split_pos: Optional[Coordinates] = None
     active_cube: int = 0
 
+    def active_bridge(self) -> FrozenSet[Coordinates]:
+        return self.active_bridges
 
+   
     def is_split(self) -> bool:
         """Trả về trạng thái hiện tại xem có đang bị chia đôi hay không?"""
         return self.orientation == Orientation.SPLIT and self.split_pos is not None
@@ -53,7 +56,7 @@ class State:
             return self.split_pos
         return (self.r, self.c)
 
-    def get_inactive_cube_pos(self) -> Coordinates:
+    def get_inactive_cube_pos(self) -> Optional[Coordinates]:
         """Trả về tọa độ của khối đơn ta đang không điều khiển (ngược lại với cái trên)."""
         if not self.is_split() and self.split_pos is None:
             return None

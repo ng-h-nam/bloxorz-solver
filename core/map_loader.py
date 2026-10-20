@@ -6,9 +6,8 @@ from core.board import (
     BridgeAction,
     BridgeMetadata,
     BridgeMode, 
-    SwitchMetadata,
 )
-from state import Coordinates
+from core.state import Coordinates
 
 
 def classify(ch: str) -> TileType:
@@ -21,6 +20,8 @@ def classify(ch: str) -> TileType:
         return TileType.GOAL
     if ch == "O":
         return TileType.FALLING
+    if ch == "U":
+        return TileType.SPLIT_SWITCH
     if "A" <= ch <= "Z":
         return TileType.SOFT_SWITCH
     if "0" <= ch <= "9":
