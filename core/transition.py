@@ -106,6 +106,53 @@ def normalize_action(action: ActionInput) -> Direction:
     raise ValueError(f"Action không hợp lệ: {action}")
 
 
+def roll_block(state: State, action: ActionInput) -> State:
+    """
+    Tính tọa độ và tư thế mới của khối sau khi lăn theo `action`
+    (chỉ tính toán hình học thuần túy, không kiểm tra biên hay hiệu ứng ô trên bàn cờ).
+    """
+    if isinstance(action, str) and action.strip().upper() in ("SPACE", "SWITCH", "TAB"):
+        return state.switch_active_cube()
+
+    direction = normalize_action(action)
+
+    if state.orientation == Orientation.SPLIT:
+        dr, dc = SINGLE_CUBE_DELTA[direction]
+        if state.split_pos is None:
+            return State(
+                r=state.r + dr,
+                c=state.c + dc,
+                orientation=Orientation.SPLIT,
+                active_bridges=state.active_bridges,
+                split_pos=None,
+                active_cube=state.active_cube,
+            )
+        r1, c1 = state.r, state.c
+        r2, c2 = state.split_pos
+        if state.active_cube == 0:
+            new_r, new_c = r1 + dr, c1 + dc
+            new_split_pos = (r2, c2)
+        else:
+            new_r, new_c = r1, c1
+            new_split_pos = (r2 + dr, c2 + dc)
+        return State(
+            r=new_r,
+            c=new_c,
+            orientation=Orientation.SPLIT,
+            active_bridges=state.active_bridges,
+            split_pos=new_split_pos,
+            active_cube=state.active_cube,
+        ).normalize_or_merge()
+
+    dr, dc, new_orientation = TRANSITION_TABLE[(state.orientation, direction)]
+    return State(
+        r=state.r + dr,
+        c=state.c + dc,
+        orientation=new_orientation,
+        active_bridges=state.active_bridges,
+    )
+
+
 def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
     """Kiểm tra chi tiết từng ô mà block chiếm giữ trên bàn cờ."""
     occupied: List[Coordinates] = get_occupied_cells(state)
