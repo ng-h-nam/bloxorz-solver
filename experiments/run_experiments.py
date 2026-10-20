@@ -12,7 +12,6 @@ chạy 4 thuật toán tìm kiếm (BFS, DFS, UCS, A*), đo lường chỉ số 
 """
 
 # Import giả định các Solvers từ gói algorithms nếu chạy trong dự án
-# Khi chạy độc lập hoặc tích hợp, đảm bảo PYTHONPATH bao gồm thư mục Source/
 
 def run_single_experiment(solver, board_map, map_name, log_file_path):
     """
@@ -97,8 +96,8 @@ def main():
     try:
         from algorithms.bfs import BFSSolver
         from algorithms.dfs import DFSSolver
-        from algorithms.ucs import UCSSolver
-        from algorithms.astar import AStarSolver
+        # from algorithms.ucs import UCSSolver
+        # from algorithms.astar import AStarSolver
         from core.map_loader import load_map
         
         solvers_cls = [BFSSolver, DFSSolver, UCSSolver, AStarSolver]
