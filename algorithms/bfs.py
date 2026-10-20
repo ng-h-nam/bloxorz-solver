@@ -18,7 +18,7 @@ from core.map_loader import load_level
 from core.state import Orientation, State
 
 
-class BFS(BaseSolver):
+class BFSSolver(BaseSolver):
     """
     Thuật toán Breadth-First Search (BFS) tìm số bước đi ít nhất trên đồ thị có trọng số đồng nhất.
     """
@@ -150,7 +150,7 @@ def run_bfs_experiments(map_paths: List[str]) -> None:
             continue
 
         board = load_level(map_path)
-        solver = BFS(board)
+        solver = BFSSolver(board)
         result = solver.solve()
 
         if result.is_solved:

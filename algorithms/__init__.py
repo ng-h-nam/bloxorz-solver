@@ -10,8 +10,8 @@ from algorithms.base_solver import (
     SolveResult,
     replay_path,
 )
-from algorithms.bfs import BFS
-from algorithms.dfs import DFS
+from algorithms.bfs import BFSSolver
+from algorithms.dfs import DFSSolver
 
 __all__ = [
     "ActionType",
@@ -20,6 +20,6 @@ __all__ = [
     "SolveResult",
     "Solution",
     "replay_path",
-    "BFS",
-    "DFS",
+    "BFSSolver",
+    "DFSSolver",
 ]
