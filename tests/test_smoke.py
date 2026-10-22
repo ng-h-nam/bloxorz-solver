@@ -1,5 +1,3 @@
-
-
 def test_game_smoke():
     """Khởi tạo game và chạy thử 100 frames để bắt các lỗi crash cơ bản."""
     import pygame

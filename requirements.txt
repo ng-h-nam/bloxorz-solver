@@ -5,7 +5,7 @@ PyOpenGL_accelerate==3.1.10
 # test
 pytest==9.1.1
 
-numpy==2.5.4
+numpy==2.4.0
 
 # For CI
 ruff==0.17.1
