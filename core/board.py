@@ -25,9 +25,9 @@ class BridgeMode(Enum):
         t = text.strip().lower()
         if t in ("onoff", "toggle", "switch", "swap"):
             return cls.TOGGLE
-        if t in ("on", "open", "enable"):
+        if t in ("on", "open", "enable", "permanent", "permanent_open"):
             return cls.OPEN
-        if t in ("off", "close", "disable"):
+        if t in ("off", "close", "disable", "permanent_close"):
             return cls.CLOSE
         raise ValueError(f"Chế độ cầu không hợp lệ: '{text}'")
     

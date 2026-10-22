@@ -7,6 +7,14 @@ from core.state import Coordinates, Orientation, State, get_occupied_cells
 
 ActionInput = Union[Direction, str]
 
+SWITCH_ACTION: str = "SWITCH"
+SWITCH_ALIASES: Tuple[str, ...] = ("SWITCH", "SPACE", "TAB")
+
+
+def is_switch_action(action: ActionInput) -> bool:
+    """Kiểm tra action có phải là lệnh đổi khối đơn đang điều khiển (SWITCH / SPACE / TAB) hay không."""
+    return isinstance(action, str) and action.strip().upper() in SWITCH_ALIASES
+
 
 class MoveResult(Enum):
     """Kết quả của một bước di chuyển."""
@@ -111,7 +119,7 @@ def roll_block(state: State, action: ActionInput) -> State:
     Tính tọa độ và tư thế mới của khối sau khi lăn theo `action`
     (chỉ tính toán hình học thuần túy, không kiểm tra biên hay hiệu ứng ô trên bàn cờ).
     """
-    if isinstance(action, str) and action.strip().upper() in ("SPACE", "SWITCH", "TAB"):
+    if is_switch_action(action):
         return state.switch_active_cube()
 
     direction = normalize_action(action)
@@ -219,7 +227,7 @@ def get_next_state(
     if board is None and _CURRENT_BOARD is not None:
         board = _CURRENT_BOARD
 
-    if isinstance(action, str) and action.strip().upper() in ("SPACE", "SWITCH", "TAB"):
+    if is_switch_action(action):
         if not state.is_split():
             return None
         return state.switch_active_cube()
@@ -367,8 +375,8 @@ def get_successors(
 
     # Nếu đang ở trạng thái SPLIT, cho phép thêm hành động đổi khối điều khiển ("SWITCH")
     if state.is_split():
-        switched = get_next_state(state, "SWITCH", board=board)
+        switched = get_next_state(state, SWITCH_ACTION, board=board)
         if switched is not None and switched != state:
-            successors.append(("SWITCH", switched))
+            successors.append((SWITCH_ACTION, switched))
 
     return successors

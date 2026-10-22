@@ -62,9 +62,9 @@ def _parse_bridge_mode(text: str) -> BridgeMode:
     t = text.strip().lower()
     if t in ("swap", "onoff", "toggle", "switch"):
         return BridgeMode.TOGGLE
-    if t in ("on", "open", "enable"):
+    if t in ("on", "open", "enable", "permanent", "permanent_open"):
         return BridgeMode.OPEN
-    if t in ("off", "close", "disable"):
+    if t in ("off", "close", "disable", "permanent_close"):
         return BridgeMode.CLOSE
     return BridgeMode.from_str(text)
 
@@ -200,10 +200,9 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
         for spec in action_specs:
             if len(spec) < 2:
                 raise ValueError(f"Định dạng tác động cầu không hợp lệ: {spec}")
-            b_idx = int(spec[0])
-            mode_str = str(spec[1])
-            b_id = _bridge_index_to_id(b_idx)
-            mode = _parse_bridge_mode(mode_str)
+            b_ref = spec[0]
+            b_id = str(b_ref).strip().lower() if isinstance(b_ref, str) and str(b_ref).strip().isalpha() else _bridge_index_to_id(int(b_ref))
+            mode = _parse_bridge_mode(str(spec[1]))
 
             target_cells = bridge_cells_by_id.get(b_id, ())
             for cell in target_cells:
