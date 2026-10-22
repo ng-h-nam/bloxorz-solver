@@ -72,7 +72,7 @@ class Board:
     Lưu trữ cấu trúc của màn chơi, bao gồm: layout, điểm xuất phát, điểm đích, vị trí cầu.
     """
     def __init__(
-        self, 
+        self,
         grid: List[List[TileType]],
         symbols: Optional[List[List[str]]] = None,
         start_pos: Coordinates = (0, 0),
@@ -87,6 +87,7 @@ class Board:
 
     ):
         self.grid = grid
+        self.symbols = symbols
         self.rows = len(grid)
         self.cols = len(grid[0]) if self.rows > 0 else 0
         self.height = self.rows
@@ -290,7 +291,7 @@ class Board:
 
 
     def in_board(self, r: int, c: int) -> bool:
-        """Kiểm tra tọa độ (r, c) có nằm trong phạm vi lưới hay không."""
+        """Kiểm tra tọa độ (r, c) có nằm trong lưới hay không."""
         return 0 <= r < self.rows and 0 <= c < self.cols
 
     def get_symbol(self, r: int, c: int) -> str:
@@ -300,10 +301,14 @@ class Board:
         return self.symbols[r][c]
     
     def get_tile(self, r: int, c: int) -> TileType:
-        """Trả về loại ô tại vị trí (r, c). Nếu không trong cuộc chơi, đã tính là rơi xuống the void."""
+        """Trả về loại ô tại (r, c). Ngoài lưới được coi là VOID."""
         if not self.in_board(r, c):
             return TileType.VOID
         return self.grid[r][c]
+
+    def get_symbol(self, r: int, c: int) -> str:
+        """Trả về ký hiệu gốc trong file map, ví dụ 'A' hoặc 'c'."""
+        return self.symbols[r][c]
 
     def apply_switch(
         self, switch_pos: Coordinates, current_bridges: FrozenSet[Coordinates]

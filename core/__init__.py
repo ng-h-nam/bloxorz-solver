@@ -1,1 +1,1 @@
-"""Its just __init__ guys..."""
+"""Tạo file này để python nhận diện đây là một package hợp lệ"""
