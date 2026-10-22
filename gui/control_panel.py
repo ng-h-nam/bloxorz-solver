@@ -1,4 +1,4 @@
-import os 
+import os
 from typing import List, Optional, Tuple
 
 import pygame
@@ -14,15 +14,20 @@ from OpenGL.GL import (
 
 from core.game import Game
 
-# Đường dẫn tuyệt đối tới tệp font DejaVuSans.ttf
-FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "fonts", "DejaVuSans.ttf")
-
 # Màu chữ của pygame: số nguyên 0..255
 RGB = Tuple[int, int, int]
 # Màu tô của OpenGL: số thực 0..1
 Color3 = Tuple[float, float, float]
 # Tọa độ hoặc kích thước tính bằng pixel
 Pixel = Tuple[int, int]
+
+FONT_PATH: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts", "DejaVuSans.ttf")
+FONT_SIZE: int = 22
+PANEL_WIDTH: int = 340
+PANEL_PADDING: int = 16
+MESSAGE_TOP: int = 340
+MAX_MESSAGE_LINES: int = 6
+PANEL_BG: Color3 = (0.11, 0.11, 0.17)
 
 TEXT_COLOR: RGB = (255, 255, 255)
 MESSAGE_COLOR: RGB = (255, 140, 140)
@@ -67,6 +72,23 @@ def _fill_rect(rect: pygame.Rect, color: Color3, window_height: int) -> None:
     glEnd()
 
 
+def wrap_text(font: pygame.font.Font, text: str, max_width: int) -> List[str]:
+    """Ngắt chữ thành nhiều dòng, mỗi dòng không rộng quá max_width điểm ảnh."""
+    lines: List[str] = []
+    line = ""
+    for word in text.split():
+        trial = word if not line else line + " " + word
+        if font.size(trial)[0] <= max_width:
+            line = trial
+        else:
+            if line:
+                lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
+    return lines
+
+
 class TextLabel:
     """Một dòng chữ. Chỉ tải lại texture khi nội dung thay đổi."""
 
@@ -83,7 +105,7 @@ class TextLabel:
         self.text = text
         surface = self.font.render(text or " ", True, self.color)
         self.size = surface.get_size()
-        data = pygame.image.tostring(surface, "RGBA", True)
+        data = pygame.image.tobytes(surface, "RGBA", True)
 
         if self.texture is None:
             self.texture = glGenTextures(1)
@@ -129,15 +151,18 @@ class Button:
 
 
 class ControlPanel:
-    def __init__(self, width: int, height: int, font_size: int = 30) -> None:
+    def __init__(self, width: int, height: int, font_size: int = FONT_SIZE) -> None:
         self.width: int = width
         self.height: int = height
         font = pygame.font.Font(FONT_PATH, font_size)
+        self.font: pygame.font.Font = font
 
         self.title: TextLabel = TextLabel(font)
         self.title.set_text("Bloxorz")
         self.info_lines: List[TextLabel] = [TextLabel(font) for _ in range(4)]
-        self.message: TextLabel = TextLabel(font, MESSAGE_COLOR)
+        self.message_lines: List[TextLabel] = [TextLabel(font, MESSAGE_COLOR) for _ in range(MAX_MESSAGE_LINES)]
+        self._message: str = ""
+        self._wrapped: List[str] = []
 
         # Week 1 chỉ bật Restart. New Game và Run Solver để sẵn, bật ở mốc 2
         self.buttons: List[Button] = [
@@ -155,6 +180,7 @@ class ControlPanel:
 
     def draw(self, game: Game, level_name: str, message: str) -> None:
         _begin_overlay(self.width, self.height)
+        _fill_rect(pygame.Rect(0, 0, PANEL_WIDTH, self.height), PANEL_BG, self.height)
 
         lines = [
             f"Màn: {level_name}",
@@ -164,7 +190,9 @@ class ControlPanel:
         ]
         for label, text in zip(self.info_lines, lines):
             label.set_text(text)
-        self.message.set_text(message)
+        if message != self._message:
+            self._message = message
+            self._wrapped = wrap_text(self.font, message, PANEL_WIDTH - 2 * PANEL_PADDING)[:MAX_MESSAGE_LINES]
 
         self.title.draw(16, 16, self.height)
         for i, label in enumerate(self.info_lines):
@@ -177,6 +205,8 @@ class ControlPanel:
             y = button.rect.y + (button.rect.h - button.label.size[1]) // 2
             button.label.draw(x, y, self.height)
 
-        self.message.draw(16, self.height - 40, self.height)
+        for i, label in enumerate(self.message_lines):
+            label.set_text(self._wrapped[i] if i < len(self._wrapped) else "")
+            label.draw(PANEL_PADDING, MESSAGE_TOP + i * self.font.get_linesize(), self.height)
 
         _end_overlay()

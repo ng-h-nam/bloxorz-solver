@@ -5,14 +5,14 @@ from pygame.locals import (
     DOUBLEBUF, OPENGL, QUIT, KEYDOWN, MOUSEBUTTONDOWN,
     K_UP, K_DOWN, K_LEFT, K_RIGHT, K_w, K_a, K_s, K_d, K_r,
 )
-from OpenGL.GL import glEnable, glMatrixMode, glLoadIdentity, GL_DEPTH_TEST, GL_PROJECTION, GL_MODELVIEW
+from OpenGL.GL import glEnable, glMatrixMode, glLoadIdentity, glViewport, GL_DEPTH_TEST, GL_PROJECTION, GL_MODELVIEW
 from OpenGL.GLU import gluPerspective
 
 from core.block import Direction
 from core.game import Game, GameStatus
 from core.transition import MoveResult
-from gui.control_panel import ControlPanel
-from gui.renderer import Renderer
+from gui.control_panel import PANEL_WIDTH, ControlPanel
+from gui.renderer import FOV_DEGREES, Renderer
 
 KEY_TO_DIRECTION: Dict[int, Direction] = {
     K_UP: Direction.UP, K_w: Direction.UP,
@@ -31,12 +31,14 @@ class Window:
         self,
         game: Game,
         level_name: str = "",
-        width: int = 1024,
+        width: int = 1280,
         height: int = 768,
     ) -> None:
         self.game: Game = game
         self.level_name: str = level_name
         self.message: str = ""
+        self.width: int = width
+        self.height: int = height
 
         pygame.init()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
@@ -45,11 +47,12 @@ class Window:
         glEnable(GL_DEPTH_TEST)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(45, width / height, 0.1, 100)
+        aspect = (width - PANEL_WIDTH) / height      # chỉ vùng bên phải cột bảng dùng cho cảnh 3D
+        gluPerspective(FOV_DEGREES, aspect, 0.1, 100)
         glMatrixMode(GL_MODELVIEW)
 
         # Tạo sau set_mode vì cần ngữ cảnh OpenGL
-        self.renderer: Renderer = Renderer(game.board)
+        self.renderer: Renderer = Renderer(game.board, aspect)
         self.panel: ControlPanel = ControlPanel(width, height)
         self.clock: pygame.time.Clock = pygame.time.Clock()
 
@@ -71,7 +74,9 @@ class Window:
         pygame.quit()
 
     def draw(self) -> None:
+        glViewport(PANEL_WIDTH, 0, self.width - PANEL_WIDTH, self.height)
         self.renderer.draw(self.game.state)
+        glViewport(0, 0, self.width, self.height)
         self.panel.draw(self.game, self.level_name, self.message)
 
     def handle_key(self, key: int) -> None:

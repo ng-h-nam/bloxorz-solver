@@ -30,3 +30,6 @@ build/
 dist/
 *.egg-info/
 
+# Tool convert image
+texture/
+
