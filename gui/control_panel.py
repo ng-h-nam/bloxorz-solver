@@ -4,13 +4,37 @@ from typing import List, Optional, Tuple
 
 import pygame
 from OpenGL.GL import (
-    glBegin, glEnd, glColor3f, glColor4f, glVertex2f, glTexCoord2f, GL_QUADS,
-    glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
-    glEnable, glDisable, glBlendFunc, GL_BLEND, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-    GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR, GL_DEPTH_TEST,
-    glMatrixMode, glPushMatrix, glPopMatrix, glLoadIdentity, glOrtho,
-    GL_PROJECTION, GL_MODELVIEW,
+    glBegin,
+    glEnd,
+    glColor3f,
+    glColor4f,
+    glVertex2f,
+    glTexCoord2f,
+    GL_QUADS,
+    glGenTextures,
+    glBindTexture,
+    glTexImage2D,
+    glTexParameteri,
+    glEnable,
+    glDisable,
+    glBlendFunc,
+    GL_BLEND,
+    GL_SRC_ALPHA,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_TEXTURE_2D,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    GL_TEXTURE_MIN_FILTER,
+    GL_TEXTURE_MAG_FILTER,
+    GL_LINEAR,
+    GL_DEPTH_TEST,
+    glMatrixMode,
+    glPushMatrix,
+    glPopMatrix,
+    glLoadIdentity,
+    glOrtho,
+    GL_PROJECTION,
+    GL_MODELVIEW,
 )
 
 from gui.level_picker import MAX_VISIBLE_ROWS, LevelPicker
@@ -22,7 +46,9 @@ Color3 = Tuple[float, float, float]
 # Tọa độ hoặc kích thước tính bằng pixel
 Pixel = Tuple[int, int]
 
-FONT_PATH: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts", "DejaVuSans.ttf")
+FONT_PATH: str = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts", "DejaVuSans.ttf"
+)
 FONT_SIZE: int = 22
 SMALL_FONT_SIZE: int = 17
 BIG_FONT_SIZE: int = 44
@@ -71,6 +97,7 @@ HELP_LINES: List[str] = [
 @dataclass
 class HudData:
     """Những gì bảng thông tin hiển thị; do Window quyết định để khớp với hoạt cảnh."""
+
     level_name: str
     moves: int
     orientation: str
@@ -181,8 +208,7 @@ class TextLabel:
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.size[0], self.size[1],
-                     0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.size[0], self.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
 
     def draw(self, x: int, y: int, window_height: int) -> None:
         """x, y là pixel gốc trên-trái của chữ."""
@@ -194,10 +220,14 @@ class TextLabel:
         glColor3f(1.0, 1.0, 1.0)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glBegin(GL_QUADS)
-        glTexCoord2f(0, 0); glVertex2f(x, bottom)
-        glTexCoord2f(1, 0); glVertex2f(x + w, bottom)
-        glTexCoord2f(1, 1); glVertex2f(x + w, bottom + h)
-        glTexCoord2f(0, 1); glVertex2f(x, bottom + h)
+        glTexCoord2f(0, 0)
+        glVertex2f(x, bottom)
+        glTexCoord2f(1, 0)
+        glVertex2f(x + w, bottom)
+        glTexCoord2f(1, 1)
+        glVertex2f(x + w, bottom + h)
+        glTexCoord2f(0, 1)
+        glVertex2f(x, bottom + h)
         glEnd()
         glDisable(GL_TEXTURE_2D)
 
@@ -240,12 +270,20 @@ class ControlPanel:
         self._wrapped: List[str] = []
 
         self.buttons: List[Button] = [
-            Button(pygame.Rect(PANEL_PADDING, BUTTON_TOP + i * BUTTON_STEP, BUTTON_WIDTH, BUTTON_HEIGHT), text, action, font, enabled)
-            for i, (text, action, enabled) in enumerate([
-                ("Restart", "restart", True),
-                ("New Game", "new_game", True),
-                ("Run Solver", None, False),
-            ])
+            Button(
+                pygame.Rect(PANEL_PADDING, BUTTON_TOP + i * BUTTON_STEP, BUTTON_WIDTH, BUTTON_HEIGHT),
+                text,
+                action,
+                font,
+                enabled,
+            )
+            for i, (text, action, enabled) in enumerate(
+                [
+                    ("Restart", "restart", True),
+                    ("New Game", "new_game", True),
+                    ("Run Solver", None, False),
+                ]
+            )
         ]
 
         help_width = PANEL_WIDTH - 2 * PANEL_PADDING

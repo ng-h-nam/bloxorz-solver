@@ -62,7 +62,9 @@ class LevelPicker:
         box.center = (window_w // 2, window_h // 2)
         start, end = self.visible_range()
         rows = [
-            pygame.Rect(box.x + BOX_PADDING, box.y + TITLE_HEIGHT + i * ROW_HEIGHT, BOX_WIDTH - 2 * BOX_PADDING, ROW_HEIGHT)
+            pygame.Rect(
+                box.x + BOX_PADDING, box.y + TITLE_HEIGHT + i * ROW_HEIGHT, BOX_WIDTH - 2 * BOX_PADDING, ROW_HEIGHT
+            )
             for i in range(end - start)
         ]
         return box, rows

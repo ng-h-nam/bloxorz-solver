@@ -10,6 +10,7 @@ ActionInput = Union[Direction, str]
 
 class MoveResult(Enum):
     """Kết quả của một bước di chuyển."""
+
     OK = "OK"
     FALL = "FALL"
 
@@ -22,9 +23,11 @@ class MoveOutcome:
     - state: Trạng thái mới sau nước đi (nếu FALL thì là trạng thái rơi tạm thời để GUI vẽ hoạt cảnh).
     - message: Thông báo mô tả chi tiết kết quả nước đi.
     """
+
     result: MoveResult
     state: State
     message: str = ""
+
 
 _CURRENT_BOARD: Optional[Board] = None
 
@@ -69,29 +72,27 @@ ACTION_ALIAS_MAP: Dict[str, Direction] = {
 
 TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientation]] = {
     # 1. STANDING
-    (Orientation.STANDING, Direction.UP):    (-2,  0, Orientation.VERTICAL),
-    (Orientation.STANDING, Direction.DOWN):  ( 1,  0, Orientation.VERTICAL),
-    (Orientation.STANDING, Direction.LEFT):  ( 0, -2, Orientation.HORIZONTAL),
-    (Orientation.STANDING, Direction.RIGHT): ( 0,  1, Orientation.HORIZONTAL),
-
+    (Orientation.STANDING, Direction.UP): (-2, 0, Orientation.VERTICAL),
+    (Orientation.STANDING, Direction.DOWN): (1, 0, Orientation.VERTICAL),
+    (Orientation.STANDING, Direction.LEFT): (0, -2, Orientation.HORIZONTAL),
+    (Orientation.STANDING, Direction.RIGHT): (0, 1, Orientation.HORIZONTAL),
     # 2. HORIZONTAL
-    (Orientation.HORIZONTAL, Direction.UP):    (-1,  0, Orientation.HORIZONTAL),
-    (Orientation.HORIZONTAL, Direction.DOWN):  ( 1,  0, Orientation.HORIZONTAL),
-    (Orientation.HORIZONTAL, Direction.LEFT):  ( 0, -1, Orientation.STANDING),
-    (Orientation.HORIZONTAL, Direction.RIGHT): ( 0,  2, Orientation.STANDING),
-
+    (Orientation.HORIZONTAL, Direction.UP): (-1, 0, Orientation.HORIZONTAL),
+    (Orientation.HORIZONTAL, Direction.DOWN): (1, 0, Orientation.HORIZONTAL),
+    (Orientation.HORIZONTAL, Direction.LEFT): (0, -1, Orientation.STANDING),
+    (Orientation.HORIZONTAL, Direction.RIGHT): (0, 2, Orientation.STANDING),
     # 3. VERTICAL
-    (Orientation.VERTICAL, Direction.UP):    (-1,  0, Orientation.STANDING),
-    (Orientation.VERTICAL, Direction.DOWN):  ( 2,  0, Orientation.STANDING),
-    (Orientation.VERTICAL, Direction.LEFT):  ( 0, -1, Orientation.VERTICAL),
-    (Orientation.VERTICAL, Direction.RIGHT): ( 0,  1, Orientation.VERTICAL),
+    (Orientation.VERTICAL, Direction.UP): (-1, 0, Orientation.STANDING),
+    (Orientation.VERTICAL, Direction.DOWN): (2, 0, Orientation.STANDING),
+    (Orientation.VERTICAL, Direction.LEFT): (0, -1, Orientation.VERTICAL),
+    (Orientation.VERTICAL, Direction.RIGHT): (0, 1, Orientation.VERTICAL),
 }
 
 SINGLE_CUBE_DELTA: Dict[Direction, Tuple[int, int]] = {
-    Direction.UP:    (-1,  0),
-    Direction.DOWN:  ( 1,  0),
-    Direction.LEFT:  ( 0, -1),
-    Direction.RIGHT: ( 0,  1),
+    Direction.UP: (-1, 0),
+    Direction.DOWN: (1, 0),
+    Direction.LEFT: (0, -1),
+    Direction.RIGHT: (0, 1),
 }
 
 
@@ -176,23 +177,17 @@ def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
     return True, "Nước đi hợp lệ."
 
 
-def is_out_of_bounds(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_out_of_bounds(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_out_of_bounds(state)
 
 
-def is_on_void(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_on_void(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_on_void(state)
 
 
-def is_valid_move(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_valid_move(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_valid_move(state)
 
@@ -200,9 +195,7 @@ def is_valid_move(
 is_valid_state = is_valid_move
 
 
-def is_goal_state(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_goal_state(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_goal_state(state)
 
@@ -348,7 +341,6 @@ def get_next_state(
     if not board.is_valid_move(final_state):
         return None
     return final_state
-
 
 
 def get_successors(

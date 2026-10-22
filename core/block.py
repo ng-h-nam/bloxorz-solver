@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, FrozenSet, Optional
+from typing import List, Optional
 from core.state import Coordinates, Orientation, State
 
 
@@ -15,8 +15,15 @@ class Block:
     Đại diện cho thực thể khối sắt rỉ 1x1x2.
     Có thể đồng bộ trực tiếp với một đối tượng State.
     """
-    def __init__(self, r: int, c: int, orientation: Orientation = Orientation.STANDING, split_pos: Optional[Coordinates] = None,
-        active_cube: int = 0,):
+
+    def __init__(
+        self,
+        r: int,
+        c: int,
+        orientation: Orientation = Orientation.STANDING,
+        split_pos: Optional[Coordinates] = None,
+        active_cube: int = 0,
+    ):
         self.r = r
         self.c = c
         self.orientation = orientation
@@ -26,8 +33,13 @@ class Block:
     @classmethod
     def from_state(cls, state: State) -> "Block":
         """Tạo đối tượng Block từ một State hiện tại."""
-        return cls(r=state.r, c=state.c, orientation=state.orientation, split_pos=state.split_pos,
-        active_cube = state.active_cube)
+        return cls(
+            r=state.r,
+            c=state.c,
+            orientation=state.orientation,
+            split_pos=state.split_pos,
+            active_cube=state.active_cube,
+        )
 
     def to_state(self, active_bridges=frozenset()) -> State:
         """Xuất trạng thái hiện tại của Block thành đối tượng State bất biến."""

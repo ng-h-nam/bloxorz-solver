@@ -22,6 +22,7 @@ from core.transition import (
 
 class GameStatus(Enum):
     """Trạng thái hiện tại của ván chơi Bloxorz."""
+
     PLAYING = "PLAYING"
     WON = "WON"
     LOST = "LOST"
@@ -248,7 +249,4 @@ class Game:
         return outcomes
 
     def __repr__(self) -> str:
-        return (
-            f"Game(state={self.state}, moves={self.moves}, "
-            f"status={self.status.value})"
-        )
+        return f"Game(state={self.state}, moves={self.moves}, status={self.status.value})"

@@ -3,9 +3,32 @@ from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import pygame
 from pygame.locals import (
-    DOUBLEBUF, OPENGL, QUIT, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, MOUSEWHEEL, KMOD_SHIFT,
-    K_UP, K_DOWN, K_LEFT, K_RIGHT, K_w, K_a, K_s, K_d,
-    K_r, K_c, K_n, K_SPACE, K_ESCAPE, K_RETURN, K_KP_ENTER, K_PAGEUP, K_PAGEDOWN,
+    DOUBLEBUF,
+    OPENGL,
+    QUIT,
+    KEYDOWN,
+    MOUSEBUTTONDOWN,
+    MOUSEBUTTONUP,
+    MOUSEMOTION,
+    MOUSEWHEEL,
+    KMOD_SHIFT,
+    K_UP,
+    K_DOWN,
+    K_LEFT,
+    K_RIGHT,
+    K_w,
+    K_a,
+    K_s,
+    K_d,
+    K_r,
+    K_c,
+    K_n,
+    K_SPACE,
+    K_ESCAPE,
+    K_RETURN,
+    K_KP_ENTER,
+    K_PAGEUP,
+    K_PAGEDOWN,
 )
 from OpenGL.GL import glEnable, glMatrixMode, glLoadIdentity, glViewport, GL_DEPTH_TEST, GL_PROJECTION, GL_MODELVIEW
 from OpenGL.GLU import gluPerspective
@@ -21,10 +44,14 @@ from gui.levels import discover_levels, level_label
 from gui.renderer import FOV_DEGREES, Renderer, load_textures
 
 KEY_TO_DIRECTION: Dict[int, Direction] = {
-    K_UP: Direction.UP, K_w: Direction.UP,
-    K_DOWN: Direction.DOWN, K_s: Direction.DOWN,
-    K_LEFT: Direction.LEFT, K_a: Direction.LEFT,
-    K_RIGHT: Direction.RIGHT, K_d: Direction.RIGHT,
+    K_UP: Direction.UP,
+    K_w: Direction.UP,
+    K_DOWN: Direction.DOWN,
+    K_s: Direction.DOWN,
+    K_LEFT: Direction.LEFT,
+    K_a: Direction.LEFT,
+    K_RIGHT: Direction.RIGHT,
+    K_d: Direction.RIGHT,
 }
 
 MSG_ENDED: str = "Ván đã kết thúc. Nhấn R để chơi lại."
@@ -53,12 +80,12 @@ class Window:
         pygame.init()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
         pygame.display.set_caption("Bloxorz")
-        pygame.key.stop_text_input()      # game không nhập chữ: tránh để bộ gõ (Unikey, Bamboo...) chặn phím chữ
+        pygame.key.stop_text_input()  # game không nhập chữ: tránh để bộ gõ (Unikey, Bamboo...) chặn phím chữ
 
         glEnable(GL_DEPTH_TEST)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        self.aspect: float = (width - PANEL_WIDTH) / height      # chỉ vùng bên phải cột bảng dùng cho cảnh 3D
+        self.aspect: float = (width - PANEL_WIDTH) / height  # chỉ vùng bên phải cột bảng dùng cho cảnh 3D
         gluPerspective(FOV_DEGREES, self.aspect, 0.1, 1000)
         glMatrixMode(GL_MODELVIEW)
 
@@ -121,7 +148,7 @@ class Window:
         if self.animator.update(dt):
             self._finish_animation()
         elif self.animator.active and self.animator.phase == Phase.FALL and self._pending_broken is not None:
-            self.broken_tiles = frozenset({self._pending_broken})     # ô giòn vỡ đúng lúc khối bắt đầu rơi
+            self.broken_tiles = frozenset({self._pending_broken})  # ô giòn vỡ đúng lúc khối bắt đầu rơi
 
     def draw(self) -> None:
         glViewport(PANEL_WIDTH, 0, self.width - PANEL_WIDTH, self.height)
@@ -154,7 +181,7 @@ class Window:
         if key == K_n:
             self.open_picker()
             return
-        if self.animator.active:      # bỏ qua phím di chuyển khi đang hoạt cảnh
+        if self.animator.active:  # bỏ qua phím di chuyển khi đang hoạt cảnh
             return
 
         direction = KEY_TO_DIRECTION.get(key)
@@ -273,7 +300,7 @@ class Window:
         path = self.levels[index]
         try:
             game = Game.from_file(path)
-        except Exception as error:      # map hỏng thì giữ màn hiện tại, không sập
+        except Exception as error:  # map hỏng thì giữ màn hiện tại, không sập
             self.picker.close()
             self.message = f"Không nạp được màn {level_label(path)}: {error}"
             return

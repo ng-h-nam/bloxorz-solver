@@ -3,12 +3,34 @@ import os
 from typing import AbstractSet, Dict, FrozenSet, List, Optional, Tuple
 
 from OpenGL.GL import (
-    glClearColor, glClear, glLoadIdentity,
-    glGenLists, glNewList, glEndList, glCallList, glDeleteLists, GL_COMPILE,
-    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
-    glPushMatrix, glPopMatrix, glTranslatef, glRotatef,
-    glLineWidth, glBegin, glEnd, glVertex3f, glColor3f, glColor4f, glTexCoord2f,
-    glEnable, glDisable, glBindTexture, GL_LINE_LOOP, GL_QUADS, GL_TEXTURE_2D,
+    glClearColor,
+    glClear,
+    glLoadIdentity,
+    glGenLists,
+    glNewList,
+    glEndList,
+    glCallList,
+    glDeleteLists,
+    GL_COMPILE,
+    GL_COLOR_BUFFER_BIT,
+    GL_DEPTH_BUFFER_BIT,
+    glPushMatrix,
+    glPopMatrix,
+    glTranslatef,
+    glRotatef,
+    glLineWidth,
+    glBegin,
+    glEnd,
+    glVertex3f,
+    glColor3f,
+    glColor4f,
+    glTexCoord2f,
+    glEnable,
+    glDisable,
+    glBindTexture,
+    GL_LINE_LOOP,
+    GL_QUADS,
+    GL_TEXTURE_2D,
 )
 from OpenGL.GLU import gluLookAt
 
@@ -19,8 +41,14 @@ from gui import primitives
 from gui.animator import Pose, TilePose
 from gui.camera import OrbitCamera
 from gui.geometry import (
-    DEFAULT_FACE_SHADE, Bounds, Cell, active_piece, block_pieces,
-    roll_face_shades, roll_pivot, rotated_face_shades,
+    DEFAULT_FACE_SHADE,
+    Bounds,
+    Cell,
+    active_piece,
+    block_pieces,
+    roll_face_shades,
+    roll_pivot,
+    rotated_face_shades,
 )
 from gui.primitives import cuboid_faces, draw_textured_box, load_texture
 
@@ -29,14 +57,21 @@ TILE_HEIGHT: float = 0.2
 FOV_DEGREES: float = 45.0
 MIN_CAMERA_DISTANCE: float = 10.0
 MAX_CAMERA_DISTANCE: float = 120.0
-CAMERA_MARGIN: float = 0.95                   # chừa 5% mép khung
+CAMERA_MARGIN: float = 0.95  # chừa 5% mép khung
 BLOCK_HEIGHT: float = 2.0
-PAN_MARGIN: float = 4.0                       # được dịch điểm nhìn ra ngoài vùng bản đồ tối đa bằng ngần này ô
+PAN_MARGIN: float = 4.0  # được dịch điểm nhìn ra ngoài vùng bản đồ tối đa bằng ngần này ô
 
 TEXTURE_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "textures")
 TEXTURE_NAMES: List[str] = [
-    "floor", "floor_side", "block", "bridge", "fragile",
-    "goal", "soft_switch", "heavy_switch", "split_switch",
+    "floor",
+    "floor_side",
+    "block",
+    "bridge",
+    "fragile",
+    "goal",
+    "soft_switch",
+    "heavy_switch",
+    "split_switch",
 ]
 
 # Loại ô -> hình dùng cho mặt trên
@@ -101,7 +136,10 @@ def fit_camera_distance(bounds: Tuple[float, float, float, float], aspect: float
         for corner in corners:
             v = (corner[0] - eye[0], corner[1] - eye[1], corner[2] - eye[2])
             depth = _dot(v, forward)
-            if abs(_dot(v, right) / depth / (tan_half * aspect)) > CAMERA_MARGIN or abs(_dot(v, up) / depth / tan_half) > CAMERA_MARGIN:
+            if (
+                abs(_dot(v, right) / depth / (tan_half * aspect)) > CAMERA_MARGIN
+                or abs(_dot(v, up) / depth / tan_half) > CAMERA_MARGIN
+            ):
                 fits = False
                 break
         if fits:
@@ -149,8 +187,7 @@ class Renderer:
         # Cần có cửa sổ OpenGL trước khi tải hình và tạo display list
         self.tex: Dict[str, int] = textures if textures is not None else load_textures()
         self.bridge_cells: List[Tuple[int, int]] = [
-            (r, c) for r in range(board.rows) for c in range(board.cols)
-            if board.grid[r][c] == TileType.BRIDGE
+            (r, c) for r in range(board.rows) for c in range(board.cols) if board.grid[r][c] == TileType.BRIDGE
         ]
 
         c0, c1, r0, r1 = content_bounds(board)
@@ -250,7 +287,9 @@ class Renderer:
         glRotatef(pose.degrees, *pose.axis)
         glTranslatef(-cx, -cy, -cz)
         draw_shaded_box(
-            tile_bounds(row, col), self.tex["fragile"], self.tex["floor_side"],
+            tile_bounds(row, col),
+            self.tex["fragile"],
+            self.tex["floor_side"],
             rotated_face_shades(BASE_SHADE, pose.axis, pose.degrees),
         )
         glPopMatrix()

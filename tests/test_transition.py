@@ -34,28 +34,32 @@ class TestBloxorzTransition(unittest.TestCase):
           - board (5x8): tích hợp VOID ('.'), FRAGILE ('O'), Soft Switch ('A'),
             Heavy Switch ('0'), Cầu ('a', 'b') và Đích ('T').
         """
-        self.open_board = parse_level([
-            "FFFFFFF",
-            "FSFFFFF",
-            "FFFFFFF",
-            "FFFFFFF",
-            "FFFFFFF",
-            "FFFFFTF",
-            "FFFFFFF",
-        ])
+        self.open_board = parse_level(
+            [
+                "FFFFFFF",
+                "FSFFFFF",
+                "FFFFFFF",
+                "FFFFFFF",
+                "FFFFFFF",
+                "FFFFFTF",
+                "FFFFFFF",
+            ]
+        )
 
-        self.board = parse_level([
-            "........",
-            ".SFOFAF.",
-            ".FFFFF0.",
-            ".FaabbT.",
-            "........",
-            "---",
-            "BRIDGE id=a priority=1 initial=closed",
-            "BRIDGE id=b priority=2 initial=closed",
-            "SWITCH id=A targets=a:toggle",
-            "SWITCH id=0 targets=b:toggle",
-        ])
+        self.board = parse_level(
+            [
+                "........",
+                ".SFOFAF.",
+                ".FFFFF0.",
+                ".FaabbT.",
+                "........",
+                "---",
+                "BRIDGE id=a priority=1 initial=closed",
+                "BRIDGE id=b priority=2 initial=closed",
+                "SWITCH id=A targets=a:toggle",
+                "SWITCH id=0 targets=b:toggle",
+            ]
+        )
         set_active_board(self.board)
 
     # =========================================================================
@@ -186,8 +190,8 @@ class TestBloxorzTransition(unittest.TestCase):
         lying_states = [
             State(3, 5, Orientation.HORIZONTAL),  # Chiếm (3, 5) và (3, 6)
             State(3, 6, Orientation.HORIZONTAL),  # Chiếm (3, 6) và (3, 7)
-            State(2, 6, Orientation.VERTICAL),    # Chiếm (2, 6) và (3, 6)
-            State(3, 6, Orientation.VERTICAL),    # Chiếm (3, 6) và (4, 6)
+            State(2, 6, Orientation.VERTICAL),  # Chiếm (2, 6) và (3, 6)
+            State(3, 6, Orientation.VERTICAL),  # Chiếm (3, 6) và (4, 6)
         ]
         for st in lying_states:
             self.assertIn((goal_r, goal_c), st.get_occupied_cells())
@@ -310,12 +314,14 @@ class TestBloxorzTransition(unittest.TestCase):
         # 5. Trường hợp công tắc đóng cầu ngay dưới chân khối:
         # Bản đồ có công tắc mềm 'A' tại (1, 2) cạnh cầu 'a' tại (1, 3) đang mở.
         # Khi khối nằm ngang đè lên cả 'A'(1, 2) và 'a'(1, 3), công tắc 'A' đóng cầu 'a' làm khối rơi!
-        trap_board = parse_level([
-            "......",
-            ".SAaT.",
-            ".FFFF.",
-            "......",
-        ])
+        trap_board = parse_level(
+            [
+                "......",
+                ".SAaT.",
+                ".FFFF.",
+                "......",
+            ]
+        )
         s_before_trap = State(2, 2, Orientation.HORIZONTAL, active_bridges=frozenset([(1, 3)]))
         self.assertIsNone(get_next_state(s_before_trap, Direction.UP, board=trap_board))
 
@@ -324,12 +330,14 @@ class TestBloxorzTransition(unittest.TestCase):
     # =========================================================================
     def test_11_split_switch_and_game_lifecycle(self):
         """Kiểm tra tách khối trên ô 'U' (SPLIT_SWITCH), đổi khối (SWITCH), gộp khối và class Game."""
-        split_board = parse_level([
-            "........",
-            ".SFFUFT.",
-            ".FFFFFF.",
-            "........",
-        ])
+        split_board = parse_level(
+            [
+                "........",
+                ".SFFUFT.",
+                ".FFFFFF.",
+                "........",
+            ]
+        )
         game = Game(split_board)
         self.assertEqual(game.status, GameStatus.PLAYING)
 
@@ -343,7 +351,9 @@ class TestBloxorzTransition(unittest.TestCase):
         # Đổi quyền điều khiển sang khối đơn thứ 2 và di chuyển lại gần để tự động gộp thành khối 1x1x2
         game.switch_cube()
         self.assertEqual(game.state.active_cube, 1)
-        game.move(Direction.LEFT)  # Khối (1, 5) sang (1, 4), kề với (1, 3) -> Tự động gộp thành HORIZONTAL (1, 3)-(1, 4)
+        game.move(
+            Direction.LEFT
+        )  # Khối (1, 5) sang (1, 4), kề với (1, 3) -> Tự động gộp thành HORIZONTAL (1, 3)-(1, 4)
         self.assertFalse(game.state.is_split())
         self.assertEqual(game.state.orientation, Orientation.HORIZONTAL)
         self.assertEqual(state_key(game.state)[:3], (1, 3, "HORIZONTAL"))

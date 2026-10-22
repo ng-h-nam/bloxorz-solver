@@ -10,11 +10,11 @@ ROLL_SECONDS: float = 0.25
 FALL_SECONDS: float = 0.6
 SINK_SECONDS: float = 0.6
 
-FALL_DROP: float = 8.0          # độ sâu rơi (đơn vị ô) khi hết pha rơi
+FALL_DROP: float = 8.0  # độ sâu rơi (đơn vị ô) khi hết pha rơi
 FALL_EXTRA_ANGLE: float = 60.0  # góc xoay thêm khi khối rơi ra khỏi mép
-SINK_DEPTH: float = 2.4         # khối chìm sâu hơn chiều cao của nó nên bị ô đích che hẳn
-TILE_TILT: float = 35.0         # ô giòn vỡ nghiêng thêm ngần này độ khi rơi
-TILE_LEAD: float = 0.2          # ô giòn rơi trước: khối còn đứng yên trong 20% đầu của pha rơi
+SINK_DEPTH: float = 2.4  # khối chìm sâu hơn chiều cao của nó nên bị ô đích che hẳn
+TILE_TILT: float = 35.0  # ô giòn vỡ nghiêng thêm ngần này độ khi rơi
+TILE_LEAD: float = 0.2  # ô giòn rơi trước: khối còn đứng yên trong 20% đầu của pha rơi
 
 
 class Phase(Enum):
@@ -27,20 +27,22 @@ class Phase(Enum):
 @dataclass(frozen=True)
 class TilePose:
     """Cách vẽ một ô đang rơi cùng khối (ô giòn bị vỡ)."""
+
     cell: Cell
-    drop: float                  # dời theo trục y (không dương)
-    axis: Vec3                   # trục nghiêng, quanh tâm ô
+    drop: float  # dời theo trục y (không dương)
+    axis: Vec3  # trục nghiêng, quanh tâm ô
     degrees: float
 
 
 @dataclass(frozen=True)
 class Pose:
     """Cách vẽ mảnh khối đang chuyển động."""
-    piece: int                   # chỉ số mảnh trong block_pieces(display_state)
-    bounds: Bounds               # hộp bao của mảnh trước khi chuyển động
+
+    piece: int  # chỉ số mảnh trong block_pieces(display_state)
+    bounds: Bounds  # hộp bao của mảnh trước khi chuyển động
     direction: Optional[Direction]
-    angle: float                 # độ xoay quanh cạnh đáy theo hướng lăn
-    drop: float                  # dời theo trục y (không dương)
+    angle: float  # độ xoay quanh cạnh đáy theo hướng lăn
+    drop: float  # dời theo trục y (không dương)
     tile: Optional[TilePose] = None
 
 

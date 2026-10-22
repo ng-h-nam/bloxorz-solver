@@ -4,19 +4,17 @@ Thuật toán DFS (Depth-First Search).
 
 import os
 import sys
-import time
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Set
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from algorithms.base_solver import ActionType, BaseSolver, Node, SolveResult, replay_path
-from core.block import Direction
+from algorithms.base_solver import BaseSolver, Node, SolveResult
 from core.board import Board
 from core.map_loader import load_level
-from core.state import Orientation, State
+from core.state import State
 
 
 class DFS(BaseSolver):
@@ -175,7 +173,5 @@ def run_dfs_experiments(map_paths: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    test_maps = [
-        os.path.join(PROJECT_ROOT, "data", "maps", f"level{i}.txt") for i in range(4)
-    ]
+    test_maps = [os.path.join(PROJECT_ROOT, "data", "maps", f"level{i}.txt") for i in range(4)]
     run_dfs_experiments(test_maps)

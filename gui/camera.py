@@ -3,16 +3,16 @@ from typing import Optional, Tuple
 
 Vec3 = Tuple[float, float, float]
 
-DEFAULT_ELEVATION: float = math.atan2(12, 8)   # góc nhìn mặc định, giữ như bản cũ
+DEFAULT_ELEVATION: float = math.atan2(12, 8)  # góc nhìn mặc định, giữ như bản cũ
 MIN_ELEVATION: float = math.radians(15)
-MAX_ELEVATION: float = math.radians(85)        # dưới 90 độ để trục "lên" không bị suy biến
-ORBIT_SENSITIVITY: float = 0.008               # radian trên mỗi điểm ảnh kéo
+MAX_ELEVATION: float = math.radians(85)  # dưới 90 độ để trục "lên" không bị suy biến
+ORBIT_SENSITIVITY: float = 0.008  # radian trên mỗi điểm ảnh kéo
 PAN_SENSITIVITY: float = 0.0016
 ZOOM_STEP: float = 1.12
 MIN_ZOOM_FACTOR: float = 0.35
 MAX_ZOOM_FACTOR: float = 2.5
 MIN_DISTANCE: float = 3.0
-RESET_SECONDS: float = 0.35                    # thời gian đưa camera về vị trí mặc định
+RESET_SECONDS: float = 0.35  # thời gian đưa camera về vị trí mặc định
 
 
 def _ease(t: float) -> float:
@@ -32,7 +32,7 @@ class OrbitCamera:
     ) -> None:
         self.default_center: Tuple[float, float] = (center_x, center_z)
         self.default_distance: float = distance
-        self.limits = limits          # (x nhỏ nhất, x lớn nhất, z nhỏ nhất, z lớn nhất) của điểm nhìn
+        self.limits = limits  # (x nhỏ nhất, x lớn nhất, z nhỏ nhất, z lớn nhất) của điểm nhìn
         self.center_x: float = center_x
         self.center_z: float = center_z
         self.distance: float = distance
@@ -74,7 +74,7 @@ class OrbitCamera:
             return
         k = _ease(t)
         x0, z0, d0, yaw0, el0 = self._reset_from
-        yaw_delta = (0.0 - yaw0 + math.pi) % (2 * math.pi) - math.pi     # quay theo đường ngắn nhất
+        yaw_delta = (0.0 - yaw0 + math.pi) % (2 * math.pi) - math.pi  # quay theo đường ngắn nhất
         self.center_x = x0 + (self.default_center[0] - x0) * k
         self.center_z = z0 + (self.default_center[1] - z0) * k
         self.distance = d0 + (self.default_distance - d0) * k

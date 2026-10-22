@@ -1,11 +1,11 @@
 from typing import List, Any, Dict, Optional, Tuple
 import json
 from core.board import (
-    Board, 
+    Board,
     TileType,
     BridgeAction,
     BridgeMetadata,
-    BridgeMode, 
+    BridgeMode,
 )
 from core.state import Coordinates
 
@@ -30,12 +30,14 @@ def classify(ch: str) -> TileType:
         return TileType.BRIDGE
     raise ValueError(f"Ký tự lạ '{ch}' trong file map")
 
+
 def _parse_coord_str(text: str) -> Coordinates:
     """Chuyển chuỗi "r, c" thành tuple."""
     parts = text.strip().split(",")
     if len(parts) != 2:
         raise ValueError(f"Tọa độ '{text}' không đúng định dạng 'r,c'")
     return (int(parts[0].strip()), int(parts[1].strip()))
+
 
 def _parse_kv_tokens(tokens: List[str]) -> Dict[str, str]:
     """Chuyển danh sách ['id=a', 'priority=1'] thành dict {'id': 'a', 'priority': '1'}."""
@@ -45,6 +47,7 @@ def _parse_kv_tokens(tokens: List[str]) -> Dict[str, str]:
             k, v = token.split("=", 1)
             result[k.strip().lower()] = v.strip()
     return result
+
 
 def _parse_metadata_section(
     meta_lines: List[str],
@@ -112,9 +115,7 @@ def _parse_metadata_section(
                 priority = int(kv.get("priority", 1))
                 initial_str = kv.get("initial", "closed").lower()
                 initial_open = initial_str in ("open", "on", "true", "1")
-                requires = tuple(
-                    x.strip() for x in kv.get("requires", "").split(",") if x.strip()
-                )
+                requires = tuple(x.strip() for x in kv.get("requires", "").split(",") if x.strip())
                 bridge_cfg[b_id] = {
                     "cells": tuple(cells),
                     "priority": priority,
@@ -145,11 +146,7 @@ def _parse_metadata_section(
                     target_spec = target_spec.strip()
                     if target_spec in bridge_groups:
                         for cell in bridge_groups[target_spec]:
-                            actions.append(
-                                BridgeAction(
-                                    target_pos=cell, mode=mode, bridge_id=target_spec
-                                )
-                            )
+                            actions.append(BridgeAction(target_pos=cell, mode=mode, bridge_id=target_spec))
                     elif ";" in target_spec or target_spec[0].isdigit():
                         cell = _parse_coord_str(target_spec.replace(";", ","))
                         actions.append(BridgeAction(target_pos=cell, mode=mode))
@@ -172,11 +169,7 @@ def _parse_metadata_section(
     else:
         # Hỗ trợ khi khối sau '---' là JSON metadata
         for b_id, b_info in raw_meta.get("bridges", {}).items():
-            cells = (
-                [tuple(c) for c in b_info["cells"]]
-                if "cells" in b_info
-                else bridge_groups.get(b_id, [])
-            )
+            cells = [tuple(c) for c in b_info["cells"]] if "cells" in b_info else bridge_groups.get(b_id, [])
             bridge_cfg[b_id] = {
                 "cells": tuple(cells),
                 "priority": int(b_info.get("priority", 1)),
@@ -184,26 +177,16 @@ def _parse_metadata_section(
                 "requires": tuple(b_info.get("requires", [])),
             }
         for sw_key, sw_info in raw_meta.get("switches", {}).items():
-            sc = (
-                _parse_coord_str(sw_key)
-                if "," in sw_key
-                else switch_positions.get(sw_key, [(0, 0)])[0]
-            )
+            sc = _parse_coord_str(sw_key) if "," in sw_key else switch_positions.get(sw_key, [(0, 0)])[0]
             actions = []
             for t in sw_info.get("targets", []):
                 b_id = t["bridge"]
                 mode = BridgeMode.from_str(t.get("mode", "toggle"))
                 for cell in bridge_groups.get(b_id, []):
-                    actions.append(
-                        BridgeAction(target_pos=cell, mode=mode, bridge_id=b_id)
-                    )
+                    actions.append(BridgeAction(target_pos=cell, mode=mode, bridge_id=b_id))
             switches[sc] = actions
         for sp_key, sp_info in raw_meta.get("splits", {}).items():
-            sc = (
-                _parse_coord_str(sp_key)
-                if "," in sp_key
-                else split_positions[0]
-            )
+            sc = _parse_coord_str(sp_key) if "," in sp_key else split_positions[0]
             splits[sc] = (tuple(sp_info[0]), tuple(sp_info[1]))
 
     # 3. Nếu một số công tắc trên bản đồ chưa được khai báo tường minh trong metadata,
@@ -224,9 +207,7 @@ def _parse_metadata_section(
                     target_id = sorted_bridge_ids[int(ch)]
             if target_id:
                 switches[sc] = [
-                    BridgeAction(
-                        target_pos=pos, mode=BridgeMode.TOGGLE, bridge_id=target_id
-                    )
+                    BridgeAction(target_pos=pos, mode=BridgeMode.TOGGLE, bridge_id=target_id)
                     for pos in bridge_groups[target_id]
                 ]
 
@@ -255,6 +236,8 @@ def _parse_metadata_section(
 
     raw_meta["bridge_count"] = len(final_bridge_meta)
     return switches, splits, final_bridge_meta, raw_meta
+
+
 def parse_level(lines: List[str]) -> Board:
     """Chuyển danh sách dòng chữ thành Board (hỗ trợ cả phần metadata sau '---'). Báo lỗi nếu map sai định dạng."""
     map_lines: List[str] = []

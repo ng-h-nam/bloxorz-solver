@@ -22,7 +22,12 @@ FACE_NORMALS: Dict[str, Vec3] = {
 
 # Độ sáng của mặt khi hộp đứng yên (mặt hướng lên sáng nhất, hướng xuống tối nhất)
 DEFAULT_FACE_SHADE: Dict[str, float] = {
-    "top": 1.0, "front": 0.85, "back": 0.85, "left": 0.7, "right": 0.7, "bottom": 0.5,
+    "top": 1.0,
+    "front": 0.85,
+    "back": 0.85,
+    "left": 0.7,
+    "right": 0.7,
+    "bottom": 0.5,
 }
 
 # Trục quay và dấu của góc khi lăn theo từng hướng (glRotatef quay ngược chiều kim đồng hồ)
@@ -106,10 +111,7 @@ def rotated_face_shades(base: Dict[str, float], axis: Vec3, degrees: float) -> D
     """Độ sáng của từng mặt khi hộp đã xoay `degrees` độ quanh `axis`."""
     if degrees == 0:
         return dict(base)
-    return {
-        name: shade_for_normal(rotate_vector(normal, axis, degrees), base)
-        for name, normal in FACE_NORMALS.items()
-    }
+    return {name: shade_for_normal(rotate_vector(normal, axis, degrees), base) for name, normal in FACE_NORMALS.items()}
 
 
 def roll_face_shades(base: Dict[str, float], direction: Direction, angle: float) -> Dict[str, float]:
