@@ -1,0 +1,148 @@
+      ..O...    
+      ......b   
+...  O..O..... 
+.S.BB....OO..O 
+      ..O..O... 
+      ......O.. 
+...  ......O...
+.H.BB.O.   ...OX
+...  ...    ....
+...            ...
+---
+{
+  "passcode": "614955",
+  "bridges": {
+    "a": [
+      [
+        1,
+        11
+      ]
+    ],
+    "b": [
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "c": [
+      [
+        7,
+        3
+      ],
+      [
+        7,
+        4
+      ]
+    ]
+  },
+  "switches": {
+    "0,7": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "2,5": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "2,8": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "3,9": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "3,10": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "3,13": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "4,7": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "4,10": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "5,11": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "6,11": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "7,6": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "7,13": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "off"
+        }
+      ]
+    },
+    "7,14": {
+      "targets": [
+        {
+          "bridge": "a",
+          "mode": "on"
+        }
+      ]
+    }
+  }
+}

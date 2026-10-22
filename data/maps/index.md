@@ -1,46 +1,71 @@
-# Bloxorz Solver - Index & Classifications Map Dataset
+# Bloxorz Solver - Index & Classifications Map Dataset (33 Stages)
 
-File quản lý danh mục bản đồ game Bloxorz sử dụng định dạng `.txt`. Toàn bộ bản đồ trong hệ thống đã được xác minh bằng thuật toán **BFS (Breadth-First Search)** đảm bảo có lời giải hợp lệ.
+File quản lý danh mục toàn bộ 33 bản đồ chính thức của game Bloxorz sử dụng định dạng văn bản `.txt`. Toàn bộ bản đồ trong hệ thống đã được kiểm thử và xác minh bằng thuật toán **BFS (Breadth-First Search)** đảm bảo có lời giải hợp lệ, không rơi vào trạng thái bế tắc (deadlock).
 
 ---
 
 ## 🔑 Chú thích Ký hiệu Bản đồ (Map Character Legend)
 
-Để hiểu rõ cấu trúc các file bản đồ `.txt`, hệ thống quy ước các ký tự ô (tiles) như sau:
+Hệ thống quy ước các ký tự ô (`tiles`) trong các tệp bản đồ `.txt`:
 
 | Ký tự | Tên gọi / Ý nghĩa | Mô tả chi tiết |
 | :---: | :--- | :--- |
-| **` `** (Space) hoặc **`-`** | **Void / Khoảng trống** | Hố sâu. Khối gạch rơi xuống đây sẽ bị thua (Game Over). |
-| **`F`** hoặc số/chữ khác | **Floor / Ô Sàn thường** | Ô đất bình thường mà khối gạch có thể di chuyển, nằm đè hoặc đứng lên. |
+| **` `** (Space) hoặc số dấu **`-`** | **Void / Khoảng trống** | Hố sâu. Khối gạch rơi xuống đây sẽ bị thua (Game Over). |
+| **`.`** hoặc ký tự sàn | **Floor / Ô Sàn thường** | Ô đất bình thường mà khối gạch có thể di chuyển, nằm đè hoặc đứng lên. |
 | **`S`** | **Start / Điểm xuất phát** | Vị trí ban đầu của khối gạch khi bắt đầu màn chơi. |
-| **`G`** (hoặc đích tùy map) | **Goal / Ô Đích** | Vị trí mục tiêu. Khối gạch phải **đứng thẳng (Standing)** chính xác lên ô này để chiến thắng. |
-| **`1`, `0`** | **Switches / Công tắc** | Các loại công tắc (Soft/Heavy switches) giúp kích hoạt hoặc thay đổi trạng thái cầu. |
-| **`A`, `B`, `C` / `a`, `b`, `c`** | **Bridges / Cầu nối** | Các khối cầu đóng/mở (Toggle hoặc Permanent bridge) liên kết với công tắc tương ứng. |
+| **`T`** (hoặc **`X`**) | **Goal / Ô Đích** | Vị trí mục tiêu. Khối gạch phải **đứng thẳng (Standing)** chính xác lên ô này để chiến thắng. |
+| **`O`** | **Soft Switch / Ô tròn** | Công kích hoạt khi gạch đè lên, dùng để bật/tắt hoặc đổi trạng thái cầu. |
+| **`H`** | **Heavy/Hard Switch / Ô chữ X hoặc H** | Công tắc cứng, chỉ kích hoạt khi khối gạch **đứng thẳng** trên đó. |
+| **`b`**, **`B`** | **Bridges / Cầu nối** | Các đoạn cầu đóng/mở (Toggle, Open/Off) liên kết với các công tắc trong phần metadata. |
+| **`T`** (đứng độc lập) | **Teleport / Cổng dịch chuyển** | Ô dịch chuyển dịch khối gạch sang vị trí tương ứng trên bản đồ. |
 
 ---
 
 ## 📊 Phân loại Nhóm Bản đồ (Categories)
 
-- **Nhóm E (Basic / Introductory):** Các màn chơi cơ bản (`level0.txt`, `level1.txt`, `level2.txt`) giúp làm quen với không gian trạng thái, góc lật khối và các lối đi hẹp.
-- **Nhóm B (Fragile / Special Tiles):** Các màn chơi (`level3.txt`, `level4.txt`) có các đặc điểm cấu trúc thử thách khả năng kiểm soát diện tích tiếp xúc của khối.
-- **Nhóm D (Switches & Bridges):** Các màn chơi (`level5.txt`, `level6.txt`, `level7.txt`) có chứa các cơ chế công tắc và cầu nối điều khiển đường đi.
-- **Nhóm C & Advanced / Complex:** Các màn chơi nâng cao (`level8.txt`, `level9.txt`,... đến `level12.txt`, `zfortest.txt`, `zlevel120.txt`) với độ phức tạp cao, không gian rẽ nhánh lớn phục vụ cho kiểm thử hiệu năng toàn diện của các thuật toán (BFS, DFS, UCS, A*).
+- **Nhóm 1 (Stage 01 – Stage 10): Cơ bản & Giới thiệu cơ chế**
+  - Các màn chơi đầu tiên giúp làm quen với không gian lật gạch, các đường đi hẹp và bắt đầu tiếp cận cơ chế cầu nối đơn giản (`stage_01.txt` đến `stage_10.txt`).
+- **Nhóm 2 (Stage 11 – Stage 22): Trung cấp & Phối hợp đa cơ chế**
+  - Tăng độ phức tạp với hệ thống nhiều công tắc, cầu nối liên hoàn, cổng dịch chuyển (Teleport) đòi hỏi tư duy logic bước đi (`stage_11.txt` đến `stage_22.txt`).
+- **Nhóm 3 (Stage 23 – Stage 33): Nâng cao & Phức hợp (Advanced / Complex)**
+  - Các màn chơi có không gian rẽ nhánh lớn, kết hợp đồng thời công tắc đa chiều, ô dịch chuyển và điều kiện cầu phức tạp, thử thách tối ưu hóa thuật toán (`stage_23.txt` đến `stage_33.txt`).
 
 ---
 
-## 🗺️ Danh sách Chi tiết Bản đồ .txt
+## 🗺️ Danh sách Chi tiết 33 Bản đồ .txt
 
 | Tên File | Nhóm Phân loại | Tình trạng BFS Solvable | Ghi chú / Đặc điểm cấu trúc |
 | :--- | :---: | :---: | :--- |
-| `level0.txt`[cite: 14] | **E** | **TRUE** | Màn hướng dẫn cơ bản với không gian nhỏ. |
-| `level1.txt`[cite: 15] | **E** | **TRUE** | Làm quen với các hướng chuyển động và độ rộng đường đi. |
-| `level2.txt`[cite: 16] | **E** | **TRUE** | Kết hợp các đoạn đường gấp khúc và ranh giới hố sâu. |
-| `level3.txt`[cite: 17] | **B** | **TRUE** | Bắt đầu xuất hiện các cấu trúc thử thách diện tích bề mặt. |
-| `level4.txt`[cite: 18] | **B** | **TRUE** | Màn chơi phức hợp có chứa các khu vực bẫy và công tắc cục bộ (`1`, `a`, `b`). |
-| `level5.txt`[cite: 19] | **D** | **TRUE** | Tích hợp cơ chế công tắc (`0`) và điều hướng cầu nối. |
-| `level6.txt`[cite: 20] | **D** | **TRUE** | Sử dụng hệ thống công tắc đa dạng (`A`, `B`, `C`, `a`, `b`, `c`) mở cầu phức tạp. |
-| `level7.txt`[cite: 21] | **D** | **TRUE** | Màn chơi tổng hợp nhiều công tắc và tuyến đường rẽ nhánh sâu. |
-| `level8.txt`[cite: 22] | **C / Advanced** | **TRUE** | Mức độ khó cao, đòi hỏi thuật toán tìm kiếm duyệt qua nhiều không gian trạng thái. |
-| `level9.txt`[cite: 23] | **C / Advanced** | **TRUE** | Thử thách tối ưu hóa đường đi với các khu vực cách ly. |
-| `level10.txt` - `level12.txt` | **C / Advanced** | **TRUE** | Bộ map nâng cao dùng cho đánh giá thực nghiệm hiệu suất Solver. |
-| `zfortest.txt` / `zlevel120.txt` | **Stress Test** | **TRUE** | Các map đặc biệt dùng để kiểm tra giới hạn bộ nhớ và thời gian (Stress testing). |
+| `stage_01.txt` | **Nhóm 1** | **TRUE** | Màn hướng dẫn cơ bản với không gian nhỏ. |
+| `stage_02.txt` | **Nhóm 1** | **TRUE** | Bắt đầu giới thiệu cơ chế cầu nối đơn giản (`a`, `b`). |
+| `stage_03.txt` | **Nhóm 1** | **TRUE** | Làm quen với các hướng chuyển động và đường đi gấp khúc. |
+| `stage_04.txt` | **Nhóm 1** | **TRUE** | Đường đi hẹp, thử thách kiểm soát diện tích tiếp xúc. |
+| `stage_05.txt` | **Nhóm 1** | **TRUE** | Tích hợp nhiều cầu nối và công tắc điều khiển trạng thái. |
+| `stage_06.txt` | **Nhóm 1** | **TRUE** | Không gian rẽ nhánh trung bình, kiểm tra độ chính xác lật gạch. |
+| `stage_07.txt` | **Nhóm 1** | **TRUE** | Kết hợp công tắc chuyển đổi cầu nối linh hoạt. |
+| `stage_08.txt` | **Nhóm 1** | **TRUE** | Giới thiệu cơ chế cổng dịch chuyển (Teleport). |
+| `stage_09.txt` | **Nhóm 1** | **TRUE** | Thử thách tối ưu hóa đường đi qua không gian cách ly. |
+| `stage_10.txt` | **Nhóm 1** | **TRUE** | Tổng hợp công tắc, cầu nối và teleport ở mức cơ bản. |
+| `stage_11.txt` | **Nhóm 2** | **TRUE** | Mở rộng quy mô lưới và cấu trúc cầu nối dọc. |
+| `stage_12.txt` | **Nhóm 2** | **TRUE** | Màn chơi phối hợp công tắc cứng (`H`) và cầu ẩn. |
+| `stage_13.txt` | **Nhóm 2** | **TRUE** | Đường đi zích-zắc qua các ô trống hẹp. |
+| `stage_14.txt` | **Nhóm 2** | **TRUE** | Xử lý chuỗi hành động bật/tắt cầu liên tục. |
+| `stage_15.txt` | **Nhóm 2** | **TRUE** | Phức hợp nhiều công tắc mềm và cổng dịch chuyển. |
+| `stage_16.txt` | **Nhóm 2** | **TRUE** | Mật độ cổng dịch chuyển cao, yêu cầu tính toán hướng đi. |
+| `stage_17.txt` | **Nhóm 2** | **TRUE** | Hệ thống cầu nối rải rác đòi hỏi thứ tự kích hoạt chuẩn xác. |
+| `stage_18.txt` | **Nhóm 2** | **TRUE** | Cấu trúc đối xứng với nhiều công tắc điều hướng. |
+| `stage_19.txt` | **Nhóm 2** | **TRUE** | Thử thách định vị khối gạch trên các tuyến đường dài. |
+| `stage_20.txt` | **Nhóm 2** | **TRUE** | Kết hợp teleport và switch đa mục tiêu. |
+| `stage_21.txt` | **Nhóm 2** | **TRUE** | Màn chơi chiến lược với các đoạn cầu nối ẩn. |
+| `stage_22.txt` | **Nhóm 2** | **TRUE** | Cấu trúc phức hợp kiểm tra khả năng qua màn trung cấp. |
+| `stage_23.txt` | **Nhóm 3** | **TRUE** | Bắt đầu phân khúc nâng cao với logic công tắc chéo. |
+| `stage_24.txt` | **Nhóm 3** | **TRUE** | Tích hợp teleport ngược chiều và cầu nối điều kiện. |
+| `stage_25.txt` | **Nhóm 3** | **TRUE** | Không gian hẹp kết hợp chuyển đổi trạng thái liên tục. |
+| `stage_26.txt` | **Nhóm 3** | **TRUE** | Thử thách tư duy không gian với các bẫy hố sâu. |
+| `stage_27.txt` | **Nhóm 3** | **TRUE** | Màn chơi quy mô lớn đòi hỏi lập kế hoạch đường đi dài. |
+| `stage_28.txt` | **Nhóm 3** | **TRUE** | Phối hợp nhịp nhàng giữa công tắc, cầu và cổng dịch chuyển. |
+| `stage_29.txt` | **Nhóm 3** | **TRUE** | Độ khó cao với nhiều tầng logic công tắc phụ thuộc. |
+| `stage_30.txt` | **Nhóm 3** | **TRUE** | Đường đi uốn khúc qua hệ thống vực thẳm rộng lớn. |
+| `stage_31.txt` | **Nhóm 3** | **TRUE** | Cấu trúc phức tạp kiểm thử hiệu suất duyệt không gian trạng thái. |
+| `stage_32.txt` | **Nhóm 3** | **TRUE** | Áp lực thời gian và bước đi với các cơ chế cầu ẩn dày đặc. |
+| `stage_33.txt` | **Nhóm 3** | **TRUE** | **Boss Stage:** Màn chơi đỉnh cao tổng hợp toàn bộ cơ chế phức tạp nhất của game. |
