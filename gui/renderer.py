@@ -21,7 +21,7 @@ TILE_HEIGHT: float = 0.2
 TILE_COLORS: Dict[TileType, Color] = {
     TileType.FLOOR: (0.85, 0.85, 0.75),
     TileType.GOAL: (0.3, 0.9, 0.4),
-    TileType.FALLING: (0.9, 0.6, 0.4),
+    TileType.FRAGILE: (0.9, 0.6, 0.4),
     TileType.SOFT_SWITCH: (0.6, 0.6, 0.9),
     TileType.HEAVY_SWITCH: (0.9, 0.4, 0.8),
 }
