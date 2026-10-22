@@ -1,3 +1,4 @@
+import os 
 from typing import List, Optional, Tuple
 
 import pygame
@@ -12,6 +13,9 @@ from OpenGL.GL import (
 )
 
 from core.game import Game
+
+# Đường dẫn tuyệt đối tới tệp font DejaVuSans.ttf
+FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "fonts", "DejaVuSans.ttf")
 
 # Màu chữ của pygame: số nguyên 0..255
 RGB = Tuple[int, int, int]
@@ -128,7 +132,7 @@ class ControlPanel:
     def __init__(self, width: int, height: int, font_size: int = 30) -> None:
         self.width: int = width
         self.height: int = height
-        font = pygame.font.Font(None, font_size)
+        font = pygame.font.Font(FONT_PATH, font_size)
 
         self.title: TextLabel = TextLabel(font)
         self.title.set_text("Bloxorz")
