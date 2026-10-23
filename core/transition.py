@@ -7,9 +7,18 @@ from core.state import Coordinates, Orientation, State, get_occupied_cells
 
 ActionInput = Union[Direction, str]
 
+SWITCH_ACTION: str = "SWITCH"
+SWITCH_ALIASES: Tuple[str, ...] = ("SWITCH", "SPACE", "TAB")
+
+
+def is_switch_action(action: ActionInput) -> bool:
+    """Kiểm tra action có phải là lệnh đổi khối đơn đang điều khiển (SWITCH / SPACE / TAB) hay không."""
+    return isinstance(action, str) and action.strip().upper() in SWITCH_ALIASES
+
 
 class MoveResult(Enum):
     """Kết quả của một bước di chuyển."""
+
     OK = "OK"
     FALL = "FALL"
 
@@ -22,9 +31,11 @@ class MoveOutcome:
     - state: Trạng thái mới sau nước đi (nếu FALL thì là trạng thái rơi tạm thời để GUI vẽ hoạt cảnh).
     - message: Thông báo mô tả chi tiết kết quả nước đi.
     """
+
     result: MoveResult
     state: State
     message: str = ""
+
 
 _CURRENT_BOARD: Optional[Board] = None
 
@@ -69,29 +80,27 @@ ACTION_ALIAS_MAP: Dict[str, Direction] = {
 
 TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientation]] = {
     # 1. STANDING
-    (Orientation.STANDING, Direction.UP):    (-2,  0, Orientation.VERTICAL),
-    (Orientation.STANDING, Direction.DOWN):  ( 1,  0, Orientation.VERTICAL),
-    (Orientation.STANDING, Direction.LEFT):  ( 0, -2, Orientation.HORIZONTAL),
-    (Orientation.STANDING, Direction.RIGHT): ( 0,  1, Orientation.HORIZONTAL),
-
+    (Orientation.STANDING, Direction.UP): (-2, 0, Orientation.VERTICAL),
+    (Orientation.STANDING, Direction.DOWN): (1, 0, Orientation.VERTICAL),
+    (Orientation.STANDING, Direction.LEFT): (0, -2, Orientation.HORIZONTAL),
+    (Orientation.STANDING, Direction.RIGHT): (0, 1, Orientation.HORIZONTAL),
     # 2. HORIZONTAL
-    (Orientation.HORIZONTAL, Direction.UP):    (-1,  0, Orientation.HORIZONTAL),
-    (Orientation.HORIZONTAL, Direction.DOWN):  ( 1,  0, Orientation.HORIZONTAL),
-    (Orientation.HORIZONTAL, Direction.LEFT):  ( 0, -1, Orientation.STANDING),
-    (Orientation.HORIZONTAL, Direction.RIGHT): ( 0,  2, Orientation.STANDING),
-
+    (Orientation.HORIZONTAL, Direction.UP): (-1, 0, Orientation.HORIZONTAL),
+    (Orientation.HORIZONTAL, Direction.DOWN): (1, 0, Orientation.HORIZONTAL),
+    (Orientation.HORIZONTAL, Direction.LEFT): (0, -1, Orientation.STANDING),
+    (Orientation.HORIZONTAL, Direction.RIGHT): (0, 2, Orientation.STANDING),
     # 3. VERTICAL
-    (Orientation.VERTICAL, Direction.UP):    (-1,  0, Orientation.STANDING),
-    (Orientation.VERTICAL, Direction.DOWN):  ( 2,  0, Orientation.STANDING),
-    (Orientation.VERTICAL, Direction.LEFT):  ( 0, -1, Orientation.VERTICAL),
-    (Orientation.VERTICAL, Direction.RIGHT): ( 0,  1, Orientation.VERTICAL),
+    (Orientation.VERTICAL, Direction.UP): (-1, 0, Orientation.STANDING),
+    (Orientation.VERTICAL, Direction.DOWN): (2, 0, Orientation.STANDING),
+    (Orientation.VERTICAL, Direction.LEFT): (0, -1, Orientation.VERTICAL),
+    (Orientation.VERTICAL, Direction.RIGHT): (0, 1, Orientation.VERTICAL),
 }
 
 SINGLE_CUBE_DELTA: Dict[Direction, Tuple[int, int]] = {
-    Direction.UP:    (-1,  0),
-    Direction.DOWN:  ( 1,  0),
-    Direction.LEFT:  ( 0, -1),
-    Direction.RIGHT: ( 0,  1),
+    Direction.UP: (-1, 0),
+    Direction.DOWN: (1, 0),
+    Direction.LEFT: (0, -1),
+    Direction.RIGHT: (0, 1),
 }
 
 
@@ -104,6 +113,53 @@ def normalize_action(action: ActionInput) -> Direction:
         if key in ACTION_ALIAS_MAP:
             return ACTION_ALIAS_MAP[key]
     raise ValueError(f"Action không hợp lệ: {action}")
+
+
+def roll_block(state: State, action: ActionInput) -> State:
+    """
+    Tính tọa độ và tư thế mới của khối sau khi lăn theo `action`
+    (chỉ tính toán hình học thuần túy, không kiểm tra biên hay hiệu ứng ô trên bàn cờ).
+    """
+    if is_switch_action(action):
+        return state.switch_active_cube()
+
+    direction = normalize_action(action)
+
+    if state.orientation == Orientation.SPLIT:
+        dr, dc = SINGLE_CUBE_DELTA[direction]
+        if state.split_pos is None:
+            return State(
+                r=state.r + dr,
+                c=state.c + dc,
+                orientation=Orientation.SPLIT,
+                active_bridges=state.active_bridges,
+                split_pos=None,
+                active_cube=state.active_cube,
+            )
+        r1, c1 = state.r, state.c
+        r2, c2 = state.split_pos
+        if state.active_cube == 0:
+            new_r, new_c = r1 + dr, c1 + dc
+            new_split_pos = (r2, c2)
+        else:
+            new_r, new_c = r1, c1
+            new_split_pos = (r2 + dr, c2 + dc)
+        return State(
+            r=new_r,
+            c=new_c,
+            orientation=Orientation.SPLIT,
+            active_bridges=state.active_bridges,
+            split_pos=new_split_pos,
+            active_cube=state.active_cube,
+        ).normalize_or_merge()
+
+    dr, dc, new_orientation = TRANSITION_TABLE[(state.orientation, direction)]
+    return State(
+        r=state.r + dr,
+        c=state.c + dc,
+        orientation=new_orientation,
+        active_bridges=state.active_bridges,
+    )
 
 
 def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
@@ -129,23 +185,17 @@ def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
     return True, "Nước đi hợp lệ."
 
 
-def is_out_of_bounds(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_out_of_bounds(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_out_of_bounds(state)
 
 
-def is_on_void(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_on_void(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_on_void(state)
 
 
-def is_valid_move(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_valid_move(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_valid_move(state)
 
@@ -153,9 +203,7 @@ def is_valid_move(
 is_valid_state = is_valid_move
 
 
-def is_goal_state(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> bool:
+def is_goal_state(arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_goal_state(state)
 
@@ -172,7 +220,7 @@ def get_next_state(
     if board is None and _CURRENT_BOARD is not None:
         board = _CURRENT_BOARD
 
-    if isinstance(action, str) and action.strip().upper() in ("SPACE", "SWITCH", "TAB"):
+    if is_switch_action(action):
         if not state.is_split():
             return None
         return state.switch_active_cube()
@@ -303,7 +351,6 @@ def get_next_state(
     return final_state
 
 
-
 def get_successors(
     arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
 ) -> List[Tuple[Union[Direction, str], State]]:
@@ -320,8 +367,8 @@ def get_successors(
 
     # Nếu đang ở trạng thái SPLIT, cho phép thêm hành động đổi khối điều khiển ("SWITCH")
     if state.is_split():
-        switched = get_next_state(state, "SWITCH", board=board)
+        switched = get_next_state(state, SWITCH_ACTION, board=board)
         if switched is not None and switched != state:
-            successors.append(("SWITCH", switched))
+            successors.append((SWITCH_ACTION, switched))
 
     return successors

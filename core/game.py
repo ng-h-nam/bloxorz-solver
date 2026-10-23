@@ -15,12 +15,14 @@ from core.transition import (
     is_goal_state,
     is_valid_state,
     normalize_action,
+    roll_block,
     set_active_board,
 )
 
 
 class GameStatus(Enum):
     """Trạng thái hiện tại của ván chơi Bloxorz."""
+
     PLAYING = "PLAYING"
     WON = "WON"
     LOST = "LOST"
@@ -110,9 +112,7 @@ class Game:
         Tính trạng thái tọa độ khi khối vừa lăn vào ô không hợp lệ (rơi)
         để phục vụ Animator vẽ hoạt cảnh rơi, kèm thông báo nguyên nhân.
         """
-        candidate = get_next_state(self.state, direction, board=None)
-        if candidate is None:
-            return self.state, "Nước đi không hợp lệ."
+        candidate = roll_block(self.state, direction)
 
         valid, reason = check_occupied_cells(self.board, candidate)
         if not valid:
@@ -249,7 +249,4 @@ class Game:
         return outcomes
 
     def __repr__(self) -> str:
-        return (
-            f"Game(state={self.state}, moves={self.moves}, "
-            f"status={self.status.value})"
-        )
+        return f"Game(state={self.state}, moves={self.moves}, status={self.status.value})"
