@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from enum import Enum
-from typing import List, Optional, Sequence, Tuple, Union
 
 from core.block import Block, Direction
 from core.board import Board, TileType
@@ -39,7 +39,7 @@ class Game:
     def __init__(
         self,
         board: Board,
-        initial_state: Optional[State] = None,
+        initial_state: State | None = None,
     ) -> None:
         self.board: Board = board
         set_active_board(board)
@@ -58,8 +58,8 @@ class Game:
         self.state: State = self.initial_state
         self.moves: int = 0
         self.status: GameStatus = GameStatus.PLAYING
-        self.history: List[State] = []
-        self.move_history: List[Union[Direction, str]] = []
+        self.history: list[State] = []
+        self.move_history: list[Direction | str] = []
 
         self._update_initial_status()
 
@@ -70,7 +70,7 @@ class Game:
         return cls(board)
 
     @classmethod
-    def from_lines(cls, lines: List[str]) -> "Game":
+    def from_lines(cls, lines: list[str]) -> "Game":
         """Khởi tạo ván chơi từ danh sách các dòng văn bản mô tả map."""
         board = parse_level(lines)
         return cls(board)
@@ -105,7 +105,7 @@ class Game:
         """Kiểm tra ván chơi đã kết thúc (WON hoặc LOST) hay chưa."""
         return self.status in (GameStatus.WON, GameStatus.LOST)
 
-    def _compute_fallen_state(self, direction: Direction) -> Tuple[State, str]:
+    def _compute_fallen_state(self, direction: Direction) -> tuple[State, str]:
         """
         Tính trạng thái tọa độ khi khối vừa lăn vào ô không hợp lệ (rơi)
         để phục vụ Animator vẽ hoạt cảnh rơi, kèm thông báo nguyên nhân.
@@ -122,9 +122,7 @@ class Game:
         new_bridges = candidate.active_bridges
         for cell_r, cell_c in candidate.get_occupied_cells():
             tile = self.board.get_tile(cell_r, cell_c)
-            if tile == TileType.SOFT_SWITCH:
-                new_bridges = self.board.apply_switch((cell_r, cell_c), new_bridges)
-            elif tile == TileType.HEAVY_SWITCH and candidate.orientation == Orientation.STANDING:
+            if tile == TileType.SOFT_SWITCH or tile == TileType.HEAVY_SWITCH and candidate.orientation == Orientation.STANDING:
                 new_bridges = self.board.apply_switch((cell_r, cell_c), new_bridges)
 
         fallen = State(
@@ -138,7 +136,7 @@ class Game:
         _, reason = check_occupied_cells(self.board, fallen)
         return fallen, reason
 
-    def move(self, action: ActionInput) -> Optional[MoveOutcome]:
+    def move(self, action: ActionInput) -> MoveOutcome | None:
         """
         Thực hiện một bước di chuyển theo `action` (Direction hoặc chuỗi hướng / 'SPACE').
         - Nếu ván chơi đã kết thúc (WON hoặc LOST), bỏ qua nước đi và trả về None.
@@ -197,7 +195,7 @@ class Game:
             message="Nước đi hợp lệ.",
         )
 
-    def switch_cube(self) -> Optional[MoveOutcome]:
+    def switch_cube(self) -> MoveOutcome | None:
         """Chuyển quyền điều khiển giữa 2 khối đơn khi đang ở trạng thái SPLIT."""
         return self.move("SWITCH")
 
@@ -227,18 +225,18 @@ class Game:
         self._update_initial_status()
         return self.state
 
-    def get_valid_moves(self) -> List[Tuple[str, State]]:
+    def get_valid_moves(self) -> list[tuple[str, State]]:
         """Trả về danh sách các nước đi hợp lệ (action_name, next_state) từ trạng thái hiện tại."""
         if self.status != GameStatus.PLAYING:
             return []
         return get_successors(self.board, self.state)
 
-    def apply_solution(self, actions: Sequence[ActionInput]) -> List[MoveOutcome]:
+    def apply_solution(self, actions: Sequence[ActionInput]) -> list[MoveOutcome]:
         """
         Thực thi tuần tự một danh sách các hành động (ví dụ: đường đi từ Solver).
         Dừng lại sớm nếu ván chơi kết thúc (WON hoặc LOST).
         """
-        outcomes: List[MoveOutcome] = []
+        outcomes: list[MoveOutcome] = []
         for action in actions:
             outcome = self.move(action)
             if outcome is None:

@@ -1,6 +1,6 @@
+import csv
 import os
 import sys
-import csv
 import time
 import tracemalloc
 from datetime import datetime
@@ -96,6 +96,7 @@ def main():
     try:
         from algorithms.bfs import BFSSolver
         from algorithms.dfs import DFSSolver
+
         # from algorithms.ucs import UCSSolver
         # from algorithms.astar import AStarSolver
         from core.map_loader import load_map

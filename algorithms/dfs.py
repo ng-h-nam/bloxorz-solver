@@ -4,19 +4,16 @@ Thuật toán DFS (Depth-First Search).
 
 import os
 import sys
-import time
-from typing import Dict, List, Optional, Set, Tuple
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from algorithms.base_solver import ActionType, BaseSolver, Node, SolveResult, replay_path
-from core.block import Direction
+from algorithms.base_solver import BaseSolver, Node, SolveResult
 from core.board import Board
 from core.map_loader import load_level
-from core.state import Orientation, State
+from core.state import State
 
 
 class DFSSolver(BaseSolver):
@@ -25,13 +22,13 @@ class DFSSolver(BaseSolver):
     def __init__(
         self,
         board: Board,
-        initial_state: Optional[State] = None,
-        max_depth: Optional[int] = 1000,
-        node_limit: Optional[int] = None,
-        time_limit: Optional[float] = None,
+        initial_state: State | None = None,
+        max_depth: int | None = 1000,
+        node_limit: int | None = None,
+        time_limit: float | None = None,
     ) -> None:
         super().__init__(board, initial_state, node_limit=node_limit, time_limit=time_limit)
-        self.max_depth: Optional[int] = max_depth
+        self.max_depth: int | None = max_depth
 
     def solve(self) -> SolveResult:
         """
@@ -59,8 +56,8 @@ class DFSSolver(BaseSolver):
             )
 
         root_node = self.create_root_node()
-        stack: List[Node] = [root_node]
-        visited: Set[State] = {self.get_state_key(self.initial_state)}
+        stack: list[Node] = [root_node]
+        visited: set[State] = {self.get_state_key(self.initial_state)}
 
         self.nodes_explored = 0
         self.max_frontier_size = 1
@@ -82,8 +79,7 @@ class DFSSolver(BaseSolver):
                     status=limit_reason,
                 )
 
-            if len(stack) > self.max_frontier_size:
-                self.max_frontier_size = len(stack)
+            self.max_frontier_size = max(self.max_frontier_size, len(stack))
 
             current_node: Node = stack.pop()
             self.nodes_explored += 1
@@ -139,7 +135,7 @@ class DFSSolver(BaseSolver):
         )
 
 
-def run_dfs_experiments(map_paths: List[str]) -> None:
+def run_dfs_experiments(map_paths: list[str]) -> None:
     """
     Chạy thực nghiệm DFS và IDS trên danh sách bản đồ và in báo cáo chi tiết.
     """
@@ -159,7 +155,7 @@ def run_dfs_experiments(map_paths: List[str]) -> None:
         dfs_solver = DFSSolver(board, max_depth=1000)
         dfs_res = dfs_solver.solve()
         if dfs_res.is_solved:
-            valid, _, msg = dfs_solver.replay(dfs_res.actions)
+            _, _, msg = dfs_solver.replay(dfs_res.actions)
             print("  --- DFS (Depth-First Search) ---")
             print("  -> Trạng thái          : THÀNH CÔNG (Solved)")
             print(f"  -> Số bước tìm được    : {dfs_res.cost} bước")

@@ -1,12 +1,30 @@
-from typing import Dict, Tuple
 
 import pygame
-from pygame.locals import (
-    DOUBLEBUF, OPENGL, QUIT, KEYDOWN, MOUSEBUTTONDOWN,
-    K_UP, K_DOWN, K_LEFT, K_RIGHT, K_w, K_a, K_s, K_d, K_r,
+from OpenGL.GL import (
+    GL_DEPTH_TEST,
+    GL_MODELVIEW,
+    GL_PROJECTION,
+    glEnable,
+    glLoadIdentity,
+    glMatrixMode,
 )
-from OpenGL.GL import glEnable, glMatrixMode, glLoadIdentity, GL_DEPTH_TEST, GL_PROJECTION, GL_MODELVIEW
 from OpenGL.GLU import gluPerspective
+from pygame.locals import (
+    DOUBLEBUF,
+    K_DOWN,
+    K_LEFT,
+    K_RIGHT,
+    K_UP,
+    KEYDOWN,
+    MOUSEBUTTONDOWN,
+    OPENGL,
+    QUIT,
+    K_a,
+    K_d,
+    K_r,
+    K_s,
+    K_w,
+)
 
 from core.block import Direction
 from core.game import Game, GameStatus
@@ -14,7 +32,7 @@ from core.transition import MoveResult
 from gui.control_panel import ControlPanel
 from gui.renderer import Renderer
 
-KEY_TO_DIRECTION: Dict[int, Direction] = {
+KEY_TO_DIRECTION: dict[int, Direction] = {
     K_UP: Direction.UP, K_w: Direction.UP,
     K_DOWN: Direction.DOWN, K_s: Direction.DOWN,
     K_LEFT: Direction.LEFT, K_a: Direction.LEFT,
@@ -93,7 +111,7 @@ class Window:
         else:
             self.message = ""
 
-    def handle_click(self, pos: Tuple[int, int]) -> None:
+    def handle_click(self, pos: tuple[int, int]) -> None:
         if self.panel.handle_click(pos) == "restart":
             self.restart()
 

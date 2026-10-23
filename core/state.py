@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import FrozenSet, List, Tuple, Optional
 
-Coordinates = Tuple[int, int]
+Coordinates = tuple[int, int]
 
 class Orientation(Enum):
     STANDING = "STANDING"
@@ -24,8 +23,8 @@ class State:
     r: int
     c: int
     orientation: Orientation = Orientation.STANDING
-    active_bridges: FrozenSet[Coordinates] = field(default_factory=frozenset)
-    split_pos: Optional[Coordinates] = None
+    active_bridges: frozenset[Coordinates] = field(default_factory=frozenset)
+    split_pos: Coordinates | None = None
     active_cube: int = 0
 
    
@@ -33,7 +32,7 @@ class State:
         """Trả về trạng thái hiện tại xem có đang bị chia đôi hay không?"""
         return self.orientation == Orientation.SPLIT and self.split_pos is not None
     
-    def get_occupied_cells(self) -> List[Coordinates]:
+    def get_occupied_cells(self) -> list[Coordinates]:
         """Trả về danh sách các ô (r, c) mà khối đang đè lên ở trạng thái này."""
         if self.orientation == Orientation.STANDING:
             return [(self.r, self.c)]
@@ -53,7 +52,7 @@ class State:
             return self.split_pos
         return (self.r, self.c)
 
-    def get_inactive_cube_pos(self) -> Optional[Coordinates]:
+    def get_inactive_cube_pos(self) -> Coordinates | None:
         """Trả về tọa độ của khối đơn ta đang không điều khiển (ngược lại với cái trên)."""
         if not self.is_split() or self.split_pos is None:
             return None
@@ -110,7 +109,7 @@ class State:
         """Kiểm tra khối có đang đứng thẳng tại đúng tọa độ pos hay không."""
         return self.orientation == Orientation.STANDING and (self.r, self.c) == pos
 
-    def to_key(self) -> Tuple[int, int, str, FrozenSet[Coordinates]]:
+    def to_key(self) -> tuple[int, int, str, frozenset[Coordinates]]:
         """Đại diện duy nhất của state. Có thể hỗ trợ cho hàm state_key."""
         split_coord = self.split_pos if self.split_pos is not None else (-1, -1)
         bridge_tuple = tuple(sorted(self.active_bridges))
@@ -137,9 +136,9 @@ class State:
 # đây là hàm phụ trợ, khi import state không cần gọi thêm self. gì gì đó, chỉ cần from state import... là dùng dc luôn nha
 # assisted by antigravity
 
-def get_occupied_cells(state: State) -> List[Coordinates]:
+def get_occupied_cells(state: State) -> list[Coordinates]:
     return state.get_occupied_cells()
 
-def state_key(state: State) -> Tuple:
+def state_key(state: State) -> tuple:
     return state.to_key()
     

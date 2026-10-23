@@ -1,24 +1,46 @@
-from typing import List, Optional, Tuple
 
 import pygame
 from OpenGL.GL import (
-    glBegin, glEnd, glColor3f, glVertex2f, glTexCoord2f, GL_QUADS,
-    glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
-    glEnable, glDisable, glBlendFunc, GL_BLEND, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-    GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR, GL_DEPTH_TEST,
-    glMatrixMode, glPushMatrix, glPopMatrix, glLoadIdentity, glOrtho,
-    GL_PROJECTION, GL_MODELVIEW,
+    GL_BLEND,
+    GL_DEPTH_TEST,
+    GL_LINEAR,
+    GL_MODELVIEW,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_PROJECTION,
+    GL_QUADS,
+    GL_RGBA,
+    GL_SRC_ALPHA,
+    GL_TEXTURE_2D,
+    GL_TEXTURE_MAG_FILTER,
+    GL_TEXTURE_MIN_FILTER,
+    GL_UNSIGNED_BYTE,
+    glBegin,
+    glBindTexture,
+    glBlendFunc,
+    glColor3f,
+    glDisable,
+    glEnable,
+    glEnd,
+    glGenTextures,
+    glLoadIdentity,
+    glMatrixMode,
+    glOrtho,
+    glPopMatrix,
+    glPushMatrix,
+    glTexCoord2f,
+    glTexImage2D,
+    glTexParameteri,
+    glVertex2f,
 )
 
 from core.game import Game
 
 # Màu chữ của pygame: số nguyên 0..255
-RGB = Tuple[int, int, int]
+RGB = tuple[int, int, int]
 # Màu tô của OpenGL: số thực 0..1
-Color3 = Tuple[float, float, float]
+Color3 = tuple[float, float, float]
 # Tọa độ hoặc kích thước tính bằng pixel
-Pixel = Tuple[int, int]
+Pixel = tuple[int, int]
 
 TEXT_COLOR: RGB = (255, 255, 255)
 MESSAGE_COLOR: RGB = (255, 140, 140)
@@ -69,8 +91,8 @@ class TextLabel:
     def __init__(self, font: pygame.font.Font, color: RGB = TEXT_COLOR) -> None:
         self.font: pygame.font.Font = font
         self.color: RGB = color
-        self.text: Optional[str] = None
-        self.texture: Optional[int] = None
+        self.text: str | None = None
+        self.texture: int | None = None
         self.size: Pixel = (0, 0)
 
     def set_text(self, text: str) -> None:
@@ -112,12 +134,12 @@ class Button:
         self,
         rect: pygame.Rect,
         text: str,
-        action: Optional[str],
+        action: str | None,
         font: pygame.font.Font,
         enabled: bool,
     ) -> None:
         self.rect: pygame.Rect = rect
-        self.action: Optional[str] = action
+        self.action: str | None = action
         self.enabled: bool = enabled
         color = TEXT_COLOR if enabled else DISABLED_TEXT_COLOR
         self.label: TextLabel = TextLabel(font, color)
@@ -132,17 +154,17 @@ class ControlPanel:
 
         self.title: TextLabel = TextLabel(font)
         self.title.set_text("Bloxorz")
-        self.info_lines: List[TextLabel] = [TextLabel(font) for _ in range(4)]
+        self.info_lines: list[TextLabel] = [TextLabel(font) for _ in range(4)]
         self.message: TextLabel = TextLabel(font, MESSAGE_COLOR)
 
         # Week 1 chỉ bật Restart. New Game và Run Solver để sẵn, bật ở mốc 2
-        self.buttons: List[Button] = [
+        self.buttons: list[Button] = [
             Button(pygame.Rect(16, 190, 150, 36), "Restart", "restart", font, True),
             Button(pygame.Rect(16, 234, 150, 36), "New Game", None, font, False),
             Button(pygame.Rect(16, 278, 150, 36), "Run Solver", None, font, False),
         ]
 
-    def handle_click(self, pos: Pixel) -> Optional[str]:
+    def handle_click(self, pos: Pixel) -> str | None:
         """Trả về tên hành động của nút được bấm, hoặc None."""
         for button in self.buttons:
             if button.enabled and button.rect.collidepoint(pos):

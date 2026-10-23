@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Union
+
 from core.block import Direction
 from core.board import Board, TileType
 from core.state import Coordinates, Orientation, State, get_occupied_cells
@@ -26,7 +27,7 @@ class MoveOutcome:
     state: State
     message: str = ""
 
-_CURRENT_BOARD: Optional[Board] = None
+_CURRENT_BOARD: Board | None = None
 
 
 def set_active_board(board: Board) -> None:
@@ -36,8 +37,8 @@ def set_active_board(board: Board) -> None:
 
 
 def _resolve_board_and_state(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> Tuple[Board, State]:
+    arg1: Board | State, arg2: Board | State | None = None
+) -> tuple[Board, State]:
     """Hỗ trợ linh hoạt func(state), func(state, board) và func(board, state)."""
     if isinstance(arg1, State) and isinstance(arg2, Board):
         return arg2, arg1
@@ -52,7 +53,7 @@ def _resolve_board_and_state(
     raise TypeError(f"Tham số không hợp lệ: ({type(arg1)}, {type(arg2)})")
 
 
-ACTION_ALIAS_MAP: Dict[str, Direction] = {
+ACTION_ALIAS_MAP: dict[str, Direction] = {
     "UP": Direction.UP,
     "W": Direction.UP,
     "ARROW_UP": Direction.UP,
@@ -67,7 +68,7 @@ ACTION_ALIAS_MAP: Dict[str, Direction] = {
     "ARROW_RIGHT": Direction.RIGHT,
 }
 
-TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientation]] = {
+TRANSITION_TABLE: dict[tuple[Orientation, Direction], tuple[int, int, Orientation]] = {
     # 1. STANDING
     (Orientation.STANDING, Direction.UP):    (-2,  0, Orientation.VERTICAL),
     (Orientation.STANDING, Direction.DOWN):  ( 1,  0, Orientation.VERTICAL),
@@ -87,7 +88,7 @@ TRANSITION_TABLE: Dict[Tuple[Orientation, Direction], Tuple[int, int, Orientatio
     (Orientation.VERTICAL, Direction.RIGHT): ( 0,  1, Orientation.VERTICAL),
 }
 
-SINGLE_CUBE_DELTA: Dict[Direction, Tuple[int, int]] = {
+SINGLE_CUBE_DELTA: dict[Direction, tuple[int, int]] = {
     Direction.UP:    (-1,  0),
     Direction.DOWN:  ( 1,  0),
     Direction.LEFT:  ( 0, -1),
@@ -106,9 +107,9 @@ def normalize_action(action: ActionInput) -> Direction:
     raise ValueError(f"Action không hợp lệ: {action}")
 
 
-def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
+def check_occupied_cells(board: Board, state: State) -> tuple[bool, str]:
     """Kiểm tra chi tiết từng ô mà block chiếm giữ trên bàn cờ."""
-    occupied: List[Coordinates] = get_occupied_cells(state)
+    occupied: list[Coordinates] = get_occupied_cells(state)
 
     for r, c in occupied:
         if not board.in_board(r, c):
@@ -130,21 +131,21 @@ def check_occupied_cells(board: Board, state: State) -> Tuple[bool, str]:
 
 
 def is_out_of_bounds(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+    arg1: Board | State, arg2: Board | State | None = None
 ) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_out_of_bounds(state)
 
 
 def is_on_void(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+    arg1: Board | State, arg2: Board | State | None = None
 ) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_on_void(state)
 
 
 def is_valid_move(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+    arg1: Board | State, arg2: Board | State | None = None
 ) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_valid_move(state)
@@ -154,7 +155,7 @@ is_valid_state = is_valid_move
 
 
 def is_goal_state(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
+    arg1: Board | State, arg2: Board | State | None = None
 ) -> bool:
     board, state = _resolve_board_and_state(arg1, arg2)
     return board.is_goal_state(state)
@@ -163,8 +164,8 @@ def is_goal_state(
 def get_next_state(
     state: State,
     action: ActionInput,
-    board: Optional[Board] = None,
-) -> Optional[State]:
+    board: Board | None = None,
+) -> State | None:
     """
     Hàm duy nhất tính trạng thái kế tiếp (đã xóa mọi bản khai báo trùng):
       - Chữ ký chuẩn: get_next_state(state, action, board=None)
@@ -254,9 +255,7 @@ def get_next_state(
     new_bridges = state.active_bridges
     for cell_r, cell_c in candidate_state.get_occupied_cells():
         tile = board.get_tile(cell_r, cell_c)
-        if tile == TileType.SOFT_SWITCH:
-            new_bridges = board.apply_switch((cell_r, cell_c), new_bridges)
-        elif tile == TileType.HEAVY_SWITCH and new_orientation == Orientation.STANDING:
+        if tile == TileType.SOFT_SWITCH or tile == TileType.HEAVY_SWITCH and new_orientation == Orientation.STANDING:
             new_bridges = board.apply_switch((cell_r, cell_c), new_bridges)
         elif tile == TileType.SPLIT_SWITCH and new_orientation == Orientation.STANDING:
             if (cell_r, cell_c) in board.splits:
@@ -305,13 +304,13 @@ def get_next_state(
 
 
 def get_successors(
-    arg1: Union[Board, State], arg2: Optional[Union[Board, State]] = None
-) -> List[Tuple[Union[Direction, str], State]]:
+    arg1: Board | State, arg2: Board | State | None = None
+) -> list[tuple[Direction | str, State]]:
     """
     Sinh danh sách các nước đi hợp lệ (action, next_state).
     """
     board, state = _resolve_board_and_state(arg1, arg2)
-    successors: List[Tuple[Union[Direction, str], State]] = []
+    successors: list[tuple[Direction | str, State]] = []
 
     for direction in Direction:
         next_state = get_next_state(state, direction, board=board)

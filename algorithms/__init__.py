@@ -15,11 +15,11 @@ from algorithms.dfs import DFSSolver
 
 __all__ = [
     "ActionType",
-    "BaseSolver",
-    "Node",
-    "SolveResult",
-    "Solution",
-    "replay_path",
     "BFSSolver",
+    "BaseSolver",
     "DFSSolver",
+    "Node",
+    "Solution",
+    "SolveResult",
+    "replay_path",
 ]

@@ -1,11 +1,12 @@
-from typing import List, Any, Dict, Optional, Tuple
 import json
+from typing import Any
+
 from core.board import (
-    Board, 
-    TileType,
+    Board,
     BridgeAction,
     BridgeMetadata,
-    BridgeMode, 
+    BridgeMode,
+    TileType,
 )
 from core.state import Coordinates
 
@@ -37,9 +38,9 @@ def _parse_coord_str(text: str) -> Coordinates:
         raise ValueError(f"Tọa độ '{text}' không đúng định dạng 'r,c'")
     return (int(parts[0].strip()), int(parts[1].strip()))
 
-def _parse_kv_tokens(tokens: List[str]) -> Dict[str, str]:
+def _parse_kv_tokens(tokens: list[str]) -> dict[str, str]:
     """Chuyển danh sách ['id=a', 'priority=1'] thành dict {'id': 'a', 'priority': '1'}."""
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     for token in tokens:
         if "=" in token:
             k, v = token.split("=", 1)
@@ -47,15 +48,15 @@ def _parse_kv_tokens(tokens: List[str]) -> Dict[str, str]:
     return result
 
 def _parse_metadata_section(
-    meta_lines: List[str],
-    grid: List[List[TileType]],
-    symbols: List[List[str]],
+    meta_lines: list[str],
+    grid: list[list[TileType]],
+    symbols: list[list[str]],
     start_pos: Coordinates,
-) -> Tuple[
-    Dict[Coordinates, List[BridgeAction]],
-    Dict[Coordinates, Tuple[Coordinates, Coordinates]],
-    Dict[str, BridgeMetadata],
-    Dict[str, Any],
+) -> tuple[
+    dict[Coordinates, list[BridgeAction]],
+    dict[Coordinates, tuple[Coordinates, Coordinates]],
+    dict[str, BridgeMetadata],
+    dict[str, Any],
 ]:
     """
     Giải mã phần Metadata
@@ -64,9 +65,9 @@ def _parse_metadata_section(
     rows = len(grid)
     cols = len(grid[0]) if rows > 0 else 0
 
-    bridge_groups: Dict[str, List[Coordinates]] = {}
-    switch_positions: Dict[str, List[Coordinates]] = {}
-    split_positions: List[Coordinates] = []
+    bridge_groups: dict[str, list[Coordinates]] = {}
+    switch_positions: dict[str, list[Coordinates]] = {}
+    split_positions: list[Coordinates] = []
 
     for r in range(rows):
         for c in range(cols):
@@ -82,13 +83,13 @@ def _parse_metadata_section(
 
     # Nếu phần metadata được viết dưới dạng khối JSON
     joined_meta = "\n".join(meta_lines).strip()
-    raw_meta: Dict[str, Any] = {}
+    raw_meta: dict[str, Any] = {}
     if joined_meta.startswith("{") and joined_meta.endswith("}"):
         raw_meta = json.loads(joined_meta)
 
-    bridge_cfg: Dict[str, Dict[str, Any]] = {}
-    switches: Dict[Coordinates, List[BridgeAction]] = {}
-    splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = {}
+    bridge_cfg: dict[str, dict[str, Any]] = {}
+    switches: dict[Coordinates, list[BridgeAction]] = {}
+    splits: dict[Coordinates, tuple[Coordinates, Coordinates]] = {}
 
     # Nếu phần metadata được viết dưới dạng txt
     if not raw_meta:
@@ -124,14 +125,14 @@ def _parse_metadata_section(
 
             elif directive == "SWITCH":
                 # Có thể xác định switch bằng pos=r,c hoặc id=A
-                sw_coords: List[Coordinates] = []
+                sw_coords: list[Coordinates] = []
                 if "pos" in kv:
                     sw_coords = [_parse_coord_str(kv["pos"])]
                 elif "id" in kv and kv["id"] in switch_positions:
                     sw_coords = switch_positions[kv["id"]]
 
                 targets_str = kv.get("targets", "")
-                actions: List[BridgeAction] = []
+                actions: list[BridgeAction] = []
                 for item in targets_str.split(","):
                     if not item.strip():
                         continue
@@ -230,14 +231,14 @@ def _parse_metadata_section(
                     for pos in bridge_groups[target_id]
                 ]
 
-    controlled_by_map: Dict[str, List[Coordinates]] = {b_id: [] for b_id in bridge_groups}
+    controlled_by_map: dict[str, list[Coordinates]] = {b_id: [] for b_id in bridge_groups}
     for sw_pos, act_list in switches.items():
         for act in act_list:
             for b_id, b_cells in bridge_groups.items():
                 if act.target_pos in b_cells and sw_pos not in controlled_by_map[b_id]:
                     controlled_by_map[b_id].append(sw_pos)
 
-    final_bridge_meta: Dict[str, BridgeMetadata] = {}
+    final_bridge_meta: dict[str, BridgeMetadata] = {}
     for rank, b_id in enumerate(sorted_bridge_ids, start=1):
         cfg = bridge_cfg.get(b_id, {})
         cells = cfg.get("cells", tuple(bridge_groups[b_id]))
@@ -255,10 +256,10 @@ def _parse_metadata_section(
 
     raw_meta["bridge_count"] = len(final_bridge_meta)
     return switches, splits, final_bridge_meta, raw_meta
-def parse_level(lines: List[str]) -> Board:
+def parse_level(lines: list[str]) -> Board:
     """Chuyển danh sách dòng chữ thành Board (hỗ trợ cả phần metadata sau '---'). Báo lỗi nếu map sai định dạng."""
-    map_lines: List[str] = []
-    meta_lines: List[str] = []
+    map_lines: list[str] = []
+    meta_lines: list[str] = []
     in_metadata = False
 
     for line in lines:
@@ -275,17 +276,17 @@ def parse_level(lines: List[str]) -> Board:
         raise ValueError("Map rỗng")
 
     width = len(map_lines[0])
-    grid: List[List[TileType]] = []
-    symbols: List[List[str]] = []
-    start_pos: Optional[Coordinates] = None
-    goal_pos: Optional[Coordinates] = None
+    grid: list[list[TileType]] = []
+    symbols: list[list[str]] = []
+    start_pos: Coordinates | None = None
+    goal_pos: Coordinates | None = None
 
     for r, row in enumerate(map_lines):
         if len(row) != width:
             raise ValueError(f"Hàng {r} có độ dài {len(row)}, cần {width}")
 
-        tile_row: List[TileType] = []
-        symbol_row: List[str] = []
+        tile_row: list[TileType] = []
+        symbol_row: list[str] = []
         for c, ch in enumerate(row):
             tile_row.append(classify(ch))
             symbol_row.append(ch)

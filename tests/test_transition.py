@@ -1,9 +1,10 @@
 import unittest
 from pathlib import Path
+
 from core.block import Direction
 from core.board import TileType
 from core.map_loader import load_level, parse_level
-from core.state import Orientation, State, get_occupied_cells
+from core.state import Orientation, State
 from core.transition import (
     check_occupied_cells,
     get_next_state,

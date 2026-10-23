@@ -1,10 +1,20 @@
-from typing import Dict, Tuple
 
 from OpenGL.GL import (
-    glBegin, glEnd, glColor3f, glVertex3f, GL_QUADS,
-    glClearColor, glClear, glLoadIdentity,
-    glGenLists, glNewList, glEndList, glCallList, GL_COMPILE,
-    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
+    GL_COLOR_BUFFER_BIT,
+    GL_COMPILE,
+    GL_DEPTH_BUFFER_BIT,
+    GL_QUADS,
+    glBegin,
+    glCallList,
+    glClear,
+    glClearColor,
+    glColor3f,
+    glEnd,
+    glEndList,
+    glGenLists,
+    glLoadIdentity,
+    glNewList,
+    glVertex3f,
 )
 from OpenGL.GLU import gluLookAt
 
@@ -12,13 +22,13 @@ from core.board import Board, TileType
 from core.state import Orientation, State
 
 # Màu RGB, mỗi kênh trong [0, 1]
-Color = Tuple[float, float, float]
+Color = tuple[float, float, float]
 # Hộp bao (x0, x1, y0, y1, z0, z1): x = cột, y = chiều cao, z = hàng
-Bounds = Tuple[int, int, int, int, int, int]
+Bounds = tuple[int, int, int, int, int, int]
 
 TILE_HEIGHT: float = 0.2
 
-TILE_COLORS: Dict[TileType, Color] = {
+TILE_COLORS: dict[TileType, Color] = {
     TileType.FLOOR: (0.85, 0.85, 0.75),
     TileType.GOAL: (0.3, 0.9, 0.4),
     TileType.FALLING: (0.9, 0.6, 0.4),
@@ -29,7 +39,7 @@ BRIDGE_COLOR: Color = (0.5, 0.5, 0.95)
 BLOCK_COLOR: Color = (0.95, 0.55, 0.1)
 
 # VOID là khoảng trống; BRIDGE chỉ vẽ khi đang mở (lấy từ state.active_bridges)
-SKIPPED_TILES: Tuple[TileType, ...] = (TileType.VOID, TileType.BRIDGE)
+SKIPPED_TILES: tuple[TileType, ...] = (TileType.VOID, TileType.BRIDGE)
 
 
 def draw_box(
