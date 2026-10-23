@@ -3,7 +3,7 @@ def test_game_smoke():
     import pygame
 
     pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+    pygame.display.set_mode((800, 600))
     clock = pygame.time.Clock()
 
     frames_to_simulate = 100

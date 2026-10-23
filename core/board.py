@@ -5,12 +5,12 @@ from core.state import Coordinates, Orientation, State
 
 
 class TileType(Enum):
-    VOID = "."         
-    FLOOR = "F"       
-    GOAL = "T"         
-    FRAGILE = "O"     
-    BRIDGE = "a"     
-    SOFT_SWITCH = "A" 
+    VOID = "."
+    FLOOR = "F"
+    GOAL = "T"
+    FRAGILE = "O"
+    BRIDGE = "a"
+    SOFT_SWITCH = "A"
     HEAVY_SWITCH = "0"
     SPLIT_SWITCH = "U"
 
@@ -81,7 +81,7 @@ class Board:
         symbols: Optional[List[List[str]]] = None,
         start_pos: Coordinates = (0, 0),
         end_pos: Coordinates = (0, 0),
-        initial_active_bridges: Optional[FrozenSet[Coordinates]] = None, 
+        initial_active_bridges: Optional[FrozenSet[Coordinates]] = None,
         switches: Optional[Dict[Coordinates, List[BridgeAction]]] = None,
         splits: Optional[Dict[Coordinates, Tuple[Coordinates, Coordinates]]] = None,
         bridge_metadata: Optional[Dict[str, BridgeMetadata]] = None,

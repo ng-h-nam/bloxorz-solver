@@ -1,6 +1,5 @@
 import unittest
 from core.block import Direction
-from core.board import BridgeMode, TileType
 from core.game import Game, GameStatus
 from core.map_loader import load_coolmath_stage, parse_level
 from core.state import Orientation, State
@@ -171,18 +170,20 @@ class TestBloxorzAdvancedGameMechanics(unittest.TestCase):
         Tách khối tại T -> Khối đơn đè lên đích nhưng chưa thắng -> Đổi khối (SWITCH)
         -> Gộp 2 khối đơn lại thành 1x1x2 -> Lăn dựng đứng vào đích H -> Thắng (GameStatus.WON).
         """
-        board = parse_level({
-            "grid": [
-                "       ",
-                " S.T.H ",
-                " ..... ",
-                " ..... ",
-                "       ",
-            ],
-            "teleports": [
-                [1, 3, 2, 4, 2, 2, 0],
-            ],
-        })
+        board = parse_level(
+            {
+                "grid": [
+                    "       ",
+                    " S.T.H ",
+                    " ..... ",
+                    " ..... ",
+                    "       ",
+                ],
+                "teleports": [
+                    [1, 3, 2, 4, 2, 2, 0],
+                ],
+            }
+        )
         game = Game(board)
         self.assertEqual(game.status, GameStatus.PLAYING)
 
@@ -230,10 +231,18 @@ class TestBloxorzAdvancedGameMechanics(unittest.TestCase):
         stage_08 = load_coolmath_stage(8)
         game = Game(stage_08)
         solution = [
-            "RIGHT", "RIGHT",
-            "DOWN", "DOWN", "DOWN", "RIGHT", "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "DOWN",
+            "DOWN",
+            "DOWN",
+            "RIGHT",
+            "RIGHT",
             "SWITCH",
-            "UP", "UP", "UP", "RIGHT",
+            "UP",
+            "UP",
+            "UP",
+            "RIGHT",
             "RIGHT",
         ]
         game.apply_solution(solution)

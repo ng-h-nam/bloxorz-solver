@@ -34,36 +34,40 @@ class TestBloxorzTransition(unittest.TestCase):
           - board (5x8): tích hợp VOID (' '), FRAGILE ('-'), Soft Switch ('O'),
             Heavy Switch ('X'), Cầu ('b') và Đích ('H').
         """
-        self.open_board = parse_level({
-            "grid": [
-                ".......",
-                ".S.....",
-                ".......",
-                ".......",
-                ".......",
-                ".....H.",
-                ".......",
-            ]
-        })
+        self.open_board = parse_level(
+            {
+                "grid": [
+                    ".......",
+                    ".S.....",
+                    ".......",
+                    ".......",
+                    ".......",
+                    ".....H.",
+                    ".......",
+                ]
+            }
+        )
 
-        self.board = parse_level({
-            "grid": [
-                "        ",
-                " S.-.O. ",
-                " .....X ",
-                " .bbbbH ",
-                "        ",
-            ],
-            "bridges": [
-                [[3, 2], [3, 3]],
-                [[3, 4], [3, 5]],
-            ],
-            "switches": [
-                [1, 5, [[0, "swap"]]],
-                [2, 6, [[1, "swap"]]],
-            ],
-            "teleports": [],
-        })
+        self.board = parse_level(
+            {
+                "grid": [
+                    "        ",
+                    " S.-.O. ",
+                    " .....X ",
+                    " .bbbbH ",
+                    "        ",
+                ],
+                "bridges": [
+                    [[3, 2], [3, 3]],
+                    [[3, 4], [3, 5]],
+                ],
+                "switches": [
+                    [1, 5, [[0, "swap"]]],
+                    [2, 6, [[1, "swap"]]],
+                ],
+                "teleports": [],
+            }
+        )
         set_active_board(self.board)
 
     # =========================================================================
@@ -316,17 +320,19 @@ class TestBloxorzTransition(unittest.TestCase):
         self.assertEqual((step1.r, step1.c, step1.orientation), (3, 4, Orientation.STANDING))
 
         # 5. Trường hợp công tắc đóng cầu ngay dưới chân khối:
-        trap_board = parse_level({
-            "grid": [
-                "      ",
-                " SObH ",
-                " .... ",
-                "      ",
-            ],
-            "bridges": [[[1, 3]]],
-            "switches": [[1, 2, [[0, "swap"]]]],
-            "teleports": [],
-        })
+        trap_board = parse_level(
+            {
+                "grid": [
+                    "      ",
+                    " SObH ",
+                    " .... ",
+                    "      ",
+                ],
+                "bridges": [[[1, 3]]],
+                "switches": [[1, 2, [[0, "swap"]]]],
+                "teleports": [],
+            }
+        )
         s_before_trap = State(2, 2, Orientation.HORIZONTAL, active_bridges=frozenset([(1, 3)]))
         self.assertIsNone(get_next_state(s_before_trap, Direction.UP, board=trap_board))
 
@@ -335,17 +341,19 @@ class TestBloxorzTransition(unittest.TestCase):
     # =========================================================================
     def test_11_split_switch_and_game_lifecycle(self):
         """Kiểm tra tách khối trên ô 'T' (SPLIT_SWITCH), đổi khối (SWITCH), gộp khối và class Game."""
-        split_board = parse_level({
-            "grid": [
-                "        ",
-                " S..T.H ",
-                " ...... ",
-                "        ",
-            ],
-            "bridges": [],
-            "switches": [],
-            "teleports": [[1, 4, 1, 3, 1, 5, 0]],
-        })
+        split_board = parse_level(
+            {
+                "grid": [
+                    "        ",
+                    " S..T.H ",
+                    " ...... ",
+                    "        ",
+                ],
+                "bridges": [],
+                "switches": [],
+                "teleports": [[1, 4, 1, 3, 1, 5, 0]],
+            }
+        )
         game = Game(split_board)
         self.assertEqual(game.status, GameStatus.PLAYING)
 

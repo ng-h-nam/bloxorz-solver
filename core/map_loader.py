@@ -102,7 +102,7 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
     grid: List[List[TileType]] = []
     symbols: List[List[str]] = []
     start_pos: Optional[Coordinates] = None
-    end_pos  : Optional[Coordinates] = None
+    end_pos: Optional[Coordinates] = None
 
     soft_sw_counter = 0
     heavy_sw_counter = 0
@@ -174,9 +174,7 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
         coords_tuple = tuple(coords)
         bridge_cells_by_id[b_id] = coords_tuple
         # Trong coolmath.json, cầu ký hiệu bằng 'B' (in hoa) là mở sẵn khi bắt đầu màn chơi
-        is_open = bool(coords_tuple) and all(
-            padded_grid_lines[br][bc] == "B" for br, bc in coords_tuple
-        )
+        is_open = bool(coords_tuple) and all(padded_grid_lines[br][bc] == "B" for br, bc in coords_tuple)
         bridge_initial_open_by_id[b_id] = is_open
         if is_open:
             initial_open_cells.update(coords_tuple)
@@ -185,9 +183,7 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
     # Mỗi phần tử có dạng: [r, c, [[bridge_idx, mode_str], ...]]
     raw_switches = stage_data.get("switches", [])
     switches: Dict[Coordinates, List[BridgeAction]] = {}
-    controlled_by_map: Dict[str, List[Coordinates]] = {
-        b_id: [] for b_id in bridge_cells_by_id
-    }
+    controlled_by_map: Dict[str, List[Coordinates]] = {b_id: [] for b_id in bridge_cells_by_id}
 
     for sw_entry in raw_switches:
         if len(sw_entry) < 3:
@@ -201,14 +197,16 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
             if len(spec) < 2:
                 raise ValueError(f"Định dạng tác động cầu không hợp lệ: {spec}")
             b_ref = spec[0]
-            b_id = str(b_ref).strip().lower() if isinstance(b_ref, str) and str(b_ref).strip().isalpha() else _bridge_index_to_id(int(b_ref))
+            b_id = (
+                str(b_ref).strip().lower()
+                if isinstance(b_ref, str) and str(b_ref).strip().isalpha()
+                else _bridge_index_to_id(int(b_ref))
+            )
             mode = _parse_bridge_mode(str(spec[1]))
 
             target_cells = bridge_cells_by_id.get(b_id, ())
             for cell in target_cells:
-                actions.append(
-                    BridgeAction(target_pos=cell, mode=mode, bridge_id=b_id)
-                )
+                actions.append(BridgeAction(target_pos=cell, mode=mode, bridge_id=b_id))
             if b_id in controlled_by_map and sw_pos not in controlled_by_map[b_id]:
                 controlled_by_map[b_id].append(sw_pos)
 
@@ -240,17 +238,11 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
     def _estimate_bridge_distance(b_id: str) -> Tuple[int, str]:
         controllers = controlled_by_map.get(b_id, [])
         if controllers:
-            min_dist = min(
-                abs(sr - start_pos[0]) + abs(sc - start_pos[1])
-                for sr, sc in controllers
-            )
+            min_dist = min(abs(sr - start_pos[0]) + abs(sc - start_pos[1]) for sr, sc in controllers)
             return (min_dist, b_id)
         cells = bridge_cells_by_id.get(b_id, ())
         if cells:
-            min_dist = min(
-                abs(br - start_pos[0]) + abs(bc - start_pos[1])
-                for br, bc in cells
-            )
+            min_dist = min(abs(br - start_pos[0]) + abs(bc - start_pos[1]) for br, bc in cells)
             return (min_dist, b_id)
         return (0, b_id)
 
@@ -321,23 +313,27 @@ def resolve_coolmath_path(filepath: Optional[str] = None) -> str:
 
     candidates: List[str] = []
     if filepath:
-        candidates.extend([
-            filepath,
-            os.path.join(project_root, filepath),
-            os.path.join(project_root, "data", "maps", os.path.basename(filepath)),
-            os.path.join(project_root, "data", os.path.basename(filepath)),
-            os.path.join(home_dir, "Downloads", os.path.basename(filepath)),
-        ])
+        candidates.extend(
+            [
+                filepath,
+                os.path.join(project_root, filepath),
+                os.path.join(project_root, "data", "maps", os.path.basename(filepath)),
+                os.path.join(project_root, "data", os.path.basename(filepath)),
+                os.path.join(home_dir, "Downloads", os.path.basename(filepath)),
+            ]
+        )
 
-    candidates.extend([
-        os.path.join(project_root, "data", "maps", "coolmath.json"),
-        os.path.join(project_root, "data", "coolmath.json"),
-        os.path.join(project_root, "coolmath.json"),
-        os.path.join("data", "maps", "coolmath.json"),
-        os.path.join("data", "coolmath.json"),
-        "coolmath.json",
-        os.path.join(home_dir, "Downloads", "coolmath.json"),
-    ])
+    candidates.extend(
+        [
+            os.path.join(project_root, "data", "maps", "coolmath.json"),
+            os.path.join(project_root, "data", "coolmath.json"),
+            os.path.join(project_root, "coolmath.json"),
+            os.path.join("data", "maps", "coolmath.json"),
+            os.path.join("data", "coolmath.json"),
+            "coolmath.json",
+            os.path.join(home_dir, "Downloads", "coolmath.json"),
+        ]
+    )
 
     for candidate in candidates:
         if os.path.isfile(candidate):
@@ -368,9 +364,7 @@ def _select_stage_from_list(
     if isinstance(stage, int):
         if 1 <= stage <= len(stages_list):
             return stages_list[stage - 1]
-        raise ValueError(
-            f"Số thứ tự màn chơi {stage} nằm ngoài phạm vi (1..{len(stages_list)})."
-        )
+        raise ValueError(f"Số thứ tự màn chơi {stage} nằm ngoài phạm vi (1..{len(stages_list)}).")
 
     query = str(stage).strip()
     if not query:
