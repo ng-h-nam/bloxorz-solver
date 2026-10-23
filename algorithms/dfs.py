@@ -1,20 +1,16 @@
-"""
-Thuật toán DFS (Depth-First Search).
-"""
+"""Thuật toán DFS (Depth-First Search)."""
 
 import os
-import sys
-from typing import List, Optional, Set
-
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
 
 from algorithms.base_solver import BaseSolver, Node, SolveResult
 from core.board import Board
 from core.map_loader import load_level
 from core.state import State
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+# if PROJECT_ROOT not in sys.path:
+#     sys.path.insert(0, PROJECT_ROOT)
 
 
 class DFSSolver(BaseSolver):

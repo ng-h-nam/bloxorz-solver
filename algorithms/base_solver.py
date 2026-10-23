@@ -2,11 +2,15 @@
 Base Solver: Bộ khung chuẩn cho các thuật toán giải bài toán Bloxorz.
 
 Bao gồm:
-1. Node: Biểu diễn một nút trong không gian tìm kiếm, hỗ trợ truy ngược đường đi và so sánh độ ưu tiên.
-2. SolveResult (Solution): Chứa toàn diện kết quả tìm kiếm gồm chuỗi hành động, trạng thái,
-   thời gian thực thi (time.perf_counter), bộ nhớ đỉnh (tracemalloc), số nút đã mở rộng, kích thước frontier lớn nhất.
-3. replay_path: Hàm phát lại chuỗi hành động trên core để kiểm tra tính hợp lệ và xác nhận khối đến đích.
-4. BaseSolver: Abstract Base Class quản lý cấu hình giới hạn (node_limit, time_limit), đo lường hiệu năng và các thao tác cốt lõi.
+1. Node: Biểu diễn một nút trong không gian tìm kiếm, hỗ trợ truy ngược đường đi
+và so sánh độ ưu tiên.
+2. SolveResult (Solution): Chứa toàn diện kết quả tìm kiếm gồm chuỗi hành động,
+trạng thái, thời gian thực thi (time.perf_counter), bộ nhớ đỉnh (tracemalloc),
+số nút đã mở rộng, kích thước frontier lớn nhất.
+3. replay_path: Hàm phát lại chuỗi hành động trên core để kiểm tra tính hợp lệ
+và xác nhận khối đến đích.
+4. BaseSolver: Abstract Base Class quản lý cấu hình giới hạn (node_limit, time_limit),
+đo lường hiệu năng và các thao tác cốt lõi.
 """
 
 import time
@@ -14,9 +18,7 @@ import tracemalloc
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-import time
-import tracemalloc
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional
 
 from core.block import Direction
 from core.board import Board
@@ -171,7 +173,8 @@ class SolveResult:
         return (
             f"Trạng thái: {self.status} | Thắng: {self.is_solved} | Số bước: {self.cost} | "
             f"Số nút mở rộng: {self.nodes_explored} | Kích thước frontier max: {self.max_frontier_size} | "
-            f"Thời gian: {self.execution_time * 1000:.3f} ms | Bộ nhớ đỉnh: {self.memory_kb:.2f} KB ({self.memory_mb:.4f} MB)"
+            f"Thời gian: {self.execution_time * 1000:.3f} ms | "
+            f"Bộ nhớ đỉnh: {self.memory_kb:.2f} KB ({self.memory_mb:.4f} MB)"
         )
 
 
