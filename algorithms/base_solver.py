@@ -235,7 +235,7 @@ def replay_path(
         return (
             True,
             states,
-            f"Phát lại thành công {len(actions)} bước di chuyển: Khối đứng thẳng tại ô đích T{board.goal_pos}.",
+            f"Phát lại thành công {len(actions)} bước di chuyển: Khối đứng thẳng tại ô đích T{board.end_pos}.",
         )
 
     return (

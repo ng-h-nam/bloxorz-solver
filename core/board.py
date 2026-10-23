@@ -5,13 +5,12 @@ from core.state import Coordinates, Orientation, State
 
 
 class TileType(Enum):
-    VOID = "."
-    FLOOR = "F"
-    GOAL = "T"
-    FRAGILE = "O"
-    FALLING = "O"  # Alias tương thích ngược cho GUI / test
-    BRIDGE = "a"
-    SOFT_SWITCH = "A"
+    VOID = "."         
+    FLOOR = "F"       
+    GOAL = "T"         
+    FRAGILE = "O"     
+    BRIDGE = "a"     
+    SOFT_SWITCH = "A" 
     HEAVY_SWITCH = "0"
     SPLIT_SWITCH = "U"
 
@@ -24,11 +23,11 @@ class BridgeMode(Enum):
     @classmethod
     def from_str(cls, text: str) -> "BridgeMode":
         t = text.strip().lower()
-        if t in ("onoff", "toggle", "switch"):
+        if t in ("onoff", "toggle", "switch", "swap"):
             return cls.TOGGLE
-        if t in ("on", "open", "enable"):
+        if t in ("on", "open", "enable", "permanent", "permanent_open"):
             return cls.OPEN
-        if t in ("off", "close", "disable"):
+        if t in ("off", "close", "disable", "permanent_close"):
             return cls.CLOSE
         raise ValueError(f"Chế độ cầu không hợp lệ: '{text}'")
 
@@ -82,8 +81,7 @@ class Board:
         symbols: Optional[List[List[str]]] = None,
         start_pos: Coordinates = (0, 0),
         end_pos: Coordinates = (0, 0),
-        goal_pos: Optional[Coordinates] = None,
-        initial_active_bridges: Optional[FrozenSet[Coordinates]] = None,
+        initial_active_bridges: Optional[FrozenSet[Coordinates]] = None, 
         switches: Optional[Dict[Coordinates, List[BridgeAction]]] = None,
         splits: Optional[Dict[Coordinates, Tuple[Coordinates, Coordinates]]] = None,
         bridge_metadata: Optional[Dict[str, BridgeMetadata]] = None,
@@ -97,7 +95,7 @@ class Board:
         self.height = self.rows
         self.width = self.cols
         self.start_pos = start_pos
-        self.end_pos = goal_pos if goal_pos is not None else end_pos
+        self.end_pos = end_pos
 
         if symbols is not None:
             self.symbols = symbols
@@ -128,15 +126,6 @@ class Board:
             if b_meta.initial_open:
                 open_cells.update(b_meta.cells)
         self.initial_active_bridges: FrozenSet[Coordinates] = frozenset(open_cells)
-
-    @property
-    def goal_pos(self) -> Coordinates:
-        """Tương thích ngược cho các module gọi board.goal_pos."""
-        return self.end_pos
-
-    @goal_pos.setter
-    def goal_pos(self, value: Coordinates) -> None:
-        self.end_pos = value
 
     def _collect_bridge_groups(self) -> Dict[str, List[Coordinates]]:
         """Gom các tọa độ ô cầu có cùng ký tự định danh ('a'..'z') thành từng cụm cầu."""

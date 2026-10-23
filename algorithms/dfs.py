@@ -17,7 +17,7 @@ from core.map_loader import load_level
 from core.state import State
 
 
-class DFS(BaseSolver):
+class DFSSolver(BaseSolver):
     """Thuật toán Depth-First Search (DFS) có kiểm soát chu trình."""
 
     def __init__(
@@ -154,7 +154,7 @@ def run_dfs_experiments(map_paths: List[str]) -> None:
         board = load_level(map_path)
 
         # 1. Chạy DFS
-        dfs_solver = DFS(board, max_depth=1000)
+        dfs_solver = DFSSolver(board, max_depth=1000)
         dfs_res = dfs_solver.solve()
         if dfs_res.is_solved:
             valid, _, msg = dfs_solver.replay(dfs_res.actions)

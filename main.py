@@ -4,7 +4,7 @@ from core.game import Game
 from core.map_loader import load_level
 from gui.window import Window
 
-LEVEL_FILE = os.path.join("data", "maps", "level11.txt")
+LEVEL_FILE = os.path.join("data", "maps", "coolmath.json")
 
 
 def main():
