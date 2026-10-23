@@ -1,53 +1,57 @@
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 import pygame
 from OpenGL.GL import (
+    GL_BLEND,
+    GL_DEPTH_TEST,
+    GL_LINEAR,
+    GL_MODELVIEW,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_PROJECTION,
+    GL_QUADS,
+    GL_RGBA,
+    GL_SRC_ALPHA,
+    GL_TEXTURE_2D,
+    GL_TEXTURE_MAG_FILTER,
+    GL_TEXTURE_MIN_FILTER,
+    GL_UNSIGNED_BYTE,
     glBegin,
-    glEnd,
+    glBindTexture,
+    glBlendFunc,
     glColor3f,
     glColor4f,
-    glVertex2f,
-    glTexCoord2f,
-    GL_QUADS,
+    glDisable,
+    glEnable,
+    glEnd,
     glGenTextures,
-    glBindTexture,
+    glLoadIdentity,
+    glMatrixMode,
+    glOrtho,
+    glPopMatrix,
+    glPushMatrix,
+    glTexCoord2f,
     glTexImage2D,
     glTexParameteri,
-    glEnable,
-    glDisable,
-    glBlendFunc,
-    GL_BLEND,
-    GL_SRC_ALPHA,
-    GL_ONE_MINUS_SRC_ALPHA,
-    GL_TEXTURE_2D,
-    GL_RGBA,
-    GL_UNSIGNED_BYTE,
-    GL_TEXTURE_MIN_FILTER,
-    GL_TEXTURE_MAG_FILTER,
-    GL_LINEAR,
-    GL_DEPTH_TEST,
-    glMatrixMode,
-    glPushMatrix,
-    glPopMatrix,
-    glLoadIdentity,
-    glOrtho,
-    GL_PROJECTION,
-    GL_MODELVIEW,
+    glVertex2f,
 )
 
 from gui.level_picker import MAX_VISIBLE_ROWS, LevelPicker
+from gui.passcode_prompt import PasscodePrompt
 
 # Màu chữ của pygame: số nguyên 0..255
-RGB = Tuple[int, int, int]
+RGB = tuple[int, int, int]
 # Màu tô của OpenGL: số thực 0..1
-Color3 = Tuple[float, float, float]
+Color3 = tuple[float, float, float]
 # Tọa độ hoặc kích thước tính bằng pixel
-Pixel = Tuple[int, int]
+Pixel = tuple[int, int]
 
 FONT_PATH: str = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts", "DejaVuSans.ttf"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "assets",
+    "fonts",
+    "DejaVuSans.ttf",
 )
 FONT_SIZE: int = 22
 SMALL_FONT_SIZE: int = 17
@@ -58,13 +62,13 @@ PANEL_PADDING: int = 16
 TITLE_Y: int = 16
 INFO_TOP: int = 52
 INFO_STEP: int = 28
-INFO_COUNT: int = 5
-BUTTON_TOP: int = 204
+INFO_COUNT: int = 6
+BUTTON_TOP: int = 232
 BUTTON_STEP: int = 44
 BUTTON_WIDTH: int = 180
 BUTTON_HEIGHT: int = 36
-MESSAGE_TOP: int = 344
-MAX_MESSAGE_LINES: int = 4
+MESSAGE_TOP: int = 372
+MAX_MESSAGE_LINES: int = 3
 PANEL_BG: Color3 = (0.11, 0.11, 0.17)
 
 BANNER_HEIGHT: int = 230
@@ -80,9 +84,11 @@ BUTTON_COLOR: Color3 = (0.25, 0.25, 0.35)
 BUTTON_DISABLED_COLOR: Color3 = (0.15, 0.15, 0.18)
 PICKER_BOX_COLOR: Color3 = (0.14, 0.14, 0.22)
 PICKER_SELECTED_COLOR: Color3 = (0.28, 0.28, 0.45)
+PROMPT_FOOTER: str = "Enter: xác nhận  -  Backspace: xóa  -  Esc: quay lại"
+PROMPT_BOX_SIZE: tuple[int, int] = (520, 220)
 PICKER_FOOTER: str = "Lên/Xuống: chọn  -  Enter: vào  -  Esc: đóng"
 
-HELP_LINES: List[str] = [
+HELP_LINES: list[str] = [
     "Mũi tên / WASD: lăn khối",
     "Phím cách: đổi khối khi đang tách",
     "R: chơi lại",
@@ -103,6 +109,7 @@ class HudData:
     orientation: str
     status: str
     elapsed: float
+    passcode: str = ""
 
 
 @dataclass
@@ -163,9 +170,9 @@ def _fill_rect_alpha(rect: pygame.Rect, color: Color3, alpha: float, window_heig
     _quad(rect, window_height)
 
 
-def wrap_text(font: pygame.font.Font, text: str, max_width: int) -> List[str]:
+def wrap_text(font: pygame.font.Font, text: str, max_width: int) -> list[str]:
     """Ngắt chữ thành nhiều dòng, mỗi dòng không rộng quá max_width điểm ảnh."""
-    lines: List[str] = []
+    lines: list[str] = []
     line = ""
     for word in text.split():
         trial = word if not line else line + " " + word
@@ -186,8 +193,8 @@ class TextLabel:
     def __init__(self, font: pygame.font.Font, color: RGB = TEXT_COLOR) -> None:
         self.font: pygame.font.Font = font
         self.color: RGB = color
-        self.text: Optional[str] = None
-        self.texture: Optional[int] = None
+        self.text: str | None = None
+        self.texture: int | None = None
         self.size: Pixel = (0, 0)
 
     def set_color(self, color: RGB) -> None:
@@ -208,7 +215,17 @@ class TextLabel:
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.size[0], self.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA,
+            self.size[0],
+            self.size[1],
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            data,
+        )
 
     def draw(self, x: int, y: int, window_height: int) -> None:
         """x, y là pixel gốc trên-trái của chữ."""
@@ -240,12 +257,12 @@ class Button:
         self,
         rect: pygame.Rect,
         text: str,
-        action: Optional[str],
+        action: str | None,
         font: pygame.font.Font,
         enabled: bool,
     ) -> None:
         self.rect: pygame.Rect = rect
-        self.action: Optional[str] = action
+        self.action: str | None = action
         self.enabled: bool = enabled
         color = TEXT_COLOR if enabled else DISABLED_TEXT_COLOR
         self.label: TextLabel = TextLabel(font, color)
@@ -264,14 +281,19 @@ class ControlPanel:
 
         self.title: TextLabel = TextLabel(font)
         self.title.set_text("Bloxorz")
-        self.info_lines: List[TextLabel] = [TextLabel(font) for _ in range(INFO_COUNT)]
-        self.message_lines: List[TextLabel] = [TextLabel(font, MESSAGE_COLOR) for _ in range(MAX_MESSAGE_LINES)]
+        self.info_lines: list[TextLabel] = [TextLabel(font) for _ in range(INFO_COUNT)]
+        self.message_lines: list[TextLabel] = [TextLabel(font, MESSAGE_COLOR) for _ in range(MAX_MESSAGE_LINES)]
         self._message: str = ""
-        self._wrapped: List[str] = []
+        self._wrapped: list[str] = []
 
-        self.buttons: List[Button] = [
+        self.buttons: list[Button] = [
             Button(
-                pygame.Rect(PANEL_PADDING, BUTTON_TOP + i * BUTTON_STEP, BUTTON_WIDTH, BUTTON_HEIGHT),
+                pygame.Rect(
+                    PANEL_PADDING,
+                    BUTTON_TOP + i * BUTTON_STEP,
+                    BUTTON_WIDTH,
+                    BUTTON_HEIGHT,
+                ),
                 text,
                 action,
                 font,
@@ -287,7 +309,7 @@ class ControlPanel:
         ]
 
         help_width = PANEL_WIDTH - 2 * PANEL_PADDING
-        self.help_labels: List[TextLabel] = []
+        self.help_labels: list[TextLabel] = []
         for line in HELP_LINES:
             for part in wrap_text(small, line, help_width):
                 label = TextLabel(small, HELP_COLOR)
@@ -295,15 +317,20 @@ class ControlPanel:
                 self.help_labels.append(label)
 
         self.banner_title: TextLabel = TextLabel(big)
-        self.banner_lines: List[TextLabel] = [TextLabel(font) for _ in range(3)]
-        self.banner_hints: List[TextLabel] = [TextLabel(small, HELP_COLOR) for _ in range(2)]
+        self.banner_lines: list[TextLabel] = [TextLabel(font) for _ in range(3)]
+        self.banner_hints: list[TextLabel] = [TextLabel(small, HELP_COLOR) for _ in range(2)]
 
         self.picker_title: TextLabel = TextLabel(font)
         self.picker_title.set_text("Chọn màn")
-        self.picker_rows: List[TextLabel] = [TextLabel(font) for _ in range(MAX_VISIBLE_ROWS)]
+        self.picker_rows: list[TextLabel] = [TextLabel(font) for _ in range(MAX_VISIBLE_ROWS)]
         self.picker_footer: TextLabel = TextLabel(small, HELP_COLOR)
 
-    def handle_click(self, pos: Pixel) -> Optional[str]:
+        self.prompt_title: TextLabel = TextLabel(font)
+        self.prompt_digits: TextLabel = TextLabel(big)
+        self.prompt_error: TextLabel = TextLabel(font, LOSE_COLOR)
+        self.prompt_footer: TextLabel = TextLabel(small, HELP_COLOR)
+
+    def handle_click(self, pos: Pixel) -> str | None:
         """Trả về tên hành động của nút được bấm, hoặc None."""
         for button in self.buttons:
             if button.enabled and button.rect.collidepoint(pos):
@@ -320,6 +347,7 @@ class ControlPanel:
             f"Orientation: {hud.orientation}",
             f"Trạng thái: {hud.status}",
             f"Thời gian: {format_elapsed(hud.elapsed)}",
+            f"Mật khẩu: {hud.passcode or '-'}",
         ]
         for label, text in zip(self.info_lines, lines):
             label.set_text(text)
@@ -355,7 +383,12 @@ class ControlPanel:
         center_x = PANEL_WIDTH + view_w // 2
         top = (self.height - BANNER_HEIGHT) // 2
         _begin_overlay(self.width, self.height)
-        _fill_rect_alpha(pygame.Rect(PANEL_WIDTH, top, view_w, BANNER_HEIGHT), (0.0, 0.0, 0.0), 0.62, self.height)
+        _fill_rect_alpha(
+            pygame.Rect(PANEL_WIDTH, top, view_w, BANNER_HEIGHT),
+            (0.0, 0.0, 0.0),
+            0.62,
+            self.height,
+        )
 
         self.banner_title.set_color(banner.color)
         self.banner_title.set_text(banner.title)
@@ -370,13 +403,27 @@ class ControlPanel:
         hints = wrap_text(self.small_font, banner.hint, text_width)[:2]
         for i, label in enumerate(self.banner_hints):
             label.set_text(hints[i] if i < len(hints) else "")
-            label.draw_centered(center_x, top + BANNER_HEIGHT - 52 + i * self.small_font.get_linesize(), self.height)
+            label.draw_centered(
+                center_x,
+                top + BANNER_HEIGHT - 52 + i * self.small_font.get_linesize(),
+                self.height,
+            )
         _end_overlay()
 
-    def draw_picker(self, picker: LevelPicker, current_index: int) -> None:
+    def draw_picker(
+        self,
+        picker: LevelPicker,
+        current_index: int,
+        is_unlocked: Callable[[int], bool] | None = None,
+    ) -> None:
         box, rows = picker.layout(self.width, self.height)
         _begin_overlay(self.width, self.height)
-        _fill_rect_alpha(pygame.Rect(0, 0, self.width, self.height), (0.0, 0.0, 0.0), 0.55, self.height)
+        _fill_rect_alpha(
+            pygame.Rect(0, 0, self.width, self.height),
+            (0.0, 0.0, 0.0),
+            0.55,
+            self.height,
+        )
         _fill_rect(box, PICKER_BOX_COLOR, self.height)
 
         start, end = picker.visible_range()
@@ -386,7 +433,11 @@ class ControlPanel:
                 continue
             if index == picker.selected:
                 _fill_rect(rows[i], PICKER_SELECTED_COLOR, self.height)
-            name = picker.names[index] + ("  (đang chơi)" if index == current_index else "")
+            name = picker.names[index]
+            if index == current_index:
+                name += "  (đang chơi)"
+            elif is_unlocked is not None and not is_unlocked(index):
+                name += "  (khóa)"
             label.set_text(name)
             label.draw(rows[i].x + 8, rows[i].y + (rows[i].h - label.size[1]) // 2, self.height)
 
@@ -394,4 +445,31 @@ class ControlPanel:
         self.picker_title.draw(box.x + 16, box.y + 10, self.height)
         self.picker_footer.set_text(PICKER_FOOTER)
         self.picker_footer.draw(box.x + 16, box.bottom - 28, self.height)
+        _end_overlay()
+
+    def draw_prompt(self, prompt: PasscodePrompt) -> None:
+        """Hộp nhập mật khẩu của một màn bị khóa, nằm giữa cửa sổ."""
+        box = pygame.Rect(0, 0, *PROMPT_BOX_SIZE)
+        box.center = (self.width // 2, self.height // 2)
+        _begin_overlay(self.width, self.height)
+        _fill_rect_alpha(
+            pygame.Rect(0, 0, self.width, self.height),
+            (0.0, 0.0, 0.0),
+            0.55,
+            self.height,
+        )
+        _fill_rect(box, PICKER_BOX_COLOR, self.height)
+
+        self.prompt_title.set_text(f"Nhập mật khẩu của {prompt.title}")
+        self.prompt_title.draw_centered(box.centerx, box.y + 18, self.height)
+
+        slots = list(prompt.text) + ["_"] * (prompt.max_length - len(prompt.text))
+        self.prompt_digits.set_text(" ".join(slots))
+        self.prompt_digits.draw_centered(box.centerx, box.y + 68, self.height)
+
+        self.prompt_error.set_text(prompt.error)
+        self.prompt_error.draw_centered(box.centerx, box.y + 134, self.height)
+
+        self.prompt_footer.set_text(PROMPT_FOOTER)
+        self.prompt_footer.draw_centered(box.centerx, box.bottom - 34, self.height)
         _end_overlay()

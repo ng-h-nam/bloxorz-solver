@@ -68,8 +68,12 @@ Dự án sử dụng **Ruff** và **Pytest** tích hợp trên GitHub Actions (C
 
 ```bash
 pip install ruff pytest pytest-cov
-ruff format .              # Tự động format
-ruff check --fix .         # Kiểm tra lỗi cú pháp/logic
+
+ruff check . --fix
+ruff format .
+ruff check .            # còn lỗi nào thì sửa tay
+ruff format --check .   # phải sạch, giống bước CI
+
 python -m pytest tests/    # Chạy thử unit test trên Window
 # python3 -m pytest tests/ neu dang dung linux
 
