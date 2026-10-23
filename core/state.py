@@ -1,13 +1,15 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-Coordinates = tuple[int, int]
+Coordinates = Tuple[int, int]
+
 
 class Orientation(Enum):
     STANDING = "STANDING"
     HORIZONTAL = "HORIZONTAL"
     VERTICAL = "VERTICAL"
     SPLIT = "SPLIT"
+
 
 @dataclass(frozen=True)
 class State:
@@ -27,12 +29,11 @@ class State:
     split_pos: Coordinates | None = None
     active_cube: int = 0
 
-   
     def is_split(self) -> bool:
         """Trả về trạng thái hiện tại xem có đang bị chia đôi hay không?"""
         return self.orientation == Orientation.SPLIT and self.split_pos is not None
-    
-    def get_occupied_cells(self) -> list[Coordinates]:
+
+    def get_occupied_cells(self) -> List[Coordinates]:
         """Trả về danh sách các ô (r, c) mà khối đang đè lên ở trạng thái này."""
         if self.orientation == Orientation.STANDING:
             return [(self.r, self.c)]
@@ -60,7 +61,7 @@ class State:
 
     def switch_active_cube(self) -> "State":
         """Chuyển sự điều khiển của người chơi sang cho khối kia (qua lại giữa 2 khối 0 và 1).
-           Trong game, ta sử dụng phím cách (SpaceBar) để chuyển đổi việc điều khiển 2 khối này."""
+        Trong game, ta sử dụng phím cách (SpaceBar) để chuyển đổi việc điều khiển 2 khối này."""
 
         if not self.is_split():
             return self
@@ -104,7 +105,6 @@ class State:
 
         return self
 
-
     def is_standing_at(self, pos: Coordinates) -> bool:
         """Kiểm tra khối có đang đứng thẳng tại đúng tọa độ pos hay không."""
         return self.orientation == Orientation.STANDING and (self.r, self.c) == pos
@@ -129,16 +129,18 @@ class State:
         if not isinstance(other, State):
             return NotImplemented
         return self.to_key() < other.to_key()
-# nhớ import state thì gọi hàm cho chuẩn nha mấy bạn
 
+
+# nhớ import state thì gọi hàm cho chuẩn nha mấy bạn
 
 
 # đây là hàm phụ trợ, khi import state không cần gọi thêm self. gì gì đó, chỉ cần from state import... là dùng dc luôn nha
 # assisted by antigravity
 
-def get_occupied_cells(state: State) -> list[Coordinates]:
+
+def get_occupied_cells(state: State) -> List[Coordinates]:
     return state.get_occupied_cells()
 
-def state_key(state: State) -> tuple:
+
+def state_key(state: State) -> Tuple:
     return state.to_key()
-    

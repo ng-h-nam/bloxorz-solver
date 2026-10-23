@@ -1,106 +1,378 @@
+# tests/test_transition.py
 import unittest
-from pathlib import Path
-
 from core.block import Direction
 from core.board import TileType
-from core.map_loader import load_level, parse_level
-from core.state import Orientation, State
+from core.game import Game, GameStatus, MoveResult
+from core.map_loader import parse_level
+from core.state import Orientation, State, state_key
 from core.transition import (
-    check_occupied_cells,
     get_next_state,
     is_goal_state,
-    is_valid_state,
+    is_on_void,
+    is_out_of_bounds,
+    is_valid_move,
+    roll_block,
+    set_active_board,
 )
 
-# Tự động tìm file level0.txt trong project
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-POSSIBLE_PATHS = [
-    PROJECT_ROOT / "level0.txt",
-    PROJECT_ROOT / "maps" / "level0.txt",
-    Path("level0.txt"),
-]
 
+class TestBloxorzTransition(unittest.TestCase):
+    """
+    Bộ kiểm thử toàn diện theo yêu cầu bảng phân công (tests/test_transition.py):
+      1. 12 phép lăn (3 tư thế STANDING, HORIZONTAL, VERTICAL x 4 hướng UP, DOWN, LEFT, RIGHT).
+      2. Rơi ra ngoài biên (out of board) và rơi vào ô trống (VOID).
+      3. Chỉ thắng khi đứng thẳng (STANDING) trên ô đích (H / end_pos).
+      4. Ô gạch mỏng '-' (FRAGILE): đứng thẳng thì rơi (vỡ gạch), nằm ngang/dọc thì an toàn.
+      5. Công tắc Soft Switch ('O') và Heavy Switch ('X').
+      6. Cầu (Bridge 'b'/'B') khi đang đóng và khi đã mở (kể cả trường hợp cầu sập dưới khối).
+    """
 
-class TestIntegrationWithMapLoader(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        """Sử dụng trực tiếp load_level / parse_level từ core/map_loader.py của Thuật."""
-        txt_path = next((p for p in POSSIBLE_PATHS if p.exists()), None)
-        if txt_path is not None:
-            cls.board = load_level(str(txt_path))
-        else:
-            cls.board = parse_level([
-                ".....",
-                ".SFF.",
-                ".FFF.",
-                ".FTF.",
-                ".FFF.",
-                ".....",
-            ])
+    def setUp(self):
+        """
+        Khởi tạo 2 bản đồ phục vụ kiểm thử theo định dạng coolmath.json:
+          - open_board (7x7 toàn gạch '.'): dùng để kiểm thử trọn vẹn 12 phép lăn tại tâm (2, 2).
+          - board (5x8): tích hợp VOID (' '), FRAGILE ('-'), Soft Switch ('O'),
+            Heavy Switch ('X'), Cầu ('b') và Đích ('H').
+        """
+        self.open_board = parse_level(
+            {
+                "grid": [
+                    ".......",
+                    ".S.....",
+                    ".......",
+                    ".......",
+                    ".......",
+                    ".....H.",
+                    ".......",
+                ]
+            }
+        )
 
-    def test_map_loader_compatibility(self):
-        """Kiểm tra Board nhận đúng grid, symbols, start_pos, goal_pos từ map_loader.py."""
-        self.assertEqual((self.board.rows, self.board.cols), (6, 5))
-        self.assertEqual(self.board.start_pos, (1, 1))
-        self.assertEqual(self.board.goal_pos, (3, 2))
-        self.assertEqual(self.board.get_symbol(1, 1), "S")
-        self.assertEqual(self.board.get_symbol(3, 2), "T")
-        self.assertEqual(self.board.get_tile(1, 1), TileType.FLOOR)
-        self.assertEqual(self.board.get_tile(3, 2), TileType.GOAL)
-        self.assertEqual(self.board.get_tile(0, 0), TileType.VOID)
+        self.board = parse_level(
+            {
+                "grid": [
+                    "        ",
+                    " S.-.O. ",
+                    " .....X ",
+                    " .bbbbH ",
+                    "        ",
+                ],
+                "bridges": [
+                    [[3, 2], [3, 3]],
+                    [[3, 4], [3, 5]],
+                ],
+                "switches": [
+                    [1, 5, [[0, "swap"]]],
+                    [2, 6, [[1, "swap"]]],
+                ],
+                "teleports": [],
+            }
+        )
+        set_active_board(self.board)
 
-    def test_round_trip_no_coordinate_drift(self):
-        """Kiểm tra lăn đi rồi lăn ngược lại không bị lệch tọa độ khi đổi hướng."""
-        opposite = {
-            Direction.UP: Direction.DOWN,
-            Direction.DOWN: Direction.UP,
-            Direction.LEFT: Direction.RIGHT,
-            Direction.RIGHT: Direction.LEFT,
-        }
-        for orient in Orientation:
-            s = State(r=2, c=2, orientation=orient)
-            for d in Direction:
-                moved = get_next_state(s, d)
-                returned = get_next_state(moved, opposite[d])
-                self.assertEqual(s, returned)
+    # =========================================================================
+    # 1. KIỂM THỬ 12 PHÉP LĂN CƠ BẢN (3 ORIENTATIONS x 4 DIRECTIONS)
+    # =========================================================================
+    def test_01_standing_4_transitions(self):
+        """Kiểm tra 4 phép lăn (UP, DOWN, LEFT, RIGHT) khi khối đang STANDING tại (2, 2)."""
+        s = State(2, 2, Orientation.STANDING)
 
-    def test_level0_boundary_cases(self):
-        """Kiểm tra biên tại S(1, 1) và trạng thái nửa trong nửa ngoài trên level0.txt."""
-        start_state = State(*self.board.start_pos, Orientation.STANDING)
-        # Lăn UP hoặc LEFT từ (1, 1) sẽ rơi vào viền '.' (VOID)
-        self.assertIsNone(get_next_state(start_state, Direction.UP, self.board))
-        self.assertIsNone(get_next_state(start_state, Direction.LEFT, self.board))
+        # Lăn UP: ngả dọc lên trên, chiếm (0, 2) và (1, 2) -> neo tại (0, 2)
+        self.assertEqual(
+            get_next_state(s, Direction.UP, self.open_board),
+            State(0, 2, Orientation.VERTICAL),
+        )
+        # Lăn DOWN: ngả dọc xuống dưới, chiếm (3, 2) và (4, 2) -> neo tại (3, 2)
+        self.assertEqual(
+            get_next_state(s, Direction.DOWN, self.open_board),
+            State(3, 2, Orientation.VERTICAL),
+        )
+        # Lăn LEFT: ngả ngang sang trái, chiếm (2, 0) và (2, 1) -> neo tại (2, 0)
+        self.assertEqual(
+            get_next_state(s, Direction.LEFT, self.open_board),
+            State(2, 0, Orientation.HORIZONTAL),
+        )
+        # Lăn RIGHT: ngả ngang sang phải, chiếm (2, 3) và (2, 4) -> neo tại (2, 3)
+        self.assertEqual(
+            get_next_state(s, Direction.RIGHT, self.open_board),
+            State(2, 3, Orientation.HORIZONTAL),
+        )
 
-        # Trạng thái nằm ngang tại (1, 3) chiếm (1, 3)='F' và (1, 4)='.' -> Không hợp lệ
-        half_hanging = State(1, 3, Orientation.HORIZONTAL)
-        self.assertFalse(is_valid_state(self.board, half_hanging))
+    def test_02_horizontal_4_transitions(self):
+        """Kiểm tra 4 phép lăn khi khối đang HORIZONTAL tại (2, 2) [chiếm (2, 2) và (2, 3)]."""
+        s = State(2, 2, Orientation.HORIZONTAL)
 
-    def test_falling_orange_tile_with_map_loader(self):
-        """Kiểm tra ô gạch mỏng 'O' (TileType.FALLING) theo quy ước trong map_loader.py."""
-        board_with_falling = parse_level([
-            ".....",
-            ".SOF.",
-            ".FFT.",
-            ".....",
-        ])
-        # Nằm ngang đè lên (1, 2)='O' và (1, 3)='F' -> Hợp lệ
-        s_lying = State(1, 2, Orientation.HORIZONTAL)
-        self.assertTrue(is_valid_state(board_with_falling, s_lying))
+        # Lăn UP: lăn ngang lên 1 hàng -> HORIZONTAL tại (1, 2)
+        self.assertEqual(
+            get_next_state(s, Direction.UP, self.open_board),
+            State(1, 2, Orientation.HORIZONTAL),
+        )
+        # Lăn DOWN: lăn ngang xuống 1 hàng -> HORIZONTAL tại (3, 2)
+        self.assertEqual(
+            get_next_state(s, Direction.DOWN, self.open_board),
+            State(3, 2, Orientation.HORIZONTAL),
+        )
+        # Lăn LEFT: dựng đứng dậy ở ô bên trái -> STANDING tại (2, 1)
+        self.assertEqual(
+            get_next_state(s, Direction.LEFT, self.open_board),
+            State(2, 1, Orientation.STANDING),
+        )
+        # Lăn RIGHT: dựng đứng dậy ở ô bên phải -> STANDING tại (2, 4)
+        self.assertEqual(
+            get_next_state(s, Direction.RIGHT, self.open_board),
+            State(2, 4, Orientation.STANDING),
+        )
 
-        # Đứng thẳng tại (1, 2)='O' -> Bị sập (Không hợp lệ)
-        s_standing = State(1, 2, Orientation.STANDING)
-        valid, msg = check_occupied_cells(board_with_falling, s_standing)
-        self.assertFalse(valid)
-        self.assertIn("FALLING", msg)
+    def test_03_vertical_4_transitions(self):
+        """Kiểm tra 4 phép lăn khi khối đang VERTICAL tại (2, 2) [chiếm (2, 2) và (3, 2)]."""
+        s = State(2, 2, Orientation.VERTICAL)
 
-    def test_solve_level0_in_7_moves(self):
-        """Kiểm tra 7 bước di chuyển thắng màn level0.txt."""
-        state = State(*self.board.start_pos, Orientation.STANDING)
-        moves = ["RIGHT", "DOWN", "DOWN", "LEFT", "UP", "RIGHT", "DOWN"]
-        for move in moves:
-            state = get_next_state(state, move, self.board)
-            self.assertIsNotNone(state)
-        self.assertTrue(is_goal_state(self.board, state))
+        # Lăn UP: dựng đứng dậy ở ô phía trên -> STANDING tại (1, 2)
+        self.assertEqual(
+            get_next_state(s, Direction.UP, self.open_board),
+            State(1, 2, Orientation.STANDING),
+        )
+        # Lăn DOWN: dựng đứng dậy ở ô phía dưới -> STANDING tại (4, 2)
+        self.assertEqual(
+            get_next_state(s, Direction.DOWN, self.open_board),
+            State(4, 2, Orientation.STANDING),
+        )
+        # Lăn LEFT: lăn dọc sang trái 1 cột -> VERTICAL tại (2, 1)
+        self.assertEqual(
+            get_next_state(s, Direction.LEFT, self.open_board),
+            State(2, 1, Orientation.VERTICAL),
+        )
+        # Lăn RIGHT: lăn dọc sang phải 1 cột -> VERTICAL tại (2, 3)
+        self.assertEqual(
+            get_next_state(s, Direction.RIGHT, self.open_board),
+            State(2, 3, Orientation.VERTICAL),
+        )
+
+    # =========================================================================
+    # 2. KIỂM THỬ RƠI RA NGOÀI BÀN CỜ (OUT OF BOARD) VÀ RƠI VÀO VOID
+    # =========================================================================
+    def test_04_fall_out_of_board_bounds(self):
+        """Kiểm tra khối lăn vượt ra ngoài kích thước ma trận bàn cờ (5x8)."""
+        start_state = State(1, 1, Orientation.STANDING)
+
+        # Đứng tại (1, 1) lăn UP -> đòi chiếm (-1, 1) và (0, 1) -> (-1, 1) vượt biên trên
+        raw_up = roll_block(start_state, Direction.UP)
+        self.assertTrue(is_out_of_bounds(self.board, raw_up))
+        self.assertFalse(is_valid_move(self.board, raw_up))
+        self.assertIsNone(get_next_state(start_state, Direction.UP, board=self.board))
+
+        # Đứng tại (1, 1) lăn LEFT -> đòi chiếm (1, -1) và (1, 0) -> (1, -1) vượt biên trái
+        raw_left = roll_block(start_state, Direction.LEFT)
+        self.assertTrue(is_out_of_bounds(self.board, raw_left))
+        self.assertIsNone(get_next_state(start_state, Direction.LEFT, board=self.board))
+
+    def test_05_fall_into_void_full_and_partial(self):
+        """Kiểm tra khối rơi hoàn toàn vào VOID hoặc nửa trên gạch - nửa trên VOID."""
+        # 1. Rơi hoàn toàn vào VOID: Đang VERTICAL tại (1, 1) [chiếm (1,1) và (2,1)],
+        # lăn LEFT sẽ sang (1, 0) và (2, 0) đều là ô trống (VOID) nằm trong biên ma trận
+        s_vert = State(1, 1, Orientation.VERTICAL)
+        raw_void = roll_block(s_vert, Direction.LEFT)
+        self.assertFalse(is_out_of_bounds(self.board, raw_void))
+        self.assertTrue(is_on_void(self.board, raw_void))
+        self.assertFalse(is_valid_move(self.board, raw_void))
+        self.assertIsNone(get_next_state(s_vert, Direction.LEFT, board=self.board))
+
+        # 2. Nửa trong nửa ngoài (Partial void): HORIZONTAL tại (1, 6) chiếm (1, 6)='.' và (1, 7)=' '
+        half_void = State(1, 6, Orientation.HORIZONTAL)
+        self.assertTrue(is_on_void(self.board, half_void))
+        self.assertFalse(is_valid_move(self.board, half_void))
+
+    # =========================================================================
+    # 3. KIỂM THỬ ĐIỀU KIỆN THẮNG: CHỈ THẮNG KHI ĐỨNG THẲNG TRÊN ĐÍCH (H)
+    # =========================================================================
+    def test_06_win_only_when_standing_on_goal(self):
+        """Chỉ thắng khi STANDING tại đích H(3, 6). Nằm ngang/dọc đè lên H chưa thắng."""
+        goal_r, goal_c = self.board.end_pos
+        self.assertEqual((goal_r, goal_c), (3, 6))
+
+        # Đứng thẳng trên đích -> Thắng (True)
+        win_state = State(goal_r, goal_c, Orientation.STANDING)
+        self.assertTrue(is_goal_state(self.board, win_state))
+
+        # Nằm ngang hoặc nằm dọc đè qua ô (3, 6) -> Chưa thắng (False)
+        lying_states = [
+            State(3, 5, Orientation.HORIZONTAL),  # Chiếm (3, 5) và (3, 6)
+            State(3, 6, Orientation.HORIZONTAL),  # Chiếm (3, 6) và (3, 7)
+            State(2, 6, Orientation.VERTICAL),  # Chiếm (2, 6) và (3, 6)
+            State(3, 6, Orientation.VERTICAL),  # Chiếm (3, 6) và (4, 6)
+        ]
+        for st in lying_states:
+            self.assertIn((goal_r, goal_c), st.get_occupied_cells())
+            self.assertFalse(is_goal_state(self.board, st))
+
+    # =========================================================================
+    # 4. KIỂM THỬ Ô GẠCH MỎNG '-' (FRAGILE): ĐỨNG THÌ RƠI, NẰM THÌ AN TOÀN
+    # =========================================================================
+    def test_07_fragile_tile_standing_breaks_lying_safe(self):
+        """
+        Ô '-' (TileType.FRAGILE) tại tọa độ (1, 3):
+          - Đứng thẳng (STANDING) tại (1, 3) -> Gạch vỡ, nước đi không hợp lệ (None).
+          - Nằm ngang (HORIZONTAL) tại (1, 2)-(1, 3) hoặc nằm dọc (VERTICAL) tại (1, 3)-(2, 3) -> An toàn.
+        """
+        self.assertEqual(self.board.get_tile(1, 3), TileType.FRAGILE)
+
+        # Từ (1, 1) HORIZONTAL [chiếm (1,1) và (1,2)], nếu lăn RIGHT sẽ STANDING tại (1, 3)='-' -> Bị chặn (None)
+        horiz_before_o = State(1, 1, Orientation.HORIZONTAL)
+        self.assertIsNone(get_next_state(horiz_before_o, Direction.RIGHT, board=self.board))
+        self.assertFalse(is_valid_move(self.board, State(1, 3, Orientation.STANDING)))
+
+        # Từ (2, 2) HORIZONTAL [chiếm (2,2) và (2,3)], lăn UP sẽ HORIZONTAL tại (1, 2)-(1, 3) -> An toàn!
+        horiz_below = State(2, 2, Orientation.HORIZONTAL)
+        safe_horiz = get_next_state(horiz_below, Direction.UP, board=self.board)
+        self.assertIsNotNone(safe_horiz)
+        self.assertEqual(safe_horiz, State(1, 2, Orientation.HORIZONTAL))
+        self.assertTrue(is_valid_move(self.board, safe_horiz))
+
+        # Nằm dọc đè lên (1, 3) và (2, 3) -> An toàn!
+        safe_vert = State(1, 3, Orientation.VERTICAL)
+        self.assertTrue(is_valid_move(self.board, safe_vert))
+
+    # =========================================================================
+    # 5. KIỂM THỬ CÔNG TẮC SOFT SWITCH ('O') VÀ HEAVY SWITCH ('X')
+    # =========================================================================
+    def test_08_soft_switch_triggers_both_standing_and_lying(self):
+        """
+        Soft Switch 'O' tại (1, 5) điều khiển cầu 0 [(3, 2), (3, 3)]:
+          - Kích hoạt ngay cả khi khối NẰM đè lên (1, 5).
+          - Kích hoạt khi khối ĐỨNG THẲNG tại (1, 5).
+        """
+        bridge_a_cells = frozenset([(3, 2), (3, 3)])
+
+        # 1. Nằm dọc tại (1, 4)-(2, 4) lăn RIGHT sang VERTICAL tại (1, 5)-(2, 5) -> Chạm 'O' ở tư thế nằm -> Cầu 0 MỞ!
+        s_vert = State(1, 4, Orientation.VERTICAL)
+        after_lying_on_a = get_next_state(s_vert, Direction.RIGHT, board=self.board)
+        self.assertIsNotNone(after_lying_on_a)
+        self.assertEqual(after_lying_on_a.active_bridges, bridge_a_cells)
+
+        # 2. Đứng thẳng vào 'O' tại (1, 5): từ HORIZONTAL tại (1, 3)-(1, 4) lăn RIGHT -> STANDING tại (1, 5)
+        # Vì cầu 0 đang mở (từ bước trên), kích hoạt swap lần nữa sẽ ĐÓNG cầu 0
+        s_horiz_with_open_a = State(1, 3, Orientation.HORIZONTAL, active_bridges=bridge_a_cells)
+        after_standing_on_a = get_next_state(s_horiz_with_open_a, Direction.RIGHT, board=self.board)
+        self.assertIsNotNone(after_standing_on_a)
+        self.assertEqual(after_standing_on_a.orientation, Orientation.STANDING)
+        self.assertEqual(after_standing_on_a.active_bridges, frozenset())
+
+    def test_09_heavy_switch_triggers_only_when_standing(self):
+        """
+        Heavy Switch 'X' tại (2, 6) điều khiển cầu 1 [(3, 4), (3, 5)]:
+          - Nằm ngang/dọc đè lên (2, 6) -> KHÔNG kích hoạt.
+          - Đứng thẳng (STANDING) tại (2, 6) -> Kích hoạt mở/đóng cầu 1.
+        """
+        bridge_b_cells = frozenset([(3, 4), (3, 5)])
+
+        # 1. Nằm ngang tại (1, 5)-(1, 6) lăn DOWN sang HORIZONTAL tại (2, 5)-(2, 6)
+        # Dù một nửa khối đè lên (2, 6)='X' nhưng đang HORIZONTAL nên cầu 1 vẫn ĐÓNG
+        s_horiz = State(1, 5, Orientation.HORIZONTAL)
+        after_lying_on_0 = get_next_state(s_horiz, Direction.DOWN, board=self.board)
+        self.assertIsNotNone(after_lying_on_0)
+        self.assertEqual(after_lying_on_0.orientation, Orientation.HORIZONTAL)
+        self.assertEqual(after_lying_on_0.active_bridges, frozenset())
+
+        # 2. Đứng thẳng vào (2, 6)='X': từ HORIZONTAL tại (2, 4)-(2, 5) lăn RIGHT -> STANDING tại (2, 6)
+        # Đủ trọng lượng kích hoạt Heavy Switch 'X' -> Cầu 1 MỞ!
+        s_before_0 = State(2, 4, Orientation.HORIZONTAL)
+        after_standing_on_0 = get_next_state(s_before_0, Direction.RIGHT, board=self.board)
+        self.assertIsNotNone(after_standing_on_0)
+        self.assertEqual(after_standing_on_0.orientation, Orientation.STANDING)
+        self.assertEqual((after_standing_on_0.r, after_standing_on_0.c), (2, 6))
+        self.assertEqual(after_standing_on_0.active_bridges, bridge_b_cells)
+
+    # =========================================================================
+    # 6. KIỂM THỬ CẦU ĐÓNG VÀ CẦU MỞ (BRIDGE CLOSED & OPEN)
+    # =========================================================================
+    def test_10_bridge_closed_blocks_and_open_allows(self):
+        """
+        Kiểm tra di chuyển qua cầu 0 [(3, 2), (3, 3)] và cầu 1 [(3, 4), (3, 5)]:
+          - Khi cầu đóng: khối lăn lên cầu sẽ bị rơi (trả về None).
+          - Khi cầu mở: khối lăn lên cầu hợp lệ.
+          - Khi công tắc đóng sập cầu ngay dưới chân khối: khối bị rơi (trả về None).
+        """
+        bridge_a_cells = frozenset([(3, 2), (3, 3)])
+        bridge_b_cells = frozenset([(3, 4), (3, 5)])
+        all_bridges = bridge_a_cells | bridge_b_cells
+
+        # 1. Cầu 0 đang đóng: từ HORIZONTAL tại (2, 2)-(2, 3) lăn DOWN xuống (3, 2)-(3, 3) -> Rơi (None)
+        s_above_bridge_closed = State(2, 2, Orientation.HORIZONTAL, active_bridges=frozenset())
+        self.assertIsNone(get_next_state(s_above_bridge_closed, Direction.DOWN, board=self.board))
+        self.assertFalse(is_valid_move(self.board, State(3, 2, Orientation.HORIZONTAL)))
+
+        # 2. Cầu 0 đang mở: từ HORIZONTAL tại (2, 2)-(2, 3) lăn DOWN xuống (3, 2)-(3, 3) -> Thành công!
+        s_above_bridge_open = State(2, 2, Orientation.HORIZONTAL, active_bridges=bridge_a_cells)
+        on_bridge_a = get_next_state(s_above_bridge_open, Direction.DOWN, board=self.board)
+        self.assertIsNotNone(on_bridge_a)
+        self.assertEqual(
+            on_bridge_a,
+            State(3, 2, Orientation.HORIZONTAL, active_bridges=bridge_a_cells),
+        )
+
+        # 3. Cầu 0 mở nhưng cầu 1 còn đóng: từ (3, 2)-(3, 3) lăn RIGHT sang STANDING tại (3, 4) -> Rơi (None)
+        self.assertIsNone(get_next_state(on_bridge_a, Direction.RIGHT, board=self.board))
+
+        # 4. Cả cầu 0 và cầu 1 đều mở: từ (3, 2)-(3, 3) HORIZONTAL lăn RIGHT -> STANDING tại (3, 4)
+        s_all_open = State(3, 2, Orientation.HORIZONTAL, active_bridges=all_bridges)
+        step1 = get_next_state(s_all_open, Direction.RIGHT, board=self.board)  # STANDING tại (3, 4)
+        self.assertIsNotNone(step1)
+        self.assertEqual((step1.r, step1.c, step1.orientation), (3, 4, Orientation.STANDING))
+
+        # 5. Trường hợp công tắc đóng cầu ngay dưới chân khối:
+        trap_board = parse_level(
+            {
+                "grid": [
+                    "      ",
+                    " SObH ",
+                    " .... ",
+                    "      ",
+                ],
+                "bridges": [[[1, 3]]],
+                "switches": [[1, 2, [[0, "swap"]]]],
+                "teleports": [],
+            }
+        )
+        s_before_trap = State(2, 2, Orientation.HORIZONTAL, active_bridges=frozenset([(1, 3)]))
+        self.assertIsNone(get_next_state(s_before_trap, Direction.UP, board=trap_board))
+
+    # =========================================================================
+    # 7. KIỂM THỬ BỔ SUNG: Ô TÁCH KHỐI ('T') & VÒNG ĐỜI GAME
+    # =========================================================================
+    def test_11_split_switch_and_game_lifecycle(self):
+        """Kiểm tra tách khối trên ô 'T' (SPLIT_SWITCH), đổi khối (SWITCH), gộp khối và class Game."""
+        split_board = parse_level(
+            {
+                "grid": [
+                    "        ",
+                    " S..T.H ",
+                    " ...... ",
+                    "        ",
+                ],
+                "bridges": [],
+                "switches": [],
+                "teleports": [[1, 4, 1, 3, 1, 5, 0]],
+            }
+        )
+        game = Game(split_board)
+        self.assertEqual(game.status, GameStatus.PLAYING)
+
+        # Lăn RIGHT 2 lần từ (1, 1) để đứng thẳng trên ô 'T' tại (1, 4) -> Tách thành 2 khối đơn tại (1, 3) và (1, 5)
+        game.move(Direction.RIGHT)
+        outcome = game.move(Direction.RIGHT)
+        self.assertEqual(outcome.result, MoveResult.OK)
+        self.assertTrue(game.state.is_split())
+        self.assertEqual(set(game.state.get_occupied_cells()), {(1, 3), (1, 5)})
+
+        # Đổi quyền điều khiển sang khối đơn thứ 2 và di chuyển lại gần để tự động gộp thành khối 1x1x2
+        game.switch_cube()
+        self.assertEqual(game.state.active_cube, 1)
+        game.move(
+            Direction.LEFT
+        )  # Khối (1, 5) sang (1, 4), kề với (1, 3) -> Tự động gộp thành HORIZONTAL (1, 3)-(1, 4)
+        self.assertFalse(game.state.is_split())
+        self.assertEqual(game.state.orientation, Orientation.HORIZONTAL)
+        self.assertEqual(state_key(game.state)[:3], (1, 3, "HORIZONTAL"))
 
 
 if __name__ == "__main__":

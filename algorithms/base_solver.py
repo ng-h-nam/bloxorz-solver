@@ -14,7 +14,9 @@ import tracemalloc
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Optional
+import time
+import tracemalloc
+from typing import List, Optional, Sequence, Tuple, Union
 
 from core.block import Direction
 from core.board import Board
@@ -29,6 +31,7 @@ from core.transition import (
 ActionType = Direction | str
 
 # 1. BIỂU DIỄN NÚT TÌM KIẾM (SEARCH TREE NODE)
+
 
 class Node:
     """
@@ -95,6 +98,7 @@ class Node:
 
 # 2. KẾT QUẢ TÌM KIẾM (SOLUTION)
 
+
 @dataclass
 class SolveResult:
     """
@@ -111,8 +115,9 @@ class SolveResult:
         is_solved: True nếu tìm ra nghiệm hợp lệ tới đích, False nếu thất bại hoặc vượt giới hạn.
         status: Chuỗi thông báo trạng thái ("SOLVED", "NO_SOLUTION", "NODE_LIMIT_EXCEEDED", "TIME_LIMIT_EXCEEDED").
     """
-    actions: list[ActionType] = field(default_factory=list)
-    states: list[State] = field(default_factory=list)
+
+    actions: List[ActionType] = field(default_factory=list)
+    states: List[State] = field(default_factory=list)
     cost: int = 0
     nodes_explored: int = 0
     max_frontier_size: int = 0
@@ -169,10 +174,12 @@ class SolveResult:
             f"Thời gian: {self.execution_time * 1000:.3f} ms | Bộ nhớ đỉnh: {self.memory_kb:.2f} KB ({self.memory_mb:.4f} MB)"
         )
 
+
 Solution = SolveResult
 
 
 # 3. HÀM PHÁT LẠI ĐƯỜNG ĐI TRÊN CORE ĐỂ KIỂM TRA (REPLAY PATH)
+
 
 def replay_path(
     board: Board,
@@ -235,7 +242,7 @@ def replay_path(
         return (
             True,
             states,
-            f"Phát lại thành công {len(actions)} bước di chuyển: Khối đứng thẳng tại ô đích T{board.goal_pos}.",
+            f"Phát lại thành công {len(actions)} bước di chuyển: Khối đứng thẳng tại ô đích T{board.end_pos}.",
         )
 
     return (
@@ -246,6 +253,7 @@ def replay_path(
 
 
 # 4. ABSTRACT BASE SOLVER CHO TẤT CẢ CÁC THUẬT TOÁN
+
 
 class BaseSolver(ABC):
     """
@@ -287,9 +295,7 @@ class BaseSolver(ABC):
             )
 
         if not self.is_valid(self.initial_state):
-            raise ValueError(
-                f"Trạng thái xuất phát không hợp lệ trên bản đồ: {self.initial_state}"
-            )
+            raise ValueError(f"Trạng thái xuất phát không hợp lệ trên bản đồ: {self.initial_state}")
 
         self.node_limit: int | None = node_limit
         self.time_limit: float | None = time_limit

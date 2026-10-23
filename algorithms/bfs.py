@@ -2,7 +2,7 @@
 
 import os
 import sys
-from collections import deque
+from typing import List, Optional, Set
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
@@ -169,7 +169,5 @@ def run_bfs_experiments(map_paths: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    test_maps = [
-        os.path.join(PROJECT_ROOT, "data", "maps", f"level{i}.txt") for i in range(4)
-    ]
+    test_maps = [os.path.join(PROJECT_ROOT, "data", "maps", f"level{i}.txt") for i in range(4)]
     run_bfs_experiments(test_maps)
