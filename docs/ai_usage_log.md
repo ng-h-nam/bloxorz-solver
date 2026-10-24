@@ -1,4 +1,4 @@
-# **Dự án:** Blozxor Solver — Môn CSC14003 (Cơ sở Trí tuệ Nhân tạo) 
+# **Dự án:** Bloxorz Solver — Môn CSC14003 (Cơ sở Trí tuệ Nhân tạo) 
 ---
 
 ## 📌 1. CHÍNH SÁCH SỬ DỤNG AI CỦA NHÓM
