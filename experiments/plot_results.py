@@ -14,9 +14,7 @@ def main():
     log_file = os.path.join(base_dir, "data", "logs", "results.csv")
 
     if not os.path.exists(log_file):
-        print(
-            f"⚠️ Chưa tìm thấy file log kết quả tại {log_file}. Hãy chạy run_experiments.py trước!"
-        )
+        print(f"⚠️ Chưa tìm thấy file log kết quả tại {log_file}. Hãy chạy run_experiments.py trước!")
         return
 
     # Đọc dữ liệu CSV bằng Pandas
@@ -46,9 +44,7 @@ def main():
 
     # 2. Biểu đồ so sánh Bộ nhớ đỉnh (Peak Memory)
     ax2 = axes[0, 1]
-    df_success.groupby("algorithm")["peak_memory"].mean().plot(
-        kind="bar", ax=ax2, color="salmon", edgecolor="black"
-    )
+    df_success.groupby("algorithm")["peak_memory"].mean().plot(kind="bar", ax=ax2, color="salmon", edgecolor="black")
     ax2.set_title("Bộ nhớ đỉnh trung bình (MB)")
     ax2.set_xlabel("Thuật toán")
     ax2.set_ylabel("Memory (MB)")
@@ -81,7 +77,7 @@ def main():
     output_img_dir = os.path.join(base_dir, "data", "logs", "plots")
     os.makedirs(output_img_dir, exist_ok=True)
     output_img_path = os.path.join(output_img_dir, "algorithm_comparison.png")
-    
+
     plt.savefig(output_img_path, dpi=300)
     print(f"🎉 Đã vẽ biểu đồ thành công! File lưu tại: {output_img_path}")
 

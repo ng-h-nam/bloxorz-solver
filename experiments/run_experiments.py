@@ -1,8 +1,6 @@
 import os
 import sys
 import csv
-import time
-import tracemalloc
 from datetime import datetime
 
 # python -m experiments.run_experiments
@@ -13,6 +11,7 @@ Tự động duyệt qua tất cả các file bản đồ trong thư mục data/
 chạy các thuật toán tìm kiếm sẵn có (BFS, DFS), đo lường chỉ số và ghi log vào CSV.
 """
 
+
 def run_single_experiment(solver_cls, board_map, map_name, log_file_path):
     """
     Chạy 1 thuật toán trên 1 bản đồ cụ thể, đo lường chỉ số và ghi log.
@@ -21,16 +20,16 @@ def run_single_experiment(solver_cls, board_map, map_name, log_file_path):
     try:
         # Khởi tạo instance của solver bằng cách truyền board_map vào
         solver_instance = solver_cls(board_map)
-        
+
         # Gọi hàm solve() không tham số để nhận về đối tượng SolveResult
         result = solver_instance.solve()
-        
+
         success = result.is_solved
         expanded_nodes = result.nodes_explored
         execution_time = result.execution_time
-        peak_memory_mb = result.peak_memory / (1024 * 1024) if hasattr(result, 'peak_memory') else 0.0
+        peak_memory_mb = result.peak_memory / (1024 * 1024) if hasattr(result, "peak_memory") else 0.0
         solution_length = result.cost if success else 0
-        
+
     except Exception as e:
         expanded_nodes = 0
         success = False
@@ -78,6 +77,7 @@ def run_single_experiment(solver_cls, board_map, map_name, log_file_path):
         f"  ├─ [{solver_name:<10}] {status_str} | Time: {execution_time:.4f}s | Mem: {peak_memory_mb:.2f}MB | Nodes: {expanded_nodes} | Steps: {solution_length}"
     )
 
+
 def main():
     # Xác định đường dẫn tương đối từ thư mục root của Source
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -103,15 +103,17 @@ def main():
 
     # Chỉ định rõ ràng danh sách class solver muốn test (chỉ BFS và DFS)
     solvers_cls = []
-    
+
     try:
         from algorithms.bfs import BFSSolver
+
         solvers_cls.append(BFSSolver)
     except ImportError:
         print("💡 Chú ý: Không tìm thấy module BFSSolver trong package algorithms.")
 
     try:
         from algorithms.dfs import DFSSolver
+
         solvers_cls.append(DFSSolver)
     except ImportError:
         print("💡 Chú ý: Không tìm thấy module DFSSolver trong package algorithms.")
@@ -134,6 +136,7 @@ def main():
             # Nếu file map là coolmath.json tổng hợp nhiều màn, có thể load theo danh sách hoặc từng stage
             if map_file == "coolmath.json":
                 from core.map_loader import load_coolmath_levels
+
                 boards_dict = load_coolmath_levels(map_path)
                 board_maps = boards_dict
             else:
@@ -145,9 +148,9 @@ def main():
 
         # Xử lý trường hợp nạp danh sách màn chơi từ coolmath.json
         items_to_run = board_maps if isinstance(board_maps, list) else list(board_maps)
-        
+
         for idx, board_map in enumerate(items_to_run):
-            current_map_name = f"{map_file}_stage_{idx+1}" if map_file == "coolmath.json" else map_file
+            current_map_name = f"{map_file}_stage_{idx + 1}" if map_file == "coolmath.json" else map_file
             for SolverClass in solvers_cls:
                 try:
                     # Truyền trực tiếp SolverClass vào hàm thực nghiệm
