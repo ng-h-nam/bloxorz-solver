@@ -1,6 +1,6 @@
+import csv
 import os
 import sys
-import csv
 import time
 import tracemalloc
 from datetime import datetime
