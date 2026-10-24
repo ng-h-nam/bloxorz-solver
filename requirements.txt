@@ -1,4 +1,11 @@
-pygame==2.6.1
+pygame-ce==2.5.8
 PyOpenGL==3.1.10
-PyOpenGL_accelerate==3.1.10
-pytest>=7.3.0
+PyOpenGL_accelerate==3.1.10 
+
+# test
+pytest==9.1.1
+
+numpy==2.4.0
+
+# For CI
+ruff==0.17.1
