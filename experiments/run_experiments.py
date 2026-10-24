@@ -5,37 +5,40 @@ import time
 import tracemalloc
 from datetime import datetime
 
+# python -m experiments.run_experiments
+
 """
 Script tự động chạy thực nghiệm (Batch Testing) cho dự án Bloxorz Solver.
 Tự động duyệt qua tất cả các file bản đồ trong thư mục data/maps/,
-chạy 4 thuật toán tìm kiếm (BFS, DFS, UCS, A*), đo lường chỉ số và ghi log vào CSV.
+chạy các thuật toán tìm kiếm sẵn có (BFS, DFS), đo lường chỉ số và ghi log vào CSV.
 """
 
-# Import giả định các Solvers từ gói algorithms nếu chạy trong dự án
-
-
-def run_single_experiment(solver, board_map, map_name, log_file_path):
+def run_single_experiment(solver_cls, board_map, map_name, log_file_path):
     """
     Chạy 1 thuật toán trên 1 bản đồ cụ thể, đo lường chỉ số và ghi log.
     """
-    tracemalloc.start()
-    start_time = time.perf_counter()
-
+    solver_name = solver_cls.__name__  # Lấy tên của class Solver chính xác
     try:
-        # Gọi hàm solve của thuật toán (trả về path, expanded_nodes, success)
-        path, expanded_nodes, success = solver.solve(board_map)
+        # Khởi tạo instance của solver bằng cách truyền board_map vào
+        solver_instance = solver_cls(board_map)
+        
+        # Gọi hàm solve() không tham số để nhận về đối tượng SolveResult
+        result = solver_instance.solve()
+        
+        success = result.is_solved
+        expanded_nodes = result.nodes_explored
+        execution_time = result.execution_time
+        peak_memory_mb = result.peak_memory / (1024 * 1024) if hasattr(result, 'peak_memory') else 0.0
+        solution_length = result.cost if success else 0
+        
     except Exception as e:
-        path = None
         expanded_nodes = 0
         success = False
-        print(f"  ❌ Lỗi khi chạy {solver.name} trên {map_name}: {e}")
+        execution_time = 0.0
+        peak_memory_mb = 0.0
+        solution_length = 0
+        print(f"  ❌ Lỗi khi chạy {solver_name} trên {map_name}: {e}")
 
-    execution_time = time.perf_counter() - start_time
-    _, peak_mem_bytes = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
-
-    peak_memory_mb = peak_mem_bytes / (1024 * 1024)
-    solution_length = len(path) if (path and success) else 0
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Ghi nối kết quả vào CSV
@@ -61,7 +64,7 @@ def run_single_experiment(solver, board_map, map_name, log_file_path):
             [
                 timestamp,
                 map_name,
-                getattr(solver, "name", solver.__class__.__name__),
+                solver_name,
                 success,
                 f"{execution_time:.6f}",
                 f"{peak_memory_mb:.4f}",
@@ -72,9 +75,8 @@ def run_single_experiment(solver, board_map, map_name, log_file_path):
 
     status_str = "✅ Success" if success else "❌ Failed"
     print(
-        f"  ├─ [{getattr(solver, 'name', solver.__class__.__name__):<4}] {status_str} | Time: {execution_time:.4f}s | Mem: {peak_memory_mb:.2f}MB | Nodes: {expanded_nodes} | Steps: {solution_length}"
+        f"  ├─ [{solver_name:<10}] {status_str} | Time: {execution_time:.4f}s | Mem: {peak_memory_mb:.2f}MB | Nodes: {expanded_nodes} | Steps: {solution_length}"
     )
-
 
 def main():
     # Xác định đường dẫn tương đối từ thư mục root của Source
@@ -99,19 +101,29 @@ def main():
         print("⚠️ Không tìm thấy file map (.json / .txt) nào trong thư mục data/maps/!")
         sys.exit(0)
 
-    # Thử import các Solvers từ package algorithms
+    # Chỉ định rõ ràng danh sách class solver muốn test (chỉ BFS và DFS)
+    solvers_cls = []
+    
     try:
         from algorithms.bfs import BFSSolver
-        from algorithms.dfs import DFSSolver
-
-        # from algorithms.ucs import UCSSolver
-        # from algorithms.astar import AStarSolver
-        from core.map_loader import load_map
-
-        solvers_cls = [BFSSolver, DFSSolver, UCSSolver, AStarSolver]
+        solvers_cls.append(BFSSolver)
     except ImportError:
-        print("💡 Chú ý: Chưa tìm thấy đầy đủ các class Solver thực tế trong package algorithms.")
-        print("   Script được cấu trúc sẵn để chạy khi TV1-TV4 hoàn thiện mã nguồn.")
+        print("💡 Chú ý: Không tìm thấy module BFSSolver trong package algorithms.")
+
+    try:
+        from algorithms.dfs import DFSSolver
+        solvers_cls.append(DFSSolver)
+    except ImportError:
+        print("💡 Chú ý: Không tìm thấy module DFSSolver trong package algorithms.")
+
+    try:
+        from core.map_loader import load_level
+    except ImportError as e:
+        print(f"❌ Không thể import load_level từ core.map_loader: {e}")
+        return
+
+    if not solvers_cls:
+        print("❌ Không có thuật toán nào được nạp thành công để chạy thực nghiệm.")
         return
 
     for map_file in map_files:
@@ -119,17 +131,32 @@ def main():
         print(f"\n🎮 Thử nghiệm trên Map: {map_file}")
 
         try:
-            board_map = load_map(map_path)
+            # Nếu file map là coolmath.json tổng hợp nhiều màn, có thể load theo danh sách hoặc từng stage
+            if map_file == "coolmath.json":
+                from core.map_loader import load_coolmath_levels
+                boards_dict = load_coolmath_levels(map_path)
+                board_maps = boards_dict
+            else:
+                board_map = load_level(map_path)
+                board_maps = [board_map]
         except Exception as e:
             print(f"  ❌ Không thể nạp bản đồ {map_file}: {e}")
             continue
 
-        for SolverClass in solvers_cls:
-            solver = SolverClass()
-            run_single_experiment(solver, board_map, map_file, log_file)
+        # Xử lý trường hợp nạp danh sách màn chơi từ coolmath.json
+        items_to_run = board_maps if isinstance(board_maps, list) else list(board_maps)
+        
+        for idx, board_map in enumerate(items_to_run):
+            current_map_name = f"{map_file}_stage_{idx+1}" if map_file == "coolmath.json" else map_file
+            for SolverClass in solvers_cls:
+                try:
+                    # Truyền trực tiếp SolverClass vào hàm thực nghiệm
+                    run_single_experiment(SolverClass, board_map, current_map_name, log_file)
+                except Exception as e:
+                    print(f"  ❌ Lỗi khi chạy thực nghiệm: {e}")
 
     print("\n" + "=" * 70)
-    print(f"🎉 THỰC NGHIỆM HOÀN TẤT! Kết quả đã được lưu vào {log_file}")
+    print(f"THỰC NGHIỆM HOÀN TẤT! Kết quả đã được lưu vào {log_file}")
     print("=" * 70)
 
 

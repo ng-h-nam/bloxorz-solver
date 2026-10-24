@@ -9,3 +9,7 @@ numpy==2.4.0
 
 # For CI
 ruff==0.17.1
+
+# To plot results
+pandas>=2.0.0
+matplotlib>=3.5.0
