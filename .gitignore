@@ -33,3 +33,17 @@ dist/
 # Tool convert image
 texture/
 
+# LaTeX auxiliary files
+*.tex
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.bbl
+*.blg
+report/Resources/
