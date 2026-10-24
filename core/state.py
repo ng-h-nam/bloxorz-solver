@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import FrozenSet, List, Tuple, Optional
 
-Coordinates = Tuple[int, int]
+Coordinates = tuple[int, int]
 
 
 class Orientation(Enum):
