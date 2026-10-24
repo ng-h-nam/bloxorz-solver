@@ -80,6 +80,30 @@ MAX_FRAME_SECONDS: float = 0.1
 
 
 class Window:
+    """Class window chứa toàn bộ giao diện game Bloxorz: cảnh 3D, bảng điều khiển, hộp chọn màn, hộp nhập mật khẩu.
+        Sự kiện bàn phím, chuột, camera, ván chơi, màn chơi đều được xử lý ở đây.
+    Thuộc tính:
+     - game: ván chơi hiện tại.
+     - level_name: tên màn chơi hiện tại.
+     - width, height: kích thước cửa sổ.
+     - running: cờ chạy vòng lặp chính.
+     - textures: từ điển texture OpenGL.
+     - renderer: đối tượng vẽ cảnh 3D.
+     - panel: bảng điều khiển bên trái.
+     - clock: đồng hồ đo thời gian giữa các frame.
+     - animator: quản lý hoạt cảnh di chuyển khối.
+     - catalog: danh sách các màn chơi.
+     - level_index: chỉ số màn chơi hiện tại trong catalog.
+     - picker: hộp chọn màn.
+     - prompt: hộp nhập mật khẩu.
+     - _next_index: chỉ số màn kế tiếp (nếu có) sau khi thắng
+     - _drag: chế độ kéo chuột (orbit/pan) hoặc None.
+     - _mouse: vị trí chuột hiện tại.
+     - elapsed: thời gian đã chơi (tính bằng giây).
+     - message: thông báo trạng thái ván chơi.
+     - banner: thông báo thắng/thua.
+     - block_visible: cờ hiển thị khối (ẩn khi thắng/thua). 
+    """
     def __init__(
         self,
         game: Game,
