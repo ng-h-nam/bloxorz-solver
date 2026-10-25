@@ -30,7 +30,7 @@ class GameStatus(Enum):
 
 class Game:
     """
-    Quản lý vòng đời và trạng thái của một ván chơi Bloxorz:
+    Quản lý trạng thái của một ván chơi Bloxorz:
     - board: Bản đồ màn chơi hiện tại.
     - state: Trạng thái hiện tại của khối trên bàn cờ.
     - moves: Số bước di chuyển hợp lệ đã thực hiện.
