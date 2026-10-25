@@ -46,4 +46,4 @@ texture/
 *.lot
 *.bbl
 *.blg
-report/Resources/
+docs/Resources/
