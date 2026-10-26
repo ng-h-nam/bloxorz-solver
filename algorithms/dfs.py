@@ -20,7 +20,7 @@ class DFSSolver(BaseSolver):
         self,
         board: Board,
         initial_state: State | None = None,
-        max_depth: int | None = None,
+        max_depth: int | None = 3000,
         node_limit: int | None = None,
         time_limit: float | None = None,
     ) -> None:

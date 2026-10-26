@@ -98,7 +98,7 @@ DFS mở rộng nhánh tìm kiếm sâu nhất có thể dọc theo mỗi nhánh
 
 - **Cấu trúc dữ liệu Frontier:** Ngăn xếp LIFO (`list.append` và `list.pop`).
 - **Kiểm soát chu trình:** Sử dụng `visited: Set[State]` để tránh vòng lặp tuần hoàn giữa các tư thế lật khối.
-- **Giới hạn độ sâu (`max_depth`):** Do không gian trạng thái có thể chứa chu trình hoặc đường đi ngoằn ngoèo vô ích, DFS trong hệ thống được trang bị tham số `max_depth` (mặc định 1000) để cắt tỉa các nhánh đi lạc quá sâu.
+- **Giới hạn độ sâu (`max_depth`):** Do không gian trạng thái có thể chứa chu trình hoặc đường đi ngoằn ngoèo vô ích, DFS trong hệ thống được trang bị tham số `max_depth` (mặc định 3000) để cắt tỉa các nhánh đi lạc quá sâu.
 
 ### 3.2. Đánh giá Lý thuyết
 

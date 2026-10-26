@@ -15,7 +15,7 @@ import tracemalloc
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from core.block import Direction
 from core.board import Board

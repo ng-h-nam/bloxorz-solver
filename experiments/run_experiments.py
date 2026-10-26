@@ -18,8 +18,8 @@ Kiểm soát giới hạn mở rộng nút (node_limit) và giới hạn thời 
 để đảm bảo không treo hệ thống khi duyệt các không gian trạng thái lớn.
 """
 
-DEFAULT_NODE_LIMIT: int = 25000
-DEFAULT_TIME_LIMIT: float = 5.0
+DEFAULT_NODE_LIMIT: int = 30000
+DEFAULT_TIME_LIMIT: float = 8
 
 
 def run_single_experiment(
