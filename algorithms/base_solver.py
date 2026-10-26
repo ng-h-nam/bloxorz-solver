@@ -6,7 +6,8 @@ Bao gồm:
 2. SolveResult (Solution): Chứa toàn diện kết quả tìm kiếm gồm chuỗi hành động, trạng thái,
    thời gian thực thi (time.perf_counter), bộ nhớ đỉnh (tracemalloc), số nút đã mở rộng, kích thước frontier lớn nhất.
 3. replay_path: Hàm phát lại chuỗi hành động trên core để kiểm tra tính hợp lệ và xác nhận khối đến đích.
-4. BaseSolver: Abstract Base Class quản lý cấu hình giới hạn (node_limit, time_limit), đo lường hiệu năng và các thao tác cốt lõi.
+4. BaseSolver: Abstract Base Class quản lý cấu hình giới hạn (node_limit, time_limit),
+   đo lường hiệu năng và các thao tác cốt lõi.
 """
 
 from abc import ABC, abstractmethod
@@ -43,13 +44,13 @@ class Node:
         state: State,
         parent: Optional["Node"] = None,
         action: Optional[ActionType] = None,
-        cost: int = 0,
+        cost: Union[int, float] = 0,
         depth: int = 0,
     ) -> None:
         self.state: State = state
         self.parent: Optional["Node"] = parent
         self.action: Optional[ActionType] = action
-        self.cost: int = cost
+        self.cost: Union[int, float] = cost
         self.depth: int = depth
 
     def reconstruct_path(self) -> List["Node"]:
@@ -111,7 +112,7 @@ class SolveResult:
 
     actions: List[ActionType] = field(default_factory=list)
     states: List[State] = field(default_factory=list)
-    cost: int = 0
+    cost: Union[int, float] = 0
     nodes_explored: int = 0
     max_frontier_size: int = 0
     execution_time: float = 0.0
@@ -164,7 +165,8 @@ class SolveResult:
         return (
             f"Trạng thái: {self.status} | Thắng: {self.is_solved} | Số bước: {self.cost} | "
             f"Số nút mở rộng: {self.nodes_explored} | Kích thước frontier max: {self.max_frontier_size} | "
-            f"Thời gian: {self.execution_time * 1000:.3f} ms | Bộ nhớ đỉnh: {self.memory_kb:.2f} KB ({self.memory_mb:.4f} MB)"
+            f"Thời gian: {self.execution_time * 1000:.3f} ms | "
+            f"Bộ nhớ đỉnh: {self.memory_kb:.2f} KB ({self.memory_mb:.4f} MB)"
         )
 
 
@@ -386,15 +388,17 @@ class BaseSolver(ABC):
         parent: Node,
         action: ActionType,
         next_state: State,
+        cost: Optional[Union[int, float]] = None,
     ) -> Node:
         """
         Tạo một nút con kế tiếp từ nút cha sau khi thực hiện hành động.
         """
+        node_cost = cost if cost is not None else parent.cost + 1
         return Node(
             state=next_state,
             parent=parent,
             action=action,
-            cost=parent.cost + 1,
+            cost=node_cost,
             depth=parent.depth + 1,
         )
 

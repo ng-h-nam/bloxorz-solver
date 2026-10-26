@@ -13,6 +13,7 @@ from algorithms.base_solver import (
 )
 from algorithms.bfs import BFSSolver
 from algorithms.dfs import DFSSolver
+from algorithms.ucs import UCSSolver
 from algorithms.heuristic import (
     CostFunction,
     HeuristicFunction,
@@ -35,6 +36,7 @@ __all__ = [
     "replay_path",
     "BFSSolver",
     "DFSSolver",
+    "UCSSolver",
     "AStarSolver",
     "CostFunction",
     "HeuristicFunction",
