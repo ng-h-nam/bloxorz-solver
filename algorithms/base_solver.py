@@ -10,19 +10,24 @@ Bao gồm:
    đo lường hiệu năng và các thao tác cốt lõi.
 """
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 import time
 import tracemalloc
-from typing import List, Optional, Sequence, Tuple, Union
+from abc import ABC, abstractmethod
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 from core.block import Direction
 from core.board import Board
 from core.state import Orientation, State
-from core.transition import get_next_state, get_successors, is_goal_state, is_valid_state
+from core.transition import (
+    get_next_state,
+    get_successors,
+    is_goal_state,
+    is_valid_state,
+)
 
-
-ActionType = Union[Direction, str]
+ActionType = Direction | str
 
 # 1. BIỂU DIỄN NÚT TÌM KIẾM (SEARCH TREE NODE)
 
@@ -53,26 +58,26 @@ class Node:
         self.cost: Union[int, float] = cost
         self.depth: int = depth
 
-    def reconstruct_path(self) -> List["Node"]:
+    def reconstruct_path(self) -> list["Node"]:
         """
         Truy ngược từ nút hiện tại về nút gốc (Root).
 
         Returns:
             List[Node]: Danh sách các nút theo thứ tự từ Root -> Goal.
         """
-        path: List[Node] = []
-        current: Optional[Node] = self
+        path: list[Node] = []
+        current: Node | None = self
         while current is not None:
             path.append(current)
             current = current.parent
         path.reverse()
         return path
 
-    def reconstruct_actions(self) -> List[ActionType]:
+    def reconstruct_actions(self) -> list[ActionType]:
         """Trả về chuỗi hành động từ Root đến Goal."""
         return [n.action for n in self.reconstruct_path() if n.action is not None]
 
-    def reconstruct_states(self) -> List[State]:
+    def reconstruct_states(self) -> list[State]:
         """Trả về chuỗi trạng thái tương ứng từ Root đến Goal."""
         return [n.state for n in self.reconstruct_path()]
 
@@ -144,9 +149,9 @@ class SolveResult:
     def time_taken(self) -> float:
         return self.execution_time
 
-    def get_action_names(self) -> List[str]:
+    def get_action_names(self) -> list[str]:
         """Trả về danh sách tên chuỗi tên các hành động (ví dụ: ['RIGHT', 'DOWN', 'SWITCH'])."""
-        res: List[str] = []
+        res: list[str] = []
         for act in self.actions:
             if isinstance(act, Direction):
                 res.append(act.value)
@@ -167,6 +172,8 @@ class SolveResult:
             f"Số nút mở rộng: {self.nodes_explored} | Kích thước frontier max: {self.max_frontier_size} | "
             f"Thời gian: {self.execution_time * 1000:.3f} ms | "
             f"Bộ nhớ đỉnh: {self.memory_kb:.2f} KB ({self.memory_mb:.4f} MB)"
+            f"Thời gian: {self.execution_time * 1000:.3f} ms | "
+            f"Bộ nhớ đỉnh: {self.memory_kb:.2f} KB ({self.memory_mb:.4f} MB)"
         )
 
 
@@ -179,8 +186,8 @@ Solution = SolveResult
 def replay_path(
     board: Board,
     actions: Sequence[ActionType],
-    initial_state: Optional[State] = None,
-) -> Tuple[bool, List[State], str]:
+    initial_state: State | None = None,
+) -> tuple[bool, list[State], str]:
     """
     Phát lại (replay) chuỗi hành động trên tầng core để kiểm tra tính hợp lệ và xác nhận về đích.
 
@@ -212,7 +219,7 @@ def replay_path(
     if not is_valid_state(board, initial_state):
         return False, [initial_state], f"Trạng thái ban đầu không hợp lệ: {initial_state}"
 
-    states: List[State] = [initial_state]
+    states: list[State] = [initial_state]
     current_state = initial_state
 
     # Trường hợp đặc biệt: xuất phát ngay tại đích và không có hành động
@@ -265,9 +272,9 @@ class BaseSolver(ABC):
     def __init__(
         self,
         board: Board,
-        initial_state: Optional[State] = None,
-        node_limit: Optional[int] = None,
-        time_limit: Optional[float] = None,
+        initial_state: State | None = None,
+        node_limit: int | None = None,
+        time_limit: float | None = None,
     ) -> None:
         """
         Khởi tạo BaseSolver.
@@ -292,8 +299,8 @@ class BaseSolver(ABC):
         if not self.is_valid(self.initial_state):
             raise ValueError(f"Trạng thái xuất phát không hợp lệ trên bản đồ: {self.initial_state}")
 
-        self.node_limit: Optional[int] = node_limit
-        self.time_limit: Optional[float] = time_limit
+        self.node_limit: int | None = node_limit
+        self.time_limit: float | None = time_limit
 
         self.nodes_explored: int = 0
         self.max_frontier_size: int = 0
@@ -309,7 +316,6 @@ class BaseSolver(ABC):
         Returns:
             SolveResult chứa thông tin chi tiết về lời giải và các chỉ số thực nghiệm.
         """
-        pass
 
     # Quản lý Profiling
 
@@ -332,7 +338,7 @@ class BaseSolver(ABC):
 
         return time.perf_counter()
 
-    def _finish_profiling(self, start_time: float) -> Tuple[float, int]:
+    def _finish_profiling(self, start_time: float) -> tuple[float, int]:
         """
         Dừng hoặc lấy kết quả đo thời gian và bộ nhớ đỉnh.
 
@@ -350,20 +356,17 @@ class BaseSolver(ABC):
         self.peak_memory = peak
         return execution_time, peak
 
-    def _check_limits(self, start_time: float) -> Optional[str]:
+    def _check_limits(self, start_time: float) -> str | None:
         """
         Kiểm tra xem quá trình tìm kiếm đã vượt qua time_limit hoặc node_limit hay chưa.
 
         Returns:
             Chuỗi lý do ("TIME_LIMIT_EXCEEDED" hoặc "NODE_LIMIT_EXCEEDED") nếu vượt giới hạn, ngược lại None.
         """
-        if self.time_limit is not None:
-            if (time.perf_counter() - start_time) >= self.time_limit:
-                return "TIME_LIMIT_EXCEEDED"
-
-        if self.node_limit is not None:
-            if self.nodes_explored >= self.node_limit:
-                return "NODE_LIMIT_EXCEEDED"
+        if self.time_limit is not None and (time.perf_counter() - start_time) >= self.time_limit:
+            return "TIME_LIMIT_EXCEEDED"
+        if self.node_limit is not None and self.nodes_explored >= self.node_limit:
+            return "NODE_LIMIT_EXCEEDED"
 
         return None
 
@@ -402,7 +405,7 @@ class BaseSolver(ABC):
             depth=parent.depth + 1,
         )
 
-    def get_successors(self, state: State) -> List[Tuple[ActionType, State]]:
+    def get_successors(self, state: State) -> list[tuple[ActionType, State]]:
         """Lấy danh sách các cặp (hành động, trạng thái kế tiếp) hợp lệ từ state hiện tại."""
         return get_successors(self.board, state)
 
@@ -414,6 +417,6 @@ class BaseSolver(ABC):
         """Kiểm tra trạng thái state có hợp lệ trên bàn cờ hay không."""
         return is_valid_state(self.board, state)
 
-    def replay(self, actions: Sequence[ActionType]) -> Tuple[bool, List[State], str]:
-        """Phát lại lời giải trên bàn cờ của solver này."""
+    def replay(self, actions: Sequence[ActionType]) -> tuple[bool, list[State], str]:
+        """Phát lại lời giải trên board của solver này."""
         return replay_path(self.board, actions, self.initial_state)

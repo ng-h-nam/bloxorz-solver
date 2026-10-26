@@ -29,10 +29,12 @@ from algorithms.heuristic import (
 
 __all__ = [
     "ActionType",
+    "BFSSolver",
     "BaseSolver",
+    "DFSSolver",
     "Node",
-    "SolveResult",
     "Solution",
+    "SolveResult",
     "replay_path",
     "BFSSolver",
     "DFSSolver",

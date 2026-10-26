@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import FrozenSet, List, Tuple, Optional
 
 Coordinates = Tuple[int, int]
 
@@ -26,8 +25,8 @@ class State:
     r: int
     c: int
     orientation: Orientation = Orientation.STANDING
-    active_bridges: FrozenSet[Coordinates] = field(default_factory=frozenset)
-    split_pos: Optional[Coordinates] = None
+    active_bridges: frozenset[Coordinates] = field(default_factory=frozenset)
+    split_pos: Coordinates | None = None
     active_cube: int = 0
 
     def is_split(self) -> bool:
@@ -54,7 +53,7 @@ class State:
             return self.split_pos
         return (self.r, self.c)
 
-    def get_inactive_cube_pos(self) -> Optional[Coordinates]:
+    def get_inactive_cube_pos(self) -> Coordinates | None:
         """Trả về tọa độ của khối đơn ta đang không điều khiển (ngược lại với cái trên)."""
         if not self.is_split() or self.split_pos is None:
             return None
@@ -110,7 +109,7 @@ class State:
         """Kiểm tra khối có đang đứng thẳng tại đúng tọa độ pos hay không."""
         return self.orientation == Orientation.STANDING and (self.r, self.c) == pos
 
-    def to_key(self) -> Tuple[int, int, str, FrozenSet[Coordinates]]:
+    def to_key(self) -> tuple[int, int, str, frozenset[Coordinates]]:
         """Đại diện duy nhất của state. Có thể hỗ trợ cho hàm state_key."""
         split_coord = self.split_pos if self.split_pos is not None else (-1, -1)
         bridge_tuple = tuple(sorted(self.active_bridges))
