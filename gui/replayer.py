@@ -63,17 +63,13 @@ def verify_solver_state_key(
     s_no_bridge = State(2, 2, Orientation.STANDING, active_bridges=frozenset())
     s_with_bridge = State(2, 2, Orientation.STANDING, active_bridges=frozenset([(3, 2), (3, 3)]))
     if key_fn(s_no_bridge) == key_fn(s_with_bridge):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được trạng thái đóng/mở của cầu (active_bridges)."
-        )
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được trạng thái đóng/mở của cầu (active_bridges).")
 
     # 3. Kiểm tra thứ tự cầu trong frozenset không làm lệch khóa (và băm được trong set/dict)
     s_bridge_order_1 = State(2, 2, Orientation.STANDING, active_bridges=frozenset([(3, 2), (3, 3)]))
     s_bridge_order_2 = State(2, 2, Orientation.STANDING, active_bridges=frozenset([(3, 3), (3, 2)]))
     if key_fn(s_bridge_order_1) != key_fn(s_bridge_order_2):
-        issues.append(
-            "Lỗi khóa trạng thái: Cùng tập cầu mở nhưng khác thứ tự lại sinh ra 2 khóa khác nhau."
-        )
+        issues.append("Lỗi khóa trạng thái: Cùng tập cầu mở nhưng khác thứ tự lại sinh ra 2 khóa khác nhau.")
     try:
         visited = {key_fn(s_bridge_order_1)}
         if key_fn(s_bridge_order_2) not in visited:
@@ -85,24 +81,33 @@ def verify_solver_state_key(
     s_split_1 = State(1, 1, Orientation.SPLIT, split_pos=(3, 1), active_cube=0)
     s_split_2 = State(1, 1, Orientation.SPLIT, split_pos=(3, 2), active_cube=0)
     if key_fn(s_split_1) == key_fn(s_split_2):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được tọa độ khối thứ hai (split_pos) khi tách khối."
-        )
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được tọa độ khối thứ hai (split_pos) khi tách khối.")
 
     # 5. Kiểm tra phân biệt quyền điều khiển khối đơn (active_cube 0 vs 1)
     s_cube_0 = State(1, 1, Orientation.SPLIT, split_pos=(3, 1), active_cube=0)
     s_cube_1 = State(1, 1, Orientation.SPLIT, split_pos=(3, 1), active_cube=1)
     if key_fn(s_cube_0) == key_fn(s_cube_1):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được khối đơn đang điều khiển (active_cube 0 vs 1)."
-        )
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được khối đơn đang điều khiển (active_cube 0 vs 1).")
 
     return (len(issues) == 0, issues)
 
 
 # =============================================================================
-# 2. QUẢN LÝ TÀI KHOẢN (ĐĂNG KÝ / ĐĂNG NHẬP) & LƯU DỮ LIỆU NGƯỜI CHƠI
+# 2. QUẢN LÝ TÀI KHOẢN, TÍNH ĐIỂM & LƯU DỮ LIỆU NGƯỜI CHƠI
 # =============================================================================
+def calculate_level_score(move_count: int, won: bool = True) -> int:
+    """
+    Tính điểm của người chơi khi vượt qua màn chơi:
+      - Điểm chỉ dựa duy nhất trên SỐ BƯỚC ĐI của người chơi (`base_level_score = move_count`).
+      - Số điểm càng thấp (càng ít bước đi) nghĩa là thành tích của người chơi càng cao.
+      - Nếu chưa vượt qua màn chơi (`won == False`), trả về 0.
+    """
+    if not won:
+        return 0
+    base_level_score = max(0, int(move_count))
+    return base_level_score
+
+
 @dataclass
 class LevelRecord:
     """Bản ghi kết quả chơi hoặc giải một màn chơi của người chơi."""
@@ -112,7 +117,8 @@ class LevelRecord:
     move_count: int
     won: bool
     mode: str = "MANUAL"  # "MANUAL", "BFS", "DFS", "UCS", "A*"
-    elapsed_time: float = 0.0
+    elapsed_time: float = 0.0  # Yếu tố phụ lưu lại thời gian hoàn thành màn chơi (giây)
+    score: int = 0  # Điểm màn chơi (= move_count; càng thấp càng tốt)
     timestamp: float = field(default_factory=time.time)
 
 
@@ -124,22 +130,84 @@ class PlayerProfile:
     password_hash: str
     salt: str
     created_at: float = field(default_factory=time.time)
-    best_scores: Dict[str, int] = field(default_factory=dict)
+    best_scores: Dict[str, int] = field(default_factory=dict)  # Điểm tốt nhất = số bước ít nhất
+    best_times: Dict[str, float] = field(default_factory=dict)  # Thời gian hoàn thành (yếu tố phụ)
+    level_stats: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     saved_replays: Dict[str, List[str]] = field(default_factory=dict)
     history: List[Dict[str, Any]] = field(default_factory=list)
 
 
+class AccountPrompt:
+    """Hộp thoại Đăng nhập / Đăng ký / Đăng xuất tài khoản người chơi trên GUI."""
+
+    def __init__(self, max_length: int = 18) -> None:
+        self.max_length: int = max_length
+        self.is_open: bool = False
+        self.username: str = ""
+        self.password: str = ""
+        self.active_field: int = 0  # 0: username, 1: password
+        self.error: str = ""
+        self.info: str = ""
+
+    def open(self, current_user: Optional[str] = None) -> None:
+        self.is_open = True
+        active_name = current_user or "guest"
+        self.username = "" if active_name == "guest" else active_name
+        self.password = ""
+        self.active_field = 0 if not self.username else 1
+        self.error = ""
+        self.info = f"Đang dùng: {active_name} (Nhấn F2 để Đăng xuất)"
+
+    def close(self) -> None:
+        self.is_open = False
+        self.password = ""
+        self.error = ""
+
+    def switch_field(self) -> None:
+        self.active_field = 1 - self.active_field
+        self.error = ""
+
+    def type_char(self, ch: str) -> None:
+        if len(ch) != 1 or not (ch.isalnum() or ch in ("_", "-")):
+            return
+        if self.active_field == 0 and len(self.username) < self.max_length:
+            self.username += ch
+            self.error = ""
+        elif self.active_field == 1 and len(self.password) < self.max_length:
+            self.password += ch
+            self.error = ""
+
+    def backspace(self) -> None:
+        if self.active_field == 0:
+            self.username = self.username[:-1]
+        else:
+            self.password = self.password[:-1]
+        self.error = ""
+
+    def fail(self, message: str) -> None:
+        self.error = message
+
+
 class PlayerDataManager:
     """
-    Hệ thống quản lý tài khoản người chơi (Đăng ký, Đăng nhập, Đăng xuất)
-    và lưu trữ dữ liệu quá trình chơi / đường đi Replay vào file JSON.
+    Hệ thống quản lý tài khoản người chơi (Đăng ký, Đăng nhập, Đăng xuất),
+    tính điểm màn chơi (dựa trên số bước đi: càng ít bước điểm càng cao)
+    và lưu trữ thời gian chơi (yếu tố phụ) cùng đường đi Replay vào file JSON.
     """
 
-    def __init__(self, storage_path: Union[str, Path] = "data/players.json"):
-        self.storage_path = Path(storage_path)
+    def __init__(self, storage_path: Union[str, Path, None] = None):
+        if storage_path is None:
+            self.storage_path = Path(__file__).resolve().parent.parent / "data" / "players.json"
+        else:
+            self.storage_path = Path(storage_path)
         self.players: Dict[str, PlayerProfile] = {}
         self.current_user: Optional[str] = None
         self._load()
+
+    @staticmethod
+    def calculate_score(move_count: int, won: bool = True) -> int:
+        """Tính điểm màn chơi dựa duy nhất trên số bước đi (`base_level_score = move_count`)."""
+        return calculate_level_score(move_count=move_count, won=won)
 
     @staticmethod
     def _hash_password(password: str, salt: str) -> str:
@@ -155,13 +223,11 @@ class PlayerDataManager:
         try:
             with open(self.storage_path, "r", encoding="utf-8") as f:
                 raw = json.load(f)
-            self.players = {
-                uname: PlayerProfile(**pdata) for uname, pdata in raw.get("players", {}).items()
-            }
+            self.players = {uname: PlayerProfile(**pdata) for uname, pdata in raw.get("players", {}).items()}
             self.current_user = raw.get("last_active_user")
             if self.current_user not in self.players:
                 self.current_user = None
-        except (json.JSONDecodeError, OSError, TypeError):
+        except json.JSONDecodeError, OSError, TypeError:
             self.players = {}
             self.current_user = None
 
@@ -216,6 +282,13 @@ class PlayerDataManager:
         self.current_user = None
         self.save()
 
+    def authenticate_or_register(self, username: str, password: str) -> Tuple[bool, str]:
+        """Nếu tài khoản đã tồn tại thì đăng nhập, nếu chưa tồn tại thì đăng ký mới."""
+        uname = username.strip()
+        if uname in self.players and uname != "guest" and self.players[uname].password_hash:
+            return self.login(uname, password)
+        return self.register(uname, password)
+
     def get_current_profile(self) -> Optional[PlayerProfile]:
         """Lấy hồ sơ của người chơi đang đăng nhập."""
         if self.current_user is None:
@@ -233,7 +306,8 @@ class PlayerDataManager:
     ) -> bool:
         """
         Lưu kết quả lượt chơi và đường đi (Replay) của người chơi.
-        Tự động cập nhật kỷ lục số bước ít nhất (best_scores) và lưu replay tốt nhất.
+        - Điểm (`score`) = số bước di chuyển (`move_count`); điểm càng thấp thành tích càng cao.
+        - Thời gian chơi (`elapsed_time`) được lưu kèm như yếu tố phụ.
         """
         target_user = username or self.current_user
         if target_user is None or target_user not in self.players:
@@ -244,10 +318,11 @@ class PlayerDataManager:
 
         profile = self.players[target_user]
         move_list = [
-            m.value if isinstance(m, Direction) or hasattr(m, "value") else str(m).strip().upper()
-            for m in moves
+            m.value if isinstance(m, Direction) or hasattr(m, "value") else str(m).strip().upper() for m in moves
         ]
         move_count = sum(1 for m in move_list if m not in ("SWITCH", "SPACE", "TAB"))
+        safe_time = round(max(0.0, float(elapsed_time)), 3)
+        score = self.calculate_score(move_count=move_count, won=won)
 
         record = LevelRecord(
             level_id=level_id,
@@ -255,20 +330,43 @@ class PlayerDataManager:
             move_count=move_count,
             won=won,
             mode=mode,
-            elapsed_time=elapsed_time,
+            elapsed_time=safe_time,
+            score=score,
         )
         profile.history.append(asdict(record))
 
         if won:
             prev_best = profile.best_scores.get(level_id)
-            if prev_best is None or move_count <= prev_best:
-                profile.best_scores[level_id] = move_count
+            # Số điểm (số bước) càng thấp nghĩa là thành tích càng cao
+            if prev_best is None or score <= prev_best:
+                profile.best_scores[level_id] = score
                 profile.saved_replays[level_id] = move_list
+                profile.level_stats[level_id] = {
+                    "score": score,
+                    "move_count": move_count,
+                    "elapsed_time": safe_time,
+                    "mode": mode,
+                }
             elif level_id not in profile.saved_replays:
                 profile.saved_replays[level_id] = move_list
 
+            prev_time = profile.best_times.get(level_id)
+            if prev_time is None or safe_time < prev_time:
+                profile.best_times[level_id] = safe_time
+
         self.save()
         return True
+
+    def get_level_score_info(self, level_id: str, username: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Lấy thông tin kỷ lục của người chơi tại một màn chơi, bao gồm:
+        `score` (= `move_count`, càng thấp càng tốt) và thông tin phụ `elapsed_time`.
+        """
+        target_user = username or self.current_user or "guest"
+        profile = self.players.get(target_user)
+        if profile is None:
+            return None
+        return profile.level_stats.get(level_id)
 
     def get_saved_replay(self, level_id: str, username: Optional[str] = None) -> Optional[List[str]]:
         """Lấy chuỗi hành động Replay đã lưu của một màn chơi."""
@@ -412,9 +510,7 @@ class Replayer:
         # Bước 0: Trạng thái khởi đầu
         self.game.restart()
         initial_state = self.game.initial_state
-        initial_status = (
-            GameStatus.WON if is_goal_state(self.board, initial_state) else GameStatus.PLAYING
-        )
+        initial_status = GameStatus.WON if is_goal_state(self.board, initial_state) else GameStatus.PLAYING
         self.timeline.append(
             ReplayFrame(
                 step_index=0,
@@ -431,15 +527,11 @@ class Replayer:
         curr_state = initial_state
         roll_moves = 0
         for idx, act_str in enumerate(self.actions, start=1):
-            frame, next_state, roll_moves = self._parse_frame_step(
-                idx, act_str, curr_state, roll_moves
-            )
+            frame, next_state, roll_moves = self._parse_frame_step(idx, act_str, curr_state, roll_moves)
             self.timeline.append(frame)
             if next_state is None:
                 self.is_valid_path = False
-                self.error_message = (
-                    f"Bước replay thứ {idx} ('{act_str}') từ trạng thái {curr_state} không hợp lệ!"
-                )
+                self.error_message = f"Bước replay thứ {idx} ('{act_str}') từ trạng thái {curr_state} không hợp lệ!"
                 break
             curr_state = next_state
 
@@ -498,11 +590,7 @@ class Replayer:
     @property
     def reaches_goal(self) -> bool:
         """Kiểm tra đường đi Replay có hợp lệ và kết thúc ở trạng thái chiến thắng (WON) hay không."""
-        return (
-            self.is_valid_path
-            and len(self.timeline) > 0
-            and self.timeline[-1].status == GameStatus.WON
-        )
+        return self.is_valid_path and len(self.timeline) > 0 and self.timeline[-1].status == GameStatus.WON
 
     def play(self, restart_if_finished: bool = True) -> None:
         """Bắt đầu hoặc tiếp tục phát tự động."""
@@ -635,14 +723,9 @@ class SolverErrorEvent:
 def _extract_object_metrics(output: Any) -> Tuple[List[str], int, float]:
     """Bóc tách (actions, expanded_nodes, memory_kb) từ đối tượng SolveResult hoặc tương đương."""
     raw_seq = (
-        getattr(output, "actions", None)
-        or getattr(output, "solution", None)
-        or getattr(output, "path", None)
-        or []
+        getattr(output, "actions", None) or getattr(output, "solution", None) or getattr(output, "path", None) or []
     )
-    actions = [
-        a.value if hasattr(a, "value") else str(a) for a in raw_seq if not isinstance(a, State)
-    ]
+    actions = [a.value if hasattr(a, "value") else str(a) for a in raw_seq if not isinstance(a, State)]
     expanded = int(
         getattr(
             output,
@@ -666,9 +749,7 @@ def _extract_object_metrics(output: Any) -> Tuple[List[str], int, float]:
 def _extract_dict_metrics(output: Dict[str, Any]) -> Tuple[List[str], int, float]:
     """Bóc tách (actions, expanded_nodes, memory_kb) từ dictionary kết quả."""
     raw_seq = output.get("actions") or output.get("solution") or output.get("path") or []
-    actions = [
-        a.value if hasattr(a, "value") else str(a) for a in raw_seq if not isinstance(a, State)
-    ]
+    actions = [a.value if hasattr(a, "value") else str(a) for a in raw_seq if not isinstance(a, State)]
     expanded = int(
         output.get(
             "nodes_explored",
@@ -727,11 +808,7 @@ class BackgroundSolverWorker:
         if output is None:
             return [], 0, 0.0
 
-        if (
-            hasattr(output, "actions")
-            or hasattr(output, "solution")
-            or hasattr(output, "path")
-        ):
+        if hasattr(output, "actions") or hasattr(output, "solution") or hasattr(output, "path"):
             return _extract_object_metrics(output)
 
         if isinstance(output, dict):
@@ -739,25 +816,13 @@ class BackgroundSolverWorker:
 
         if isinstance(output, tuple) and len(output) > 0 and isinstance(output[0], (list, tuple)):
             raw_seq = output[0]
-            actions = [
-                a.value if hasattr(a, "value") else str(a)
-                for a in raw_seq
-                if not isinstance(a, State)
-            ]
-            expanded = (
-                int(output[1]) if len(output) > 1 and isinstance(output[1], (int, float)) else 0
-            )
-            mem_kb = (
-                float(output[2]) if len(output) > 2 and isinstance(output[2], (int, float)) else 0.0
-            )
+            actions = [a.value if hasattr(a, "value") else str(a) for a in raw_seq if not isinstance(a, State)]
+            expanded = int(output[1]) if len(output) > 1 and isinstance(output[1], (int, float)) else 0
+            mem_kb = float(output[2]) if len(output) > 2 and isinstance(output[2], (int, float)) else 0.0
             return actions, expanded, mem_kb
 
         if isinstance(output, (list, tuple)):
-            actions = [
-                a.value if hasattr(a, "value") else str(a)
-                for a in output
-                if not isinstance(a, State)
-            ]
+            actions = [a.value if hasattr(a, "value") else str(a) for a in output if not isinstance(a, State)]
             return actions, 0, 0.0
 
         raise ValueError(f"Định dạng kết quả trả về từ Solver không hợp lệ: {type(output)}")
@@ -775,9 +840,7 @@ class BackgroundSolverWorker:
           3. Truyền hàm / phương thức callable (ví dụ: `solver.solve` hoặc hàm `bfs_solve`).
         """
         solver_key_fn: Optional[Callable[[State], Any]] = None
-        if hasattr(solver_or_callable, "get_state_key") and callable(
-            getattr(solver_or_callable, "get_state_key")
-        ):
+        if hasattr(solver_or_callable, "get_state_key") and callable(getattr(solver_or_callable, "get_state_key")):
             solver_key_fn = getattr(solver_or_callable, "get_state_key")
 
         # Trường hợp 1: Đối tượng Solver có phương thức .solve() nhưng bản thân không phải hàm/class
@@ -840,9 +903,7 @@ class BackgroundSolverWorker:
                 if self.check_state_key_before_run:
                     self._audit_keys(key_fn_to_audit)
 
-                raw_output, solver_key_fn = self._invoke_solver_target(
-                    solver_callable, *args, **kwargs
-                )
+                raw_output, solver_key_fn = self._invoke_solver_target(solver_callable, *args, **kwargs)
                 if self.check_state_key_before_run and solver_key_fn is not None:
                     self._audit_keys(key_fn_to_audit, solver_key_fn)
 
@@ -855,9 +916,7 @@ class BackgroundSolverWorker:
 
                 actions, expanded, mem_kb = self._extract_actions_from_output(raw_output)
                 is_solved = bool(getattr(raw_output, "is_solved", bool(actions)))
-                status = str(
-                    getattr(raw_output, "status", "SOLVED" if is_solved else "NO_SOLUTION")
-                )
+                status = str(getattr(raw_output, "status", "SOLVED" if is_solved else "NO_SOLUTION"))
 
                 self.result_queue.put(
                     SolverResultEvent(

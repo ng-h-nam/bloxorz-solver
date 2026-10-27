@@ -39,6 +39,7 @@ from OpenGL.GL import (
 
 from gui.level_picker import MAX_VISIBLE_ROWS, LevelPicker
 from gui.passcode_prompt import PasscodePrompt
+from gui.replayer import AccountPrompt
 
 # Màu chữ của pygame: số nguyên 0..255
 RGB = tuple[int, int, int]
@@ -53,21 +54,22 @@ FONT_PATH: str = os.path.join(
     "fonts",
     "DejaVuSans.ttf",
 )
-FONT_SIZE: int = 22
-SMALL_FONT_SIZE: int = 17
+FONT_SIZE: int = 20
+SMALL_FONT_SIZE: int = 15
 BIG_FONT_SIZE: int = 44
 
 PANEL_WIDTH: int = 340
 PANEL_PADDING: int = 16
-TITLE_Y: int = 16
-INFO_TOP: int = 52
-INFO_STEP: int = 28
-INFO_COUNT: int = 6
-BUTTON_TOP: int = 232
-BUTTON_STEP: int = 44
-BUTTON_WIDTH: int = 180
-BUTTON_HEIGHT: int = 36
-MESSAGE_TOP: int = 372
+TITLE_Y: int = 14
+INFO_TOP: int = 46
+INFO_STEP: int = 24
+INFO_COUNT: int = 8
+BUTTON_TOP: int = 246
+BUTTON_STEP: int = 38
+BUTTON_WIDTH: int = 148
+BUTTON_HEIGHT: int = 32
+BUTTON_COL_GAP: int = 12
+MESSAGE_TOP: int = 480
 MAX_MESSAGE_LINES: int = 3
 PANEL_BG: Color3 = (0.11, 0.11, 0.17)
 
@@ -75,7 +77,7 @@ BANNER_HEIGHT: int = 230
 BANNER_MARGIN: int = 40
 
 TEXT_COLOR: RGB = (255, 255, 255)
-MESSAGE_COLOR: RGB = (255, 140, 140)
+MESSAGE_COLOR: RGB = (255, 210, 120)
 HELP_COLOR: RGB = (150, 150, 175)
 WIN_COLOR: RGB = (120, 230, 140)
 LOSE_COLOR: RGB = (255, 110, 110)
@@ -86,17 +88,17 @@ PICKER_BOX_COLOR: Color3 = (0.14, 0.14, 0.22)
 PICKER_SELECTED_COLOR: Color3 = (0.28, 0.28, 0.45)
 PROMPT_FOOTER: str = "Enter: xác nhận  -  Backspace: xóa  -  Esc: quay lại"
 PROMPT_BOX_SIZE: tuple[int, int] = (520, 220)
+ACCOUNT_BOX_SIZE: tuple[int, int] = (560, 290)
+ACCOUNT_FOOTER: str = "Tab: đổi ô  -  Enter: Đăng nhập/Đăng ký  -  F2: Đăng xuất  -  Esc: đóng"
 PICKER_FOOTER: str = "Lên/Xuống: chọn  -  Enter: vào  -  Esc: đóng"
 
 HELP_LINES: list[str] = [
-    "Mũi tên / WASD: lăn khối",
-    "Phím cách: đổi khối khi đang tách",
-    "R: chơi lại",
-    "N: chọn màn",
-    "C: đặt lại camera",
-    "Chuột phải kéo: xoay camera",
-    "Chuột giữa kéo: dịch camera",
-    "Con lăn: phóng to, thu nhỏ",
+    "Mũi tên / WASD: lăn khối  |  Space: đổi khối",
+    "Z: hoàn tác (Undo)  |  R: chơi lại  |  N: chọn màn",
+    "F: giải AI  |  M: đổi thuật toán  |  L: tài khoản",
+    "V: phát Replay lưu  |  P: tạm dừng/tiếp tục",
+    "[ / ]: lùi/tiến 1 bước  |  T: đổi tốc độ Replay",
+    "C: đặt lại camera  |  Chuột phải/giữa/lăn: camera",
 ]
 
 
@@ -110,6 +112,15 @@ class HudData:
     status: str
     elapsed: float
     passcode: str = ""
+    username: str = "guest"
+    best_record: str = "Chưa có"
+    solver_name: str = "BFS"
+    solver_running: bool = False
+    replay_active: bool = False
+    replay_playing: bool = False
+    replay_step: int = 0
+    replay_total: int = 0
+    replay_speed_label: str = "1x"
 
 
 @dataclass
@@ -268,6 +279,13 @@ class Button:
         self.label: TextLabel = TextLabel(font, color)
         self.label.set_text(text)
 
+    def update_state(self, text: str | None = None, enabled: bool | None = None) -> None:
+        if enabled is not None and enabled != self.enabled:
+            self.enabled = enabled
+            self.label.set_color(TEXT_COLOR if enabled else DISABLED_TEXT_COLOR)
+        if text is not None:
+            self.label.set_text(text)
+
 
 class ControlPanel:
     def __init__(self, width: int, height: int, font_size: int = FONT_SIZE) -> None:
@@ -282,31 +300,39 @@ class ControlPanel:
         self.title: TextLabel = TextLabel(font)
         self.title.set_text("Bloxorz")
         self.info_lines: list[TextLabel] = [TextLabel(font) for _ in range(INFO_COUNT)]
-        self.message_lines: list[TextLabel] = [TextLabel(font, MESSAGE_COLOR) for _ in range(MAX_MESSAGE_LINES)]
+        self.message_lines: list[TextLabel] = [TextLabel(small, MESSAGE_COLOR) for _ in range(MAX_MESSAGE_LINES)]
         self._message: str = ""
         self._wrapped: list[str] = []
 
-        self.buttons: list[Button] = [
-            Button(
-                pygame.Rect(
-                    PANEL_PADDING,
-                    BUTTON_TOP + i * BUTTON_STEP,
-                    BUTTON_WIDTH,
-                    BUTTON_HEIGHT,
-                ),
-                text,
-                action,
-                font,
-                enabled,
-            )
-            for i, (text, action, enabled) in enumerate(
-                [
-                    ("Restart", "restart", True),
-                    ("New Game", "new_game", True),
-                    ("Run Solver", None, False),
-                ]
-            )
+        button_specs = [
+            ("Restart (R)", "restart", True),
+            ("Chọn màn (N)", "new_game", True),
+            ("Undo (Z)", "undo", True),
+            ("Tài khoản (L)", "account", True),
+            ("AI: BFS (M)", "cycle_algo", True),
+            ("Giải AI (F)", "run_solver", True),
+            ("Replay Lưu (V)", "replay_saved", True),
+            ("Tạm dừng (P)", "replay_toggle", False),
+            ("<< Bước ([)", "step_back", False),
+            ("Bước (]) >>", "step_fwd", False),
+            ("Tốc độ: 1x (T)", "cycle_speed", True),
+            ("Thoát Replay", "stop_replay", False),
         ]
+        self.buttons: list[Button] = []
+        self._button_map: dict[str, Button] = {}
+        for idx, (text, action, enabled) in enumerate(button_specs):
+            row = idx // 2
+            col = idx % 2
+            rect = pygame.Rect(
+                PANEL_PADDING + col * (BUTTON_WIDTH + BUTTON_COL_GAP),
+                BUTTON_TOP + row * BUTTON_STEP,
+                BUTTON_WIDTH,
+                BUTTON_HEIGHT,
+            )
+            btn = Button(rect, text, action, small, enabled)
+            self.buttons.append(btn)
+            if action is not None:
+                self._button_map[action] = btn
 
         help_width = PANEL_WIDTH - 2 * PANEL_PADDING
         self.help_labels: list[TextLabel] = []
@@ -330,6 +356,13 @@ class ControlPanel:
         self.prompt_error: TextLabel = TextLabel(font, LOSE_COLOR)
         self.prompt_footer: TextLabel = TextLabel(small, HELP_COLOR)
 
+        self.account_title: TextLabel = TextLabel(font)
+        self.account_info: TextLabel = TextLabel(small, WIN_COLOR)
+        self.account_user_label: TextLabel = TextLabel(font)
+        self.account_pass_label: TextLabel = TextLabel(font)
+        self.account_error: TextLabel = TextLabel(small, LOSE_COLOR)
+        self.account_footer: TextLabel = TextLabel(small, HELP_COLOR)
+
     def handle_click(self, pos: Pixel) -> str | None:
         """Trả về tên hành động của nút được bấm, hoặc None."""
         for button in self.buttons:
@@ -337,17 +370,44 @@ class ControlPanel:
                 return button.action
         return None
 
+    def _sync_buttons(self, hud: HudData) -> None:
+        """Đồng bộ nhãn và trạng thái bật/tắt của các nút theo trạng thái hiện hành."""
+        self._button_map["cycle_algo"].update_state(
+            f"AI: {hud.solver_name} (M)",
+            enabled=not hud.solver_running,
+        )
+        self._button_map["run_solver"].update_state(
+            "Hủy Giải (F)" if hud.solver_running else "Giải AI (F)",
+            enabled=True,
+        )
+        self._button_map["replay_saved"].update_state(enabled=not hud.solver_running)
+        toggle_label = "Tạm dừng (P)" if (hud.replay_active and hud.replay_playing) else "Tiếp tục (P)"
+        self._button_map["replay_toggle"].update_state(toggle_label, enabled=hud.replay_active)
+        self._button_map["step_back"].update_state(enabled=hud.replay_active)
+        self._button_map["step_fwd"].update_state(enabled=hud.replay_active)
+        self._button_map["cycle_speed"].update_state(
+            f"Tốc độ: {hud.replay_speed_label} (T)",
+            enabled=True,
+        )
+        self._button_map["stop_replay"].update_state(enabled=hud.replay_active)
+
     def draw(self, hud: HudData, message: str) -> None:
+        self._sync_buttons(hud)
         _begin_overlay(self.width, self.height)
         _fill_rect(pygame.Rect(0, 0, PANEL_WIDTH, self.height), PANEL_BG, self.height)
 
+        moves_str = (
+            f"{hud.moves} (Replay {hud.replay_step}/{hud.replay_total})" if hud.replay_active else str(hud.moves)
+        )
         lines = [
             f"Màn: {hud.level_name}",
-            f"Số bước: {hud.moves}",
+            f"Số bước: {moves_str}",
             f"Orientation: {hud.orientation}",
             f"Trạng thái: {hud.status}",
             f"Thời gian: {format_elapsed(hud.elapsed)}",
             f"Mật khẩu: {hud.passcode or '-'}",
+            f"Tài khoản: {hud.username}",
+            f"Kỷ lục: {hud.best_record}",
         ]
         for label, text in zip(self.info_lines, lines):
             label.set_text(text)
@@ -365,10 +425,10 @@ class ControlPanel:
 
         if message != self._message:
             self._message = message
-            self._wrapped = wrap_text(self.font, message, PANEL_WIDTH - 2 * PANEL_PADDING)[:MAX_MESSAGE_LINES]
+            self._wrapped = wrap_text(self.small_font, message, PANEL_WIDTH - 2 * PANEL_PADDING)[:MAX_MESSAGE_LINES]
         for i, label in enumerate(self.message_lines):
             label.set_text(self._wrapped[i] if i < len(self._wrapped) else "")
-            label.draw(PANEL_PADDING, MESSAGE_TOP + i * self.font.get_linesize(), self.height)
+            label.draw(PANEL_PADDING, MESSAGE_TOP + i * self.small_font.get_linesize(), self.height)
 
         line_h = self.small_font.get_linesize()
         top = self.height - PANEL_PADDING - len(self.help_labels) * line_h
@@ -472,4 +532,51 @@ class ControlPanel:
 
         self.prompt_footer.set_text(PROMPT_FOOTER)
         self.prompt_footer.draw_centered(box.centerx, box.bottom - 34, self.height)
+        _end_overlay()
+
+    def draw_account_prompt(self, prompt: AccountPrompt) -> None:
+        """Hộp thoại Đăng nhập / Đăng ký / Đăng xuất tài khoản người chơi."""
+        box = pygame.Rect(0, 0, *ACCOUNT_BOX_SIZE)
+        box.center = (self.width // 2, self.height // 2)
+        _begin_overlay(self.width, self.height)
+        _fill_rect_alpha(
+            pygame.Rect(0, 0, self.width, self.height),
+            (0.0, 0.0, 0.0),
+            0.58,
+            self.height,
+        )
+        _fill_rect(box, PICKER_BOX_COLOR, self.height)
+
+        self.account_title.set_text("Tài khoản Người chơi (Đăng nhập / Đăng ký)")
+        self.account_title.draw_centered(box.centerx, box.y + 16, self.height)
+
+        self.account_info.set_text(prompt.info)
+        self.account_info.draw_centered(box.centerx, box.y + 48, self.height)
+
+        user_box = pygame.Rect(box.x + 28, box.y + 84, box.w - 56, 40)
+        pass_box = pygame.Rect(box.x + 28, box.y + 138, box.w - 56, 40)
+        _fill_rect(
+            user_box,
+            PICKER_SELECTED_COLOR if prompt.active_field == 0 else BUTTON_COLOR,
+            self.height,
+        )
+        _fill_rect(
+            pass_box,
+            PICKER_SELECTED_COLOR if prompt.active_field == 1 else BUTTON_COLOR,
+            self.height,
+        )
+
+        cursor_u = "|" if prompt.active_field == 0 else ""
+        cursor_p = "|" if prompt.active_field == 1 else ""
+        masked_pw = "*" * len(prompt.password)
+        self.account_user_label.set_text(f"Username: {prompt.username}{cursor_u}")
+        self.account_pass_label.set_text(f"Password: {masked_pw}{cursor_p}")
+        self.account_user_label.draw(user_box.x + 12, user_box.y + 8, self.height)
+        self.account_pass_label.draw(pass_box.x + 12, pass_box.y + 8, self.height)
+
+        self.account_error.set_text(prompt.error)
+        self.account_error.draw_centered(box.centerx, box.y + 196, self.height)
+
+        self.account_footer.set_text(ACCOUNT_FOOTER)
+        self.account_footer.draw_centered(box.centerx, box.bottom - 34, self.height)
         _end_overlay()
