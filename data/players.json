@@ -390,7 +390,7 @@
         "Stage 16": 42,
         "Stage 17": 315,
         "Stage 18": 85,
-        "Stage 02": 28,
+        "Stage 02": 17,
         "Stage 03": 19,
         "Stage 04": 39,
         "Stage 05": 33,
@@ -410,7 +410,7 @@
         "Stage 16": 0.077,
         "Stage 17": 0.069,
         "Stage 18": 0.053,
-        "Stage 02": 16.88,
+        "Stage 02": 0.021,
         "Stage 03": 0.007,
         "Stage 04": 0.007,
         "Stage 05": 0.026,
@@ -419,7 +419,7 @@
         "Stage 08": 0.07,
         "Stage 09": 0.119,
         "Stage 10": 1.055,
-        "Stage 01": 0.005
+        "Stage 01": 0.002
       },
       "level_stats": {
         "Stage 11": {
@@ -471,10 +471,10 @@
           "mode": "BFS"
         },
         "Stage 02": {
-          "score": 28,
-          "move_count": 28,
-          "elapsed_time": 16.88,
-          "mode": "MANUAL"
+          "score": 17,
+          "move_count": 17,
+          "elapsed_time": 0.021,
+          "mode": "A*"
         },
         "Stage 03": {
           "score": 19,
@@ -527,8 +527,8 @@
         "Stage 01": {
           "score": 7,
           "move_count": 7,
-          "elapsed_time": 0.005,
-          "mode": "BFS"
+          "elapsed_time": 0.003,
+          "mode": "A*"
         }
       },
       "saved_replays": {
@@ -1690,33 +1690,22 @@
           "RIGHT"
         ],
         "Stage 02": [
+          "UP",
           "RIGHT",
-          "UP",
-          "UP",
-          "DOWN",
           "DOWN",
           "RIGHT",
           "RIGHT",
           "RIGHT",
           "RIGHT",
           "UP",
-          "LEFT",
           "UP",
           "DOWN",
           "RIGHT",
           "DOWN",
-          "LEFT",
-          "UP",
-          "RIGHT",
-          "UP",
-          "DOWN",
-          "DOWN",
-          "RIGHT",
-          "RIGHT",
           "RIGHT",
           "RIGHT",
           "UP",
-          "LEFT",
+          "RIGHT",
           "UP"
         ],
         "Stage 03": [
@@ -2001,12 +1990,12 @@
         ],
         "Stage 01": [
           "RIGHT",
-          "DOWN",
+          "RIGHT",
           "DOWN",
           "RIGHT",
           "RIGHT",
-          "DOWN",
-          "RIGHT"
+          "RIGHT",
+          "DOWN"
         ]
       },
       "history": [
@@ -3981,6 +3970,70 @@
           "elapsed_time": 0.005,
           "score": 7,
           "timestamp": 1793199784.3034697
+        },
+        {
+          "level_id": "Stage 01",
+          "moves": [
+            "RIGHT",
+            "RIGHT",
+            "DOWN",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "DOWN"
+          ],
+          "move_count": 7,
+          "won": true,
+          "mode": "A*",
+          "elapsed_time": 0.002,
+          "score": 7,
+          "timestamp": 1793200422.3231459
+        },
+        {
+          "level_id": "Stage 02",
+          "moves": [
+            "UP",
+            "RIGHT",
+            "DOWN",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "UP",
+            "UP",
+            "DOWN",
+            "RIGHT",
+            "DOWN",
+            "RIGHT",
+            "RIGHT",
+            "UP",
+            "RIGHT",
+            "UP"
+          ],
+          "move_count": 17,
+          "won": true,
+          "mode": "A*",
+          "elapsed_time": 0.021,
+          "score": 17,
+          "timestamp": 1793200428.1327949
+        },
+        {
+          "level_id": "Stage 01",
+          "moves": [
+            "RIGHT",
+            "RIGHT",
+            "DOWN",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "DOWN"
+          ],
+          "move_count": 7,
+          "won": true,
+          "mode": "A*",
+          "elapsed_time": 0.003,
+          "score": 7,
+          "timestamp": 1793202037.395542
         }
       ]
     }

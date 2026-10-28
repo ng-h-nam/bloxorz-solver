@@ -378,9 +378,10 @@ def _select_stage_from_list(
             return item
 
     # 2. Khớp theo số thứ tự màn (ví dụ: "1", "01", "Stage 1", "stage_05")
-    digits = "".join(ch for ch in query if ch.isdigit())
+    base_query = os.path.basename(query)
+    digits = "".join(ch for ch in base_query if ch.isdigit())
     if digits:
-        stage_num = int(digits)
+        stage_num = max(1, int(digits))
         if 1 <= stage_num <= len(stages_list):
             return stages_list[stage_num - 1]
 

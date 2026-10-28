@@ -1,14 +1,14 @@
-import os
-import sys
 import csv
 from datetime import datetime
+import os
+import sys
 
 # python -m experiments.run_experiments
 
 """
 Script tự động chạy thực nghiệm (Batch Testing) cho dự án Bloxorz Solver.
-Tự động duyệt qua tất cả các file bản đồ trong thư mục data/maps/,
-chạy các thuật toán tìm kiếm sẵn có (BFS, DFS), đo lường chỉ số và ghi log vào CSV.
+Tự động duyệt qua tất cả các màn chơi trong thư mục data/maps/,
+chạy các thuật toán tìm kiếm sẵn có (BFS, DFS, A*), đo lường chỉ số và ghi log vào CSV.
 """
 
 
@@ -74,8 +74,36 @@ def run_single_experiment(solver_cls, board_map, map_name, log_file_path):
 
     status_str = "✅ Success" if success else "❌ Failed"
     print(
-        f"  ├─ [{solver_name:<10}] {status_str} | Time: {execution_time:.4f}s | Mem: {peak_memory_mb:.2f}MB | Nodes: {expanded_nodes} | Steps: {solution_length}"
+        f"  ├─ [{solver_name:<12}] {status_str} | "
+        f"Time: {execution_time:.4f}s | Mem: {peak_memory_mb:.2f}MB | "
+        f"Nodes: {expanded_nodes} | Steps: {solution_length}"
     )
+
+
+def _discover_experiment_solvers():
+    solvers_cls = []
+    try:
+        from algorithms.bfs import BFSSolver
+
+        solvers_cls.append(BFSSolver)
+    except ImportError:
+        print("💡 Chú ý: Không tìm thấy module BFSSolver trong package algorithms.")
+
+    try:
+        from algorithms.dfs import DFSSolver
+
+        solvers_cls.append(DFSSolver)
+    except ImportError:
+        print("💡 Chú ý: Không tìm thấy module DFSSolver trong package algorithms.")
+
+    try:
+        from algorithms.astar import AStarSolver
+
+        solvers_cls.append(AStarSolver)
+    except ImportError:
+        print("💡 Chú ý: Không tìm thấy module AStarSolver trong package algorithms.")
+
+    return solvers_cls
 
 
 def main():
@@ -94,38 +122,24 @@ def main():
         print(f"⚠️ Chưa tìm thấy thư mục {maps_dir}. Hãy tạo các file map trước khi chạy!")
         sys.exit(1)
 
-    # Lấy danh sách file map trong thư mục data/maps/
-    map_files = sorted([f for f in os.listdir(maps_dir) if f.endswith((".json", ".txt"))])
+    # Ưu tiên danh sách stage_*.txt nếu có, tránh chạy lặp cả coolmath.json lẫn 33 file .txt
+    txt_files = sorted([f for f in os.listdir(maps_dir) if f.endswith(".txt")])
+    json_files = sorted([f for f in os.listdir(maps_dir) if f.endswith(".json")])
+    map_files = txt_files if txt_files else json_files
 
     if not map_files:
         print("⚠️ Không tìm thấy file map (.json / .txt) nào trong thư mục data/maps/!")
         sys.exit(0)
 
-    # Chỉ định rõ ràng danh sách class solver muốn test (chỉ BFS và DFS)
-    solvers_cls = []
-
-    try:
-        from algorithms.bfs import BFSSolver
-
-        solvers_cls.append(BFSSolver)
-    except ImportError:
-        print("💡 Chú ý: Không tìm thấy module BFSSolver trong package algorithms.")
-
-    try:
-        from algorithms.dfs import DFSSolver
-
-        solvers_cls.append(DFSSolver)
-    except ImportError:
-        print("💡 Chú ý: Không tìm thấy module DFSSolver trong package algorithms.")
-
-    try:
-        from core.map_loader import load_level
-    except ImportError as e:
-        print(f"❌ Không thể import load_level từ core.map_loader: {e}")
-        return
-
+    solvers_cls = _discover_experiment_solvers()
     if not solvers_cls:
         print("❌ Không có thuật toán nào được nạp thành công để chạy thực nghiệm.")
+        return
+
+    try:
+        from core.map_loader import load_coolmath_levels, load_level
+    except ImportError as e:
+        print(f"❌ Không thể import load_level từ core.map_loader: {e}")
         return
 
     for map_file in map_files:
@@ -133,28 +147,21 @@ def main():
         print(f"\n🎮 Thử nghiệm trên Map: {map_file}")
 
         try:
-            # Nếu file map là coolmath.json tổng hợp nhiều màn, có thể load theo danh sách hoặc từng stage
             if map_file == "coolmath.json":
-                from core.map_loader import load_coolmath_levels
-
-                boards_dict = load_coolmath_levels(map_path)
-                board_maps = boards_dict
+                board_maps = load_coolmath_levels(map_path)
             else:
-                board_map = load_level(map_path)
-                board_maps = [board_map]
+                board_maps = [load_level(map_path)]
         except Exception as e:
             print(f"  ❌ Không thể nạp bản đồ {map_file}: {e}")
             continue
 
-        # Xử lý trường hợp nạp danh sách màn chơi từ coolmath.json
         items_to_run = board_maps if isinstance(board_maps, list) else list(board_maps)
 
         for idx, board_map in enumerate(items_to_run):
             current_map_name = f"{map_file}_stage_{idx + 1}" if map_file == "coolmath.json" else map_file
-            for SolverClass in solvers_cls:
+            for solver_cls in solvers_cls:
                 try:
-                    # Truyền trực tiếp SolverClass vào hàm thực nghiệm
-                    run_single_experiment(SolverClass, board_map, current_map_name, log_file)
+                    run_single_experiment(solver_cls, board_map, current_map_name, log_file)
                 except Exception as e:
                     print(f"  ❌ Lỗi khi chạy thực nghiệm: {e}")
 
