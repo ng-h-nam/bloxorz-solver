@@ -234,12 +234,17 @@ class Renderer:
         pose: Optional[Pose] = None,
         show_block: bool = True,
         hidden_tiles: AbstractSet[Cell] = frozenset(),
+        clear_color: bool = True,
     ) -> None:
+        """Vẽ cả cảnh 3D. `clear_color=False` chỉ xóa độ sâu để giữ nền đã vẽ sẵn phía sau (bầu trời)."""
         if frozenset(hidden_tiles) != self._hidden:
             self._set_hidden(hidden_tiles)
 
-        glClearColor(0.08, 0.08, 0.12, 1)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        if clear_color:
+            glClearColor(0.08, 0.08, 0.12, 1)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        else:
+            glClear(GL_DEPTH_BUFFER_BIT)
         self._setup_camera()
 
         glCallList(self.map_list)

@@ -58,9 +58,12 @@ from core.block import Direction
 from core.game import Game
 from core.state import State
 from gui.assistant import AiAssistant
+from gui.backdrop import Backdrop, SkyBackdrop
 from gui.control_panel import PANEL_WIDTH, ControlPanel
+from gui.gl_painter import GLPainter
 from gui.level_catalog import LevelCatalog
 from gui.overlays import AccountOverlay, LevelPickerOverlay, Overlay
+from gui.pixel_font import build_typefaces
 from gui.player_data import PlayerDataManager
 from gui.presenter import ScenePresenter
 from gui.renderer import FOV_DEGREES, Renderer, load_textures
@@ -137,7 +140,11 @@ class Window:
             self.session, self.presenter, self.replays, self.solver
         )
         self.renderer: Renderer = Renderer(game.board, self.aspect, self.textures)
-        self.panel: ControlPanel = ControlPanel(width, height)
+        self.painter: GLPainter = GLPainter(self.textures)
+        self.backdrop: Backdrop = SkyBackdrop()
+        self.panel: ControlPanel = ControlPanel(
+            width, height, self.painter, build_typefaces()
+        )
         self.clock: pygame.time.Clock = pygame.time.Clock()
         self.overlay: Overlay | None = None
 
@@ -189,6 +196,7 @@ class Window:
             self.draw()
             pygame.display.flip()
         self.assistant.cancel()
+        self.painter.dispose()
         pygame.quit()
 
     def process_event(self, event: pygame.event.Event) -> None:
@@ -215,17 +223,29 @@ class Window:
         )
         self.session.tick(dt, paused)
         self.renderer.camera.update(dt)
+        self.backdrop.update(dt)
         self.replays.update(dt)
         self.presenter.update(dt, self.session.game)
 
     def draw(self) -> None:
-        """Vẽ vùng 3D bên phải, rồi bảng bên trái, băng thông báo và overlay đang mở."""
+        """Vẽ nền trời, cảnh 3D bên phải, rồi bảng bên trái, băng thông báo và overlay đang mở."""
         self._sync_stage()
         game: Game = self.session.game
+        glViewport(0, 0, self.width, self.height)
+        self.painter.begin(self.width, self.height)
+        self.backdrop.draw(
+            self.painter,
+            pygame.Rect(PANEL_WIDTH, 0, self.width - PANEL_WIDTH, self.height),
+        )
+        self.painter.end()
         glViewport(PANEL_WIDTH, 0, self.width - PANEL_WIDTH, self.height)
         state, pose = self.presenter.display(game)
         self.renderer.draw(
-            state, pose, self.presenter.block_visible, self.presenter.broken_tiles
+            state,
+            pose,
+            self.presenter.block_visible,
+            self.presenter.broken_tiles,
+            clear_color=False,
         )
 
         glViewport(0, 0, self.width, self.height)
@@ -343,6 +363,7 @@ class Window:
     def handle_mouse_motion(self, pos: tuple[int, int], rel: tuple[int, int]) -> None:
         """Xoay hoặc dịch camera theo chuột đang kéo."""
         self._mouse = pos
+        self.panel.set_mouse(pos)
         if self._drag == "orbit":
             self.renderer.camera.orbit(rel[0], rel[1])
         elif self._drag == "pan":
