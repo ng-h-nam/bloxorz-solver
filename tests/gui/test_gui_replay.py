@@ -1,4 +1,4 @@
-"""Test cho gui.replay: dựng timeline và phát lại từ trạng thái đang chơi hoặc từ đầu."""
+"""Test cho gui.engine.replay: dựng timeline và phát lại từ trạng thái đang chơi hoặc từ đầu."""
 
 import pytest
 
@@ -6,9 +6,7 @@ from algorithms.bfs import BFSSolver
 from core.block import Direction
 from core.board import Board
 from core.game import Game, GameStatus
-from gui.actions import action_names
-from gui.level_catalog import LevelCatalog
-from gui.replay import (
+from gui.engine.replay import (
     MSG_EXTRA_STEPS,
     MSG_GAME_OVER,
     Replayer,
@@ -16,6 +14,8 @@ from gui.replay import (
     ReplayMode,
     build_timeline,
 )
+from gui.model.level_catalog import LevelCatalog
+from gui.shared.actions import action_names
 
 
 @pytest.fixture

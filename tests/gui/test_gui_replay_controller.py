@@ -1,4 +1,4 @@
-"""Test cho gui.replay_controller.ReplayController."""
+"""Test cho gui.engine.replay_controller.ReplayController."""
 
 from pathlib import Path
 
@@ -6,13 +6,17 @@ import pytest
 
 from algorithms.bfs import BFSSolver
 from core.game import Game
-from gui.actions import action_names
-from gui.level_catalog import LevelCatalog
-from gui.player_data import MANUAL, PlayerDataManager
-from gui.presenter import ScenePresenter
-from gui.replay import ReplayMode
-from gui.replay_controller import MSG_NO_SAVED_REPLAY, SPEED_PRESETS, ReplayController
-from gui.session import GameSession
+from gui.engine.presenter import ScenePresenter
+from gui.engine.replay import ReplayMode
+from gui.engine.replay_controller import (
+    MSG_NO_SAVED_REPLAY,
+    SPEED_PRESETS,
+    ReplayController,
+)
+from gui.model.level_catalog import LevelCatalog
+from gui.model.player_data import MANUAL, PlayerDataManager
+from gui.model.session import GameSession
+from gui.shared.actions import action_names
 
 
 @pytest.fixture

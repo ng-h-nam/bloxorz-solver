@@ -1,4 +1,4 @@
-"""Test cho gui.session.GameSession: luật chơi, tiến trình màn, mật khẩu, hoàn tác và đồng hồ."""
+"""Test cho gui.model.session.GameSession: luật chơi, tiến trình màn, mật khẩu, hoàn tác và đồng hồ."""
 
 import json
 from pathlib import Path
@@ -8,10 +8,9 @@ import pytest
 from algorithms.bfs import BFSSolver
 from core.block import Direction
 from core.game import Game, GameStatus
-from gui.actions import action_names
-from gui.level_catalog import LevelCatalog
-from gui.player_data import PlayerDataManager
-from gui.session import (
+from gui.model.level_catalog import LevelCatalog
+from gui.model.player_data import PlayerDataManager
+from gui.model.session import (
     MSG_ENDED,
     NO_RECORD_TEXT,
     GameSession,
@@ -19,6 +18,7 @@ from gui.session import (
     StageSelection,
     UndoResult,
 )
+from gui.shared.actions import action_names
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-"""Test cho gui.overlays: họ hộp thoại nổi (chọn màn, mật khẩu màn, tài khoản)."""
+"""Test cho gui.ui.overlays: họ hộp thoại nổi (chọn màn, mật khẩu màn, tài khoản)."""
 
 from collections.abc import Callable
 from pathlib import Path
@@ -24,8 +24,11 @@ from pygame.locals import (
 )
 
 from core.game import Game
-from gui.level_catalog import LevelCatalog
-from gui.overlays import (
+from gui.model.level_catalog import LevelCatalog
+from gui.model.passcode_prompt import PasscodePrompt
+from gui.model.player_data import PasswordHasher, PlayerDataManager
+from gui.model.session import GameSession
+from gui.ui.overlays import (
     MSG_LOGGED_OUT,
     MSG_NEED_USERNAME,
     MSG_WRONG_PASSCODE,
@@ -34,9 +37,6 @@ from gui.overlays import (
     Overlay,
     PasscodeOverlay,
 )
-from gui.passcode_prompt import PasscodePrompt
-from gui.player_data import PasswordHasher, PlayerDataManager
-from gui.session import GameSession
 
 WINDOW = (1280, 768)
 

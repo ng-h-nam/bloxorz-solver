@@ -57,20 +57,20 @@ from pygame.locals import (
 from core.block import Direction
 from core.game import Game
 from core.state import State
-from gui.assistant import AiAssistant
-from gui.backdrop import Backdrop, SkyBackdrop
-from gui.control_panel import PANEL_WIDTH, ControlPanel
-from gui.gl_painter import GLPainter
-from gui.level_catalog import LevelCatalog
-from gui.overlays import AccountOverlay, LevelPickerOverlay, Overlay
-from gui.pixel_font import build_typefaces
-from gui.player_data import PlayerDataManager
-from gui.presenter import ScenePresenter
-from gui.renderer import FOV_DEGREES, Renderer, load_textures
-from gui.replay_controller import ReplayController
-from gui.session import GameSession, UndoResult
-from gui.solver_service import SolverService
-from gui.viewmodels import HudData
+from gui.engine.assistant import AiAssistant
+from gui.engine.presenter import ScenePresenter
+from gui.engine.replay_controller import ReplayController
+from gui.engine.solver_service import SolverService
+from gui.model.level_catalog import LevelCatalog
+from gui.model.player_data import PlayerDataManager
+from gui.model.session import GameSession, UndoResult
+from gui.scene.renderer import FOV_DEGREES, Renderer, load_textures
+from gui.shared.viewmodels import HudData
+from gui.ui.backdrop import Backdrop, SkyBackdrop
+from gui.ui.control_panel import PANEL_WIDTH, ControlPanel
+from gui.ui.gl_painter import GLPainter
+from gui.ui.overlays import AccountOverlay, LevelPickerOverlay, Overlay
+from gui.ui.pixel_font import build_typefaces
 
 KEY_TO_DIRECTION: dict[int, Direction] = {
     K_UP: Direction.UP,

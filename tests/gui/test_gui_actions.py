@@ -1,9 +1,9 @@
-"""Test cho gui.actions: chuẩn hóa tên hành động."""
+"""Test cho gui.shared.actions: chuẩn hóa tên hành động."""
 
 import pytest
 
 from core.block import Direction
-from gui.actions import action_name, action_names, count_moves
+from gui.shared.actions import action_name, action_names, count_moves
 
 
 def test_direction_enum_maps_to_its_value() -> None:

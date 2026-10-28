@@ -1,4 +1,4 @@
-"""Test cho gui.solver_service: danh sách thuật toán, bản đồ có goal_pos và dịch vụ giải từ vị trí hiện tại."""
+"""Test cho gui.engine.solver_service: danh sách thuật toán, bản đồ có goal_pos và dịch vụ giải từ vị trí hiện tại."""
 
 import time
 from typing import Any, ClassVar
@@ -9,9 +9,7 @@ from algorithms.bfs import BFSSolver
 from core.board import Board
 from core.game import Game
 from core.state import State
-from gui.actions import action_names
-from gui.level_catalog import LevelCatalog
-from gui.solver_service import (
+from gui.engine.solver_service import (
     GoalAwareBoard,
     SolverOutcome,
     SolverService,
@@ -19,6 +17,8 @@ from gui.solver_service import (
     discover_available_solvers,
     with_goal_pos,
 )
+from gui.model.level_catalog import LevelCatalog
+from gui.shared.actions import action_names
 
 
 class FakeResult:
@@ -193,8 +193,8 @@ def test_an_outcome_is_delivered_only_once(game: Game) -> None:
 
 
 def test_outcome_solved_requires_a_non_empty_solution() -> None:
-    from gui.solver_service import SolverContext
-    from gui.solver_worker import SolverResultEvent
+    from gui.engine.solver_service import SolverContext
+    from gui.engine.solver_worker import SolverResultEvent
 
     context = SolverContext(1, "BFS", "Stage 01", State(0, 0), ())
     assert not SolverOutcome(context).solved

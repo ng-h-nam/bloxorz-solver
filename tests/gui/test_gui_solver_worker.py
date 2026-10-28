@@ -1,11 +1,11 @@
-"""Test cho gui.solver_worker: kiểm tra khóa trạng thái và bộ chạy giải nền."""
+"""Test cho gui.engine.solver_worker: kiểm tra khóa trạng thái và bộ chạy giải nền."""
 
 import time
 from typing import Any
 
 from core.block import Direction
 from core.state import State
-from gui.solver_worker import (
+from gui.engine.solver_worker import (
     CANCELLED,
     BackgroundSolverWorker,
     SolverErrorEvent,

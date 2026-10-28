@@ -1,11 +1,11 @@
-"""Test cho gui.player_data: hồ sơ, băm mật khẩu, kho JSON, quản lý tài khoản và hạn mức AI."""
+"""Test cho gui.model.player_data: hồ sơ, băm mật khẩu, kho JSON, quản lý tài khoản và hạn mức AI."""
 
 import json
 from pathlib import Path
 
 import pytest
 
-from gui.player_data import (
+from gui.model.player_data import (
     MANUAL,
     MAX_AI_USES_PER_LEVEL,
     MAX_HISTORY,

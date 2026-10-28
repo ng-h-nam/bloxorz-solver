@@ -1,6 +1,6 @@
-"""Test cho gui.account_prompt.AccountPrompt."""
+"""Test cho gui.model.account_prompt.AccountPrompt."""
 
-from gui.account_prompt import AccountPrompt
+from gui.model.account_prompt import AccountPrompt
 
 
 def test_open_as_guest_starts_with_empty_username_field() -> None:

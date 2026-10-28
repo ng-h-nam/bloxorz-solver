@@ -1,24 +1,24 @@
 """Tương thích ngược: các tên từng nằm trong `gui.replayer` nay có module riêng.
 
-- `AccountPrompt` -> `gui.account_prompt`
-- `PlayerDataManager`, `PlayerProfile`, `LevelRecord`, `calculate_level_score` -> `gui.player_data`
-- `Replayer`, `ReplayFrame` -> `gui.replay` (API mới: phát từ trạng thái đang chơi, chỉ dùng API công khai của Game)
-- `BackgroundSolverWorker`, `SolverResultEvent`, `SolverErrorEvent`, `verify_solver_state_key` -> `gui.solver_worker`
+- `AccountPrompt` -> `gui.model.account_prompt`
+- `PlayerDataManager`, `PlayerProfile`, `LevelRecord`, `calculate_level_score` -> `gui.model.player_data`
+- `Replayer`, `ReplayFrame` -> `gui.engine.replay` (API mới: phát từ trạng thái đang chơi, chỉ dùng API công khai của Game)
+- `BackgroundSolverWorker`, `SolverResultEvent`, `SolverErrorEvent`, `verify_solver_state_key` -> `gui.engine.solver_worker`
 """
 
-from gui.account_prompt import AccountPrompt
-from gui.player_data import (
-    LevelRecord,
-    PlayerDataManager,
-    PlayerProfile,
-    calculate_level_score,
-)
-from gui.replay import Replayer, ReplayFrame, ReplayMode
-from gui.solver_worker import (
+from gui.engine.replay import Replayer, ReplayFrame, ReplayMode
+from gui.engine.solver_worker import (
     BackgroundSolverWorker,
     SolverErrorEvent,
     SolverResultEvent,
     verify_solver_state_key,
+)
+from gui.model.account_prompt import AccountPrompt
+from gui.model.player_data import (
+    LevelRecord,
+    PlayerDataManager,
+    PlayerProfile,
+    calculate_level_score,
 )
 
 __all__ = [

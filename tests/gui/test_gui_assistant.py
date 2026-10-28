@@ -1,4 +1,4 @@
-"""Test cho gui.assistant.AiAssistant: hạn mức 2 lượt AI mỗi màn, AI không mở khóa màn kế, kết quả cũ."""
+"""Test cho gui.engine.assistant.AiAssistant: hạn mức 2 lượt AI mỗi màn, AI không mở khóa màn kế, kết quả cũ."""
 
 import time
 from pathlib import Path
@@ -11,20 +11,24 @@ from core.block import Direction
 from core.board import Board
 from core.game import Game, GameStatus
 from core.state import State
-from gui.actions import action_names
-from gui.assistant import (
+from gui.engine.assistant import (
     MSG_AI_ALREADY_WON,
     MSG_AI_CANCELLED,
     MSG_AI_EXHAUSTED,
     MSG_AI_STALE,
     AiAssistant,
 )
-from gui.level_catalog import LevelCatalog
-from gui.player_data import MAX_AI_USES_PER_LEVEL, PlayerDataManager
-from gui.presenter import ScenePresenter
-from gui.replay_controller import ReplayController
-from gui.session import GameSession
-from gui.solver_service import SolverService, SolverSpec, discover_available_solvers
+from gui.engine.presenter import ScenePresenter
+from gui.engine.replay_controller import ReplayController
+from gui.engine.solver_service import (
+    SolverService,
+    SolverSpec,
+    discover_available_solvers,
+)
+from gui.model.level_catalog import LevelCatalog
+from gui.model.player_data import MAX_AI_USES_PER_LEVEL, PlayerDataManager
+from gui.model.session import GameSession
+from gui.shared.actions import action_names
 
 
 class FakeResult:

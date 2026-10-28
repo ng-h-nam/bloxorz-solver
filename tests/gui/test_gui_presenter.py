@@ -1,4 +1,4 @@
-"""Test cho gui.presenter: băng thông báo và ScenePresenter."""
+"""Test cho gui.engine.presenter: băng thông báo và ScenePresenter."""
 
 from pathlib import Path
 
@@ -7,10 +7,7 @@ import pytest
 from algorithms.bfs import BFSSolver
 from core.block import Direction
 from core.game import Game, GameStatus
-from gui.actions import action_names
-from gui.level_catalog import LevelCatalog
-from gui.player_data import PlayerDataManager
-from gui.presenter import (
+from gui.engine.presenter import (
     HINT_LOST,
     HINT_WON,
     HINT_WON_NEXT,
@@ -19,8 +16,11 @@ from gui.presenter import (
     replay_banner,
     win_banner,
 )
-from gui.replay import build_timeline
-from gui.session import GameSession, MoveKind, MoveReport, WinReport
+from gui.engine.replay import build_timeline
+from gui.model.level_catalog import LevelCatalog
+from gui.model.player_data import PlayerDataManager
+from gui.model.session import GameSession, MoveKind, MoveReport, WinReport
+from gui.shared.actions import action_names
 
 
 @pytest.fixture
