@@ -1,4 +1,11 @@
+import os
+import sys
 import unittest
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from core.block import Direction
 from core.game import Game, GameStatus
 from core.map_loader import load_coolmath_stage, parse_level

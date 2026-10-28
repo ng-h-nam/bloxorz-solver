@@ -29,3 +29,6 @@ ignore = []
 # Cảnh báo nếu một hàm có quá nhiều nhánh if/elif/else hoặc vòng lặp.
 # Game thường có vòng lặp chính (game loop) khá phức tạp, để 15 là mức hợp lý (mặc định là 10)
 max-complexity = 15
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

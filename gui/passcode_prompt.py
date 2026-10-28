@@ -28,6 +28,21 @@ def digit_from_key(key: int, text: str = "") -> str | None:
     return _DIGIT_KEYS.get(key)
 
 
+def char_from_key(key: int, text: str = "", shift: bool = False) -> str | None:
+    """Ký tự chữ, số hoặc '_', '-' cho hộp nhập tài khoản mà không cần text_input."""
+    if len(text) == 1 and text.isascii() and (text.isalnum() or text in ("_", "-")):
+        return text
+    digit = digit_from_key(key, text)
+    if digit is not None:
+        return digit
+    if pygame.K_a <= key <= pygame.K_z:
+        letter = chr(ord("a") + (key - pygame.K_a))
+        return letter.upper() if shift else letter
+    if key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+        return "_" if shift else "-"
+    return None
+
+
 class PasscodePrompt:
     """Hộp nhập mật khẩu của một màn: chỉ giữ trạng thái; Window xử lý phím và việc vẽ."""
 
