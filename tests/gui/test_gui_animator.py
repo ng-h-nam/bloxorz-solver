@@ -16,12 +16,7 @@ NEW = State(3, 4, Orientation.HORIZONTAL)
 
 def test_idle_by_default():
     a = Animator()
-    assert (
-        not a.active
-        and a.phase == Phase.IDLE
-        and a.pose is None
-        and a.display_state is None
-    )
+    assert not a.active and a.phase == Phase.IDLE and a.pose is None and a.display_state is None
     assert a.update(1.0) is False
 
 
@@ -79,9 +74,7 @@ def test_cancel_stops_everything():
 def test_pose_of_split_cube_uses_the_active_cube():
     split = State(2, 2, Orientation.SPLIT, frozenset(), (2, 6), 1)
     a = Animator()
-    a.start_roll(
-        split, Direction.RIGHT, State(2, 2, Orientation.SPLIT, frozenset(), (2, 7), 1)
-    )
+    a.start_roll(split, Direction.RIGHT, State(2, 2, Orientation.SPLIT, frozenset(), (2, 7), 1))
     a.update(0.05)
     assert a.pose.piece == 1 and a.pose.bounds == (6, 7, 0, 1, 2, 3)
 
@@ -90,12 +83,7 @@ def test_fall_without_broken_tile_rotates_off_the_edge():
     a = Animator()
     a.start_fall(OLD, Direction.RIGHT)
     a.update(ROLL_SECONDS + FALL_SECONDS / 2)
-    assert (
-        a.pose.tile is None
-        and a.pose.angle > 90
-        and a.pose.drop < 0
-        and a.broken_tile is None
-    )
+    assert a.pose.tile is None and a.pose.angle > 90 and a.pose.drop < 0 and a.broken_tile is None
 
 
 def test_fall_with_broken_tile_tile_goes_first_then_block_follows_straight_down():
@@ -103,9 +91,7 @@ def test_fall_with_broken_tile_tile_goes_first_then_block_follows_straight_down(
     a.start_fall(OLD, Direction.RIGHT, (3, 4))
     a.update(ROLL_SECONDS / 2)
     assert a.pose.tile is None  # còn đang lăn: ô chưa vỡ
-    a.update(
-        ROLL_SECONDS / 2 + FALL_SECONDS * 0.1
-    )  # 10% đầu pha rơi: ô đã rơi, khối chưa
+    a.update(ROLL_SECONDS / 2 + FALL_SECONDS * 0.1)  # 10% đầu pha rơi: ô đã rơi, khối chưa
     early = a.pose
     assert a.phase == Phase.FALL and a.broken_tile == (3, 4)
     assert early.tile is not None and early.tile.cell == (3, 4)

@@ -19,12 +19,8 @@ from gui.ui.pixel_font import (
 )
 
 pygame.font.init()
-needs_monocraft = pytest.mark.skipif(
-    not os.path.exists(MONOCRAFT_PATH), reason="thiếu assets/fonts/Monocraft.ttf"
-)
-needs_fallback = pytest.mark.skipif(
-    not os.path.exists(FALLBACK_PATH), reason="thiếu assets/fonts/DejaVuSans.ttf"
-)
+needs_monocraft = pytest.mark.skipif(not os.path.exists(MONOCRAFT_PATH), reason="thiếu assets/fonts/Monocraft.ttf")
+needs_fallback = pytest.mark.skipif(not os.path.exists(FALLBACK_PATH), reason="thiếu assets/fonts/DejaVuSans.ttf")
 WHITE = (255, 255, 255)
 TONES = ["\u0300", "\u0301", "\u0309", "\u0303", "\u0323"]
 
@@ -119,10 +115,7 @@ def test_shadow_adds_one_native_pixel_each_way() -> None:
         face.render("Abc", WHITE, shadow=False),
         face.render("Abc", WHITE, shadow=True),
     )
-    assert (
-        shadowed.get_width() == plain.get_width() + 2
-        and shadowed.get_height() == plain.get_height() + 2
-    )
+    assert shadowed.get_width() == plain.get_width() + 2 and shadowed.get_height() == plain.get_height() + 2
 
 
 @needs_monocraft
@@ -156,9 +149,7 @@ def test_missing_monocraft_falls_back_to_truetype(
     tmp_path: pytest.TempPathFactory,
 ) -> None:
     faces = build_typefaces(str(tmp_path / "khong_co.ttf"), FALLBACK_PATH)  # type: ignore[operator]
-    assert set(faces) == set(ROLE_SCALES) and all(
-        isinstance(f, TrueTypeTypeface) for f in faces.values()
-    )
+    assert set(faces) == set(ROLE_SCALES) and all(isinstance(f, TrueTypeTypeface) for f in faces.values())
 
 
 @needs_fallback

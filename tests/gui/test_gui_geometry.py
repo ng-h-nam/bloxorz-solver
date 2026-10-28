@@ -29,20 +29,13 @@ def rotate(point, axis, degrees):
         axis[2] * x - axis[0] * z,
         axis[0] * y - axis[1] * x,
     )
-    return tuple(
-        p * c + cross[i] * s + axis[i] * d * (1 - c) for i, p in enumerate((x, y, z))
-    )
+    return tuple(p * c + cross[i] * s + axis[i] * d * (1 - c) for i, p in enumerate((x, y, z)))
 
 
 def rolled_bounds(bounds, direction):
     px, pz, axis, sign = roll_pivot(bounds, direction)
     x0, x1, y0, y1, z0, z1 = bounds
-    moved = [
-        rotate((x - px, y, z - pz), axis, sign * 90)
-        for x in (x0, x1)
-        for y in (y0, y1)
-        for z in (z0, z1)
-    ]
+    moved = [rotate((x - px, y, z - pz), axis, sign * 90) for x in (x0, x1) for y in (y0, y1) for z in (z0, z1)]
     moved = [(x + px, y, z + pz) for x, y, z in moved]
     return tuple(
         round(v, 6)
@@ -61,17 +54,18 @@ def test_all_twelve_rolls_land_on_new_bounds():
     for (orientation, direction), (dr, dc, new_orientation) in TRANSITION_TABLE.items():
         old = State(5, 5, orientation)
         new = State(5 + dr, 5 + dc, new_orientation)
-        assert rolled_bounds(block_bounds(old), direction) == tuple(
-            float(v) for v in block_bounds(new)
-        ), (orientation, direction)
+        assert rolled_bounds(block_bounds(old), direction) == tuple(float(v) for v in block_bounds(new)), (
+            orientation,
+            direction,
+        )
 
 
 def test_single_cube_rolls_land_on_neighbour_cell():
     for direction, (dr, dc) in SINGLE_CUBE_DELTA.items():
         direction = Direction[direction] if isinstance(direction, str) else direction
-        assert rolled_bounds(cube_bounds(5, 5), direction) == tuple(
-            float(v) for v in cube_bounds(5 + dr, 5 + dc)
-        ), direction
+        assert rolled_bounds(cube_bounds(5, 5), direction) == tuple(float(v) for v in cube_bounds(5 + dr, 5 + dc)), (
+            direction
+        )
 
 
 def test_pieces_for_whole_and_split_block():
@@ -93,9 +87,7 @@ def axis_name(vector):
 
 def test_shades_at_rest_are_exactly_the_table():
     for direction in ROLL_AXIS:
-        assert (
-            roll_face_shades(DEFAULT_FACE_SHADE, direction, 0.0) == DEFAULT_FACE_SHADE
-        )
+        assert roll_face_shades(DEFAULT_FACE_SHADE, direction, 0.0) == DEFAULT_FACE_SHADE
 
 
 def test_shades_after_a_ninety_degree_roll_match_the_table_in_the_new_position():
@@ -131,9 +123,7 @@ def test_shades_stay_inside_the_table_range():
     low, high = min(DEFAULT_FACE_SHADE.values()), max(DEFAULT_FACE_SHADE.values())
     for direction in ROLL_AXIS:
         for degree in range(0, 361, 5):
-            for value in roll_face_shades(
-                DEFAULT_FACE_SHADE, direction, float(degree)
-            ).values():
+            for value in roll_face_shades(DEFAULT_FACE_SHADE, direction, float(degree)).values():
                 assert low - 1e-9 <= value <= high + 1e-9
 
 
@@ -145,18 +135,10 @@ def test_tilt_about_any_axis_is_also_continuous():
 
 
 def test_broken_fragile_cell_only_when_standing_on_a_fragile_tile():
-    board = parse_level(
-        ["S.-.H", "....."]
-    )  # cú pháp coolmath: "." là sàn, "-" là ô giòn, "H" là đích
+    board = parse_level(["S.-.H", "....."])  # cú pháp coolmath: "." là sàn, "-" là ô giòn, "H" là đích
     assert broken_fragile_cell(board, State(0, 2, Orientation.STANDING)) == (0, 2)
-    assert (
-        broken_fragile_cell(board, State(0, 2, Orientation.HORIZONTAL)) is None
-    )  # nằm thì an toàn
-    assert (
-        broken_fragile_cell(board, State(0, 1, Orientation.STANDING)) is None
-    )  # sàn thường
-    assert (
-        broken_fragile_cell(board, State(7, 2, Orientation.STANDING)) is None
-    )  # ngoài bản đồ
+    assert broken_fragile_cell(board, State(0, 2, Orientation.HORIZONTAL)) is None  # nằm thì an toàn
+    assert broken_fragile_cell(board, State(0, 1, Orientation.STANDING)) is None  # sàn thường
+    assert broken_fragile_cell(board, State(7, 2, Orientation.STANDING)) is None  # ngoài bản đồ
     split = State(0, 2, Orientation.SPLIT, frozenset(), (1, 2), 0)
     assert broken_fragile_cell(board, split) is None  # khối đơn không làm vỡ ô

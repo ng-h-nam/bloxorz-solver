@@ -112,9 +112,7 @@ class Window:
         glEnable(GL_DEPTH_TEST)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        self.aspect: float = (
-            width - PANEL_WIDTH
-        ) / height  # chỉ vùng bên phải cột bảng dùng cho cảnh 3D
+        self.aspect: float = (width - PANEL_WIDTH) / height  # chỉ vùng bên phải cột bảng dùng cho cảnh 3D
         gluPerspective(FOV_DEGREES, self.aspect, 0.1, 1000)
         glMatrixMode(GL_MODELVIEW)
 
@@ -123,9 +121,7 @@ class Window:
                 catalog = LevelCatalog.from_json()
             except FileNotFoundError:
                 catalog = LevelCatalog([])
-        players: PlayerDataManager = (
-            player_manager if player_manager is not None else PlayerDataManager()
-        )
+        players: PlayerDataManager = player_manager if player_manager is not None else PlayerDataManager()
 
         # Tạo sau set_mode vì cần ngữ cảnh OpenGL
         self.textures: dict[str, int] = load_textures()
@@ -133,18 +129,12 @@ class Window:
         self.presenter: ScenePresenter = ScenePresenter()
         self.presenter.reset(game)
         self.replays: ReplayController = ReplayController(self.session, self.presenter)
-        self.solver: SolverService = (
-            solver_service if solver_service is not None else SolverService()
-        )
-        self.assistant: AiAssistant = AiAssistant(
-            self.session, self.presenter, self.replays, self.solver
-        )
+        self.solver: SolverService = solver_service if solver_service is not None else SolverService()
+        self.assistant: AiAssistant = AiAssistant(self.session, self.presenter, self.replays, self.solver)
         self.renderer: Renderer = Renderer(game.board, self.aspect, self.textures)
         self.painter: GLPainter = GLPainter(self.textures)
         self.backdrop: Backdrop = SkyBackdrop()
-        self.panel: ControlPanel = ControlPanel(
-            width, height, self.painter, build_typefaces()
-        )
+        self.panel: ControlPanel = ControlPanel(width, height, self.painter, build_typefaces())
         self.clock: pygame.time.Clock = pygame.time.Clock()
         self.overlay: Overlay | None = None
 
@@ -218,9 +208,7 @@ class Window:
         """Cập nhật một khung hình: đổi màn nếu cần, nhận kết quả AI, đồng hồ, camera, phát lại, hoạt cảnh."""
         self._sync_stage()
         self.assistant.poll()
-        paused: bool = (
-            self.overlay is not None or self.replays.active or self.assistant.running
-        )
+        paused: bool = self.overlay is not None or self.replays.active or self.assistant.running
         self.session.tick(dt, paused)
         self.renderer.camera.update(dt)
         self.backdrop.update(dt)
@@ -337,9 +325,7 @@ class Window:
     def handle_mouse_down(self, button: int, pos: tuple[int, int]) -> None:
         """Overlay nhận chuột trước; nếu không thì bấm nút bên trái hoặc bắt đầu kéo camera."""
         if self.overlay is not None:
-            self.overlay = self.overlay.handle_click(
-                button, pos, (self.width, self.height)
-            )
+            self.overlay = self.overlay.handle_click(button, pos, (self.width, self.height))
             return
         if button == 1:
             self._dispatch(self.panel.handle_click(pos))
@@ -349,9 +335,7 @@ class Window:
 
     def _dispatch(self, action: str | None) -> None:
         """Chạy hành động của nút vừa bấm."""
-        handler: Callable[[], None] | None = (
-            self._panel_actions.get(action) if action is not None else None
-        )
+        handler: Callable[[], None] | None = self._panel_actions.get(action) if action is not None else None
         if handler is not None:
             handler()
 

@@ -30,12 +30,8 @@ class FixedTypeface(Typeface):
     def measure(self, text: str) -> tuple[int, int]:
         return len(text) * 6 * self.scale, 9 * self.scale
 
-    def render(
-        self, text: str, color: tuple[int, int, int], shadow: bool = True
-    ) -> pygame.Surface:
-        return pygame.Surface(
-            (max(1, len(text) * 6 * self.scale), 15 * self.scale), pygame.SRCALPHA
-        )
+    def render(self, text: str, color: tuple[int, int, int], shadow: bool = True) -> pygame.Surface:
+        return pygame.Surface((max(1, len(text) * 6 * self.scale), 15 * self.scale), pygame.SRCALPHA)
 
 
 @pytest.fixture(params=["fixed", "real"])
@@ -43,10 +39,7 @@ def faces(request: pytest.FixtureRequest) -> Mapping[str, Typeface]:
     if request.param == "real":
         if not os.path.exists(MONOCRAFT_PATH):
             pytest.skip("thiếu assets/fonts/Monocraft.ttf")
-        return {
-            role: MinecraftTypeface(MONOCRAFT_PATH, scale)
-            for role, (scale, _) in ROLE_SCALES.items()
-        }
+        return {role: MinecraftTypeface(MONOCRAFT_PATH, scale) for role, (scale, _) in ROLE_SCALES.items()}
     return {role: FixedTypeface(scale) for role, (scale, _) in ROLE_SCALES.items()}
 
 
@@ -57,9 +50,7 @@ def parts(faces: Mapping[str, Typeface]) -> tuple[cp.ControlPanel, RecordingPain
 
 
 def hud(**changes: object) -> HudData:
-    base = HudData(
-        "Stage 01", 3, "STANDING", "PLAYING", 3.14, "780464", "guest", "Chưa có", "BFS"
-    )
+    base = HudData("Stage 01", 3, "STANDING", "PLAYING", 3.14, "780464", "guest", "Chưa có", "BFS")
     for key, value in changes.items():
         setattr(base, key, value)
     return base
@@ -72,15 +63,11 @@ def button(panel: cp.ControlPanel, action: str) -> cp.Button:
 def message_lines(panel: cp.ControlPanel, painter: RecordingPainter) -> list:
     """Các dòng thông báo (lọc theo vị trí vì tiêu đề cũng màu vàng)."""
     return [
-        c
-        for c in painter.text_commands()
-        if c.color == THEME.message and cp.MESSAGE_TOP <= c.pos[1] < panel.help_top
+        c for c in painter.text_commands() if c.color == THEME.message and cp.MESSAGE_TOP <= c.pos[1] < panel.help_top
     ]
 
 
-def inside(
-    painter: RecordingPainter, area: pygame.Rect, color: tuple[int, int, int]
-) -> int:
+def inside(painter: RecordingPainter, area: pygame.Rect, color: tuple[int, int, int]) -> int:
     """Số hình chữ nhật màu `color` nằm trọn trong `area`."""
     return len([r for r in painter.rects(color) if area.contains(r)])
 
@@ -112,43 +99,23 @@ def test_every_enabled_button_returns_its_own_action(parts) -> None:
 
 def test_replay_state_enables_and_labels_the_replay_buttons(parts) -> None:
     panel, _ = parts
-    panel.draw(
-        hud(replay_active=True, replay_playing=True, replay_speed_label="2x"), ""
-    )
-    assert (
-        button(panel, "replay_toggle").label == "Tạm dừng"
-        and button(panel, "cycle_speed").label == "Tốc độ 2x"
-    )
-    assert all(
-        button(panel, a).enabled
-        for a in ("replay_toggle", "step_back", "step_fwd", "stop_replay")
-    )
+    panel.draw(hud(replay_active=True, replay_playing=True, replay_speed_label="2x"), "")
+    assert button(panel, "replay_toggle").label == "Tạm dừng" and button(panel, "cycle_speed").label == "Tốc độ 2x"
+    assert all(button(panel, a).enabled for a in ("replay_toggle", "step_back", "step_fwd", "stop_replay"))
     panel.draw(hud(replay_active=True, replay_playing=False), "")
     assert button(panel, "replay_toggle").label == "Tiếp tục"
     panel.draw(hud(), "")
-    assert not any(
-        button(panel, a).enabled
-        for a in ("replay_toggle", "step_back", "step_fwd", "stop_replay")
-    )
+    assert not any(button(panel, a).enabled for a in ("replay_toggle", "step_back", "step_fwd", "stop_replay"))
 
 
 def test_solving_state_locks_the_algorithm_and_saved_replay_buttons(parts) -> None:
     panel, _ = parts
     panel.draw(hud(solver_running=True, solver_name="A*"), "")
-    assert (
-        button(panel, "run_solver").label == "Hủy giải"
-        and button(panel, "run_solver").enabled
-    )
-    assert (
-        button(panel, "cycle_algo").label == "AI: A*"
-        and not button(panel, "cycle_algo").enabled
-    )
+    assert button(panel, "run_solver").label == "Hủy giải" and button(panel, "run_solver").enabled
+    assert button(panel, "cycle_algo").label == "AI: A*" and not button(panel, "cycle_algo").enabled
     assert not button(panel, "replay_saved").enabled
     panel.draw(hud(), "")
-    assert (
-        button(panel, "run_solver").label == "Giải AI"
-        and button(panel, "cycle_algo").enabled
-    )
+    assert button(panel, "run_solver").label == "Giải AI" and button(panel, "cycle_algo").enabled
 
 
 def test_button_text_color_follows_replay_state_every_frame(parts) -> None:
@@ -168,10 +135,7 @@ def test_hovering_highlights_enabled_buttons_only(parts) -> None:
     panel, painter = parts
     panel.set_mouse(button(panel, "restart").rect.center)
     panel.draw(hud(), "")
-    assert (
-        color_of(painter, "Restart") == THEME.text_hover
-        and color_of(painter, "Undo") == THEME.text
-    )
+    assert color_of(painter, "Restart") == THEME.text_hover and color_of(painter, "Undo") == THEME.text
     painter.clear()
     panel.set_mouse(button(panel, "step_back").rect.center)  # nút đang tắt
     panel.draw(hud(), "")
@@ -205,23 +169,14 @@ def test_info_rows_show_the_game_state_with_colors(parts) -> None:
         "WON",
         "7 bước (6.2s)",
     } <= set(texts)
-    assert (
-        color_of(painter, "WON") == palette.GOLD
-        and color_of(painter, "0/2") == palette.RED
-    )
-    assert (
-        color_of(painter, "7 bước (6.2s)") == palette.GOLD
-        and color_of(painter, "780464") == palette.YELLOW
-    )
+    assert color_of(painter, "WON") == palette.GOLD and color_of(painter, "0/2") == palette.RED
+    assert color_of(painter, "7 bước (6.2s)") == palette.GOLD and color_of(painter, "780464") == palette.YELLOW
 
 
 def test_info_color_for_playing_and_available_ai_uses(parts) -> None:
     panel, painter = parts
     panel.draw(hud(ai_uses_left=2), "")
-    assert (
-        color_of(painter, "PLAYING") == palette.GREEN
-        and color_of(painter, "2/2") == palette.GREEN
-    )
+    assert color_of(painter, "PLAYING") == palette.GREEN and color_of(painter, "2/2") == palette.GREEN
     assert color_of(painter, "Chưa có") == palette.WHITE
 
 
@@ -235,10 +190,7 @@ def test_an_overlong_value_is_truncated_not_overflowing(parts) -> None:
     panel, painter = parts
     panel.draw(hud(level_name="X" * 120), "")
     shown = next(c for c in painter.text_commands() if c.text.startswith("XX"))
-    assert (
-        shown.text.endswith("..")
-        and shown.rect.right <= cp.PANEL_WIDTH - cp.PANEL_PADDING
-    )
+    assert shown.text.endswith("..") and shown.rect.right <= cp.PANEL_WIDTH - cp.PANEL_PADDING
 
 
 def test_message_is_wrapped_within_the_available_lines(parts) -> None:
@@ -247,9 +199,7 @@ def test_message_is_wrapped_within_the_available_lines(parts) -> None:
     lines = message_lines(panel, painter)
     assert 1 <= len(lines) <= panel.message_capacity and lines[-1].text.endswith("..")
     assert all(c.rect.right <= cp.PANEL_WIDTH - cp.PANEL_PADDING for c in lines)
-    assert [c.pos[1] for c in lines] == [
-        cp.MESSAGE_TOP + i * cp.MESSAGE_STEP for i in range(len(lines))
-    ]
+    assert [c.pos[1] for c in lines] == [cp.MESSAGE_TOP + i * cp.MESSAGE_STEP for i in range(len(lines))]
 
 
 def test_short_message_fits_on_one_line_and_no_message_draws_nothing(parts) -> None:
@@ -266,9 +216,7 @@ def test_help_block_is_drawn_at_the_bottom(parts) -> None:
     panel.draw(hud(), "")
     help_lines = [c for c in painter.text_commands() if c.color == THEME.help]
     assert [c.text for c in help_lines] == panel.help_lines
-    assert help_lines[0].pos[1] == panel.help_top and all(
-        not c.shadow for c in help_lines
-    )
+    assert help_lines[0].pos[1] == panel.help_top and all(not c.shadow for c in help_lines)
 
 
 def test_each_draw_call_is_wrapped_in_begin_and_end(parts) -> None:
@@ -286,11 +234,7 @@ def test_each_draw_call_is_wrapped_in_begin_and_end(parts) -> None:
         painter.clear()
         call()
         kinds = [c.kind for c in painter.commands]
-        assert (
-            kinds[0] == "begin"
-            and kinds[-1] == "end"
-            and kinds.count("begin") == kinds.count("end") == 1
-        )
+        assert kinds[0] == "begin" and kinds[-1] == "end" and kinds.count("begin") == kinds.count("end") == 1
         assert painter.commands[0].size == (1280, 768)
 
 
@@ -298,11 +242,7 @@ def test_the_column_is_tiled_with_the_stone_texture(parts) -> None:
     panel, painter = parts
     panel.draw(hud(), "")
     tiles = [c for c in painter.commands if c.kind == "tiles"]
-    assert (
-        len(tiles) == 1
-        and tiles[0].texture == THEME.panel_texture
-        and tiles[0].rect == pygame.Rect(0, 0, 340, 768)
-    )
+    assert len(tiles) == 1 and tiles[0].texture == THEME.panel_texture and tiles[0].rect == pygame.Rect(0, 0, 340, 768)
 
 
 def test_a_missing_banner_face_falls_back_to_the_title_face() -> None:
@@ -330,9 +270,7 @@ def test_banner_is_centered_in_the_3d_area_with_a_translucent_band(parts) -> Non
         )
     )
     band = next(c for c in painter.commands if c.kind == "rect")
-    assert band.rect == pygame.Rect(
-        cp.PANEL_WIDTH, (768 - cp.BANNER_HEIGHT) // 2, view_w, cp.BANNER_HEIGHT
-    )
+    assert band.rect == pygame.Rect(cp.PANEL_WIDTH, (768 - cp.BANNER_HEIGHT) // 2, view_w, cp.BANNER_HEIGHT)
     assert band.alpha == THEME.banner_alpha and band.color == (0, 0, 0)
     title = painter.text_commands("HOÀN THÀNH!")[0]
     assert title.color == palette.GREEN and title.typeface is panel.faces["banner"]
@@ -359,19 +297,10 @@ def test_picker_tags_the_current_level_and_locked_levels(parts) -> None:
     picker = make_picker()
     panel.draw_picker(picker, 0, lambda index: index < 2)
     texts = painter.texts()
-    assert (
-        texts.count("(đang chơi)") == 1
-        and texts.count("(khóa)") == picker.visible_rows - 2
-    )
+    assert texts.count("(đang chơi)") == 1 and texts.count("(khóa)") == picker.visible_rows - 2
     assert "Chọn màn  (1/33)" in texts
-    assert (
-        color_of(painter, "Stage 02") == palette.WHITE
-        and color_of(painter, "Stage 03") == palette.GRAY
-    )
-    assert (
-        color_of(painter, "(đang chơi)") == palette.GREEN
-        and color_of(painter, "(khóa)") == palette.RED
-    )
+    assert color_of(painter, "Stage 02") == palette.WHITE and color_of(painter, "Stage 03") == palette.GRAY
+    assert color_of(painter, "(đang chơi)") == palette.GREEN and color_of(painter, "(khóa)") == palette.RED
 
 
 def test_picker_without_lock_information_shows_no_lock_tags(parts) -> None:
@@ -387,9 +316,7 @@ def test_picker_highlights_the_selected_row_and_dims_the_window(parts) -> None:
     dim = next(c for c in painter.commands if c.kind == "rect")
     assert dim.rect == pygame.Rect(0, 0, 1280, 768) and dim.alpha == THEME.dim_alpha
     _, rows = picker.layout(1280, 768)
-    assert (
-        inside(painter, rows[4], THEME.outline) == 4
-    )  # viền trắng quanh dòng đang chọn
+    assert inside(painter, rows[4], THEME.outline) == 4  # viền trắng quanh dòng đang chọn
     assert all(inside(painter, rows[i], THEME.outline) == 0 for i in (0, 1, 2, 3, 5))
     assert len(painter.rects(THEME.row_selected)) == 1
 
@@ -436,19 +363,11 @@ def test_prompt_draws_six_slots_and_the_typed_digits(parts) -> None:
     panel.draw_prompt(_prompt("12"))
     assert len(painter.rects(THEME.slot_face)) == 6
     digits = painter.text_commands("1") + painter.text_commands("2")
-    assert len(digits) == 2 and all(
-        c.color == palette.WHITE and c.typeface is panel.faces["title"] for c in digits
-    )
+    assert len(digits) == 2 and all(c.color == palette.WHITE and c.typeface is panel.faces["title"] for c in digits)
     assert "Nhập mật khẩu của Stage 03" in painter.texts()
-    slots = [
-        inner.inflate(2, 2) for inner in painter.rects(THEME.slot_face)
-    ]  # rect trả về là phần ruột; lấy ô ngoài
+    slots = [inner.inflate(2, 2) for inner in painter.rects(THEME.slot_face)]  # rect trả về là phần ruột; lấy ô ngoài
     # mỗi ô có sẵn 2 mép sáng của khung lõm; ô đang chờ nhập có thêm viền trắng 4 cạnh
-    assert (
-        inside(painter, slots[2], THEME.outline)
-        - inside(painter, slots[3], THEME.outline)
-        == 4
-    )
+    assert inside(painter, slots[2], THEME.outline) - inside(painter, slots[3], THEME.outline) == 4
 
 
 def test_prompt_digits_sit_inside_their_slots(parts) -> None:
@@ -457,9 +376,7 @@ def test_prompt_digits_sit_inside_their_slots(parts) -> None:
     slots = [inner.inflate(2, 2) for inner in painter.rects(THEME.slot_face)]
     digits = [painter.text_commands(d)[0] for d in "123456"]
     assert all(slot.contains(digit.rect) for slot, digit in zip(slots, digits))
-    assert all(
-        inside(painter, slot, THEME.outline) == 2 for slot in slots
-    )  # đủ chữ số: không ô nào đang chờ
+    assert all(inside(painter, slot, THEME.outline) == 2 for slot in slots)  # đủ chữ số: không ô nào đang chờ
 
 
 def test_prompt_shows_the_error_in_red(parts) -> None:
@@ -474,11 +391,7 @@ def test_prompt_shows_the_error_in_red(parts) -> None:
 def test_prompt_box_is_centered(parts) -> None:
     panel, painter = parts
     panel.draw_prompt(_prompt(""))
-    box = next(
-        c.rect
-        for c in painter.commands
-        if c.kind == "rect" and c.rect.size == cp.PROMPT_BOX_SIZE
-    )
+    box = next(c.rect for c in painter.commands if c.kind == "rect" and c.rect.size == cp.PROMPT_BOX_SIZE)
     assert box.center == (640, 384)
 
 
@@ -495,13 +408,8 @@ def test_account_dialog_masks_the_password_and_marks_the_active_field(parts) -> 
     texts = painter.texts()
     assert "Username: an" in texts and "Password: ***|" in texts
     user, password = [r for r in painter.rects(THEME.field_face) if r.size == (504, 40)]
-    assert (
-        inside(painter, password, THEME.outline) == 4
-        and inside(painter, user, THEME.outline) == 0
-    )
-    assert (
-        inside(painter, user, THEME.field_idle_border) == 4
-    )  # ô không chọn có viền xám
+    assert inside(painter, password, THEME.outline) == 4 and inside(painter, user, THEME.outline) == 0
+    assert inside(painter, user, THEME.field_idle_border) == 4  # ô không chọn có viền xám
 
 
 def test_account_dialog_cursor_follows_the_active_field(parts) -> None:
@@ -532,9 +440,5 @@ def test_account_dialog_long_text_never_leaves_its_box(parts) -> None:
         prompt.type_char(ch)
     prompt.fail("lỗi " * 40)
     panel.draw_account_prompt(prompt)
-    box = next(
-        c.rect
-        for c in painter.commands
-        if c.kind == "rect" and c.rect.size == cp.ACCOUNT_BOX_SIZE
-    )
+    box = next(c.rect for c in painter.commands if c.kind == "rect" and c.rect.size == cp.ACCOUNT_BOX_SIZE)
     assert all(box.contains(c.rect) for c in painter.text_commands())

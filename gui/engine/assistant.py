@@ -17,9 +17,7 @@ from gui.model.session import GameSession
 MSG_AI_EXHAUSTED: str = f"Màn này đã dùng hết {MAX_AI_USES_PER_LEVEL} lượt AI. Hãy tự chơi hoặc xem Replay lưu (V)."
 MSG_AI_CANCELLED: str = "Đã hủy phiên giải AI."
 MSG_AI_ALREADY_WON: str = "Ván này đã hoàn thành. Nhấn R để chơi lại."
-MSG_AI_STALE: str = (
-    "Kết quả giải đã cũ (màn hoặc vị trí đã đổi) nên bị bỏ; không tốn lượt AI."
-)
+MSG_AI_STALE: str = "Kết quả giải đã cũ (màn hoặc vị trí đã đổi) nên bị bỏ; không tốn lượt AI."
 
 
 class AiAssistant:
@@ -76,9 +74,7 @@ class AiAssistant:
         if game.status == GameStatus.WON:
             self.session.say(MSG_AI_ALREADY_WON)
             return
-        self.replays.stop(
-            restore=True
-        )  # đang phát lại thì trả ván về như cũ rồi mới giải
+        self.replays.stop(restore=True)  # đang phát lại thì trả ván về như cũ rồi mới giải
         self.session.revive()  # vừa rơi thì giải từ vị trí ngay trước lúc rơi
         self.presenter.snap(game)
         if self.solver.start(game, self.session.level_name):
@@ -86,9 +82,7 @@ class AiAssistant:
                 f"Đang giải bằng {self.solver_name} từ vị trí hiện tại... (còn {self.uses_left} lượt AI ở màn này)"
             )
         else:
-            self.session.say(
-                f"Không bắt đầu được: {self.solver.last_error or 'lỗi không rõ'}"
-            )
+            self.session.say(f"Không bắt đầu được: {self.solver.last_error or 'lỗi không rõ'}")
 
     def poll(self) -> None:
         """Gọi mỗi khung hình: nhận kết quả của lượt giải, rồi phát lại và trừ một lượt nếu dùng được."""
@@ -99,26 +93,17 @@ class AiAssistant:
         result = outcome.result
         if outcome.errors:
             error = outcome.errors[-1]
-            self.session.say(
-                f"Lỗi {context.algorithm} ({error.error_type}): {error.error_message}"
-            )
+            self.session.say(f"Lỗi {context.algorithm} ({error.error_type}): {error.error_message}")
             return
         if result is None or not outcome.solved:
             status: str = result.status if result else "NO_RESULT"
             nodes: int = result.expanded_nodes if result else 0
-            self.session.say(
-                f"{context.algorithm} thất bại ({status}) sau {nodes} nodes."
-            )
+            self.session.say(f"{context.algorithm} thất bại ({status}) sau {nodes} nodes.")
             return
-        if (
-            context.level_id != self.session.level_name
-            or self.session.game.state != context.start_state
-        ):
+        if context.level_id != self.session.level_name or self.session.game.state != context.start_state:
             self.session.say(MSG_AI_STALE)
             return
-        if not self.replays.start(
-            result.actions, ReplayMode.FROM_CURRENT, context.algorithm
-        ):
+        if not self.replays.start(result.actions, ReplayMode.FROM_CURRENT, context.algorithm):
             return
         players = self.session.players
         players.record_solver_run(

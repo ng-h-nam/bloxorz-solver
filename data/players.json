@@ -2385,6 +2385,40 @@
           "elapsed_time": 22.211,
           "score": 32,
           "timestamp": 1793158988.662441
+        },
+        {
+          "level_id": "Stage 01",
+          "moves": [
+            "RIGHT",
+            "DOWN",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "DOWN",
+            "LEFT",
+            "UP",
+            "RIGHT",
+            "DOWN",
+            "DOWN",
+            "DOWN",
+            "LEFT",
+            "UP",
+            "DOWN",
+            "RIGHT",
+            "UP",
+            "UP",
+            "DOWN",
+            "LEFT",
+            "UP",
+            "RIGHT",
+            "DOWN"
+          ],
+          "move_count": 23,
+          "won": true,
+          "mode": "MANUAL",
+          "elapsed_time": 10.399,
+          "score": 23,
+          "timestamp": 1793162252.0321753
         }
       ],
       "ai_solutions": {

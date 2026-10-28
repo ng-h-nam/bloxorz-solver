@@ -52,9 +52,7 @@ def test_timeline_stops_at_the_first_invalid_step(board: Board) -> None:
     assert not valid and "không hợp lệ" in error and not frames[-1].is_valid
 
 
-def test_timeline_rejects_steps_after_reaching_the_goal(
-    board: Board, full: list[str]
-) -> None:
+def test_timeline_rejects_steps_after_reaching_the_goal(board: Board, full: list[str]) -> None:
     frames, valid, error = build_timeline(board, Game(board).state, [*full, "UP"])
     assert not valid and error == MSG_EXTRA_STEPS and len(frames) == len(full) + 1
 
@@ -77,9 +75,7 @@ def test_replay_starts_from_the_current_state(board: Board, full: list[str]) -> 
     assert game.moves == 3  # tạo Replayer chưa đụng tới ván
 
 
-def test_playing_to_the_end_accumulates_moves_and_wins(
-    board: Board, full: list[str]
-) -> None:
+def test_playing_to_the_end_accumulates_moves_and_wins(board: Board, full: list[str]) -> None:
     game = Game(board)
     play_manually(game, full[:3])
     replayer = Replayer(game, full[3:])
@@ -92,17 +88,12 @@ def test_playing_to_the_end_accumulates_moves_and_wins(
     assert game.is_won() and game.moves == len(full)
 
 
-def test_every_frame_matches_the_game_after_seeking(
-    board: Board, full: list[str]
-) -> None:
+def test_every_frame_matches_the_game_after_seeking(board: Board, full: list[str]) -> None:
     game = Game(board)
     replayer = Replayer(game, full)
     for index in [*range(len(full) + 1), 3, 0, len(full)]:
         replayer.seek(index)
-        assert (
-            game.state == replayer.timeline[index].state
-            and replayer.current_index == index
-        )
+        assert game.state == replayer.timeline[index].state and replayer.current_index == index
 
 
 def test_step_backward_undoes_and_stops_at_zero(board: Board, full: list[str]) -> None:
@@ -132,9 +123,7 @@ def test_stop_restores_the_players_progress(board: Board, full: list[str]) -> No
     ) == before and game.status == GameStatus.PLAYING
 
 
-def test_release_keeps_the_position_and_makes_stop_a_no_op(
-    board: Board, full: list[str]
-) -> None:
+def test_release_keeps_the_position_and_makes_stop_a_no_op(board: Board, full: list[str]) -> None:
     game = Game(board)
     replayer = Replayer(game, full)
     replayer.seek(4)
@@ -147,16 +136,12 @@ def test_release_keeps_the_position_and_makes_stop_a_no_op(
 # ---------------------------------------------------------------- Replayer: từ ô xuất phát
 
 
-def test_from_start_restarts_then_restores_the_manual_progress(
-    board: Board, full: list[str]
-) -> None:
+def test_from_start_restarts_then_restores_the_manual_progress(board: Board, full: list[str]) -> None:
     game = Game(board)
     play_manually(game, full[:3])
     snapshot = list(game.move_history)
     replayer = Replayer(game, full, mode=ReplayMode.FROM_START)
-    assert (
-        game.moves == 0 and game.state == game.initial_state
-    )  # đã quay về ô xuất phát
+    assert game.moves == 0 and game.state == game.initial_state  # đã quay về ô xuất phát
     replayer.seek(5)
     replayer.stop()
     assert list(game.move_history) == snapshot and game.moves == 3
@@ -169,9 +154,7 @@ def test_invalid_path_is_rejected_without_touching_the_game(board: Board) -> Non
     game = Game(board)
     before = game.state
     replayer = Replayer(game, ["UP", "UP"])
-    assert (
-        not replayer.is_valid_path and replayer.error_message and game.state == before
-    )
+    assert not replayer.is_valid_path and replayer.error_message and game.state == before
 
 
 def test_unknown_action_name_is_reported(board: Board) -> None:
@@ -179,9 +162,7 @@ def test_unknown_action_name_is_reported(board: Board) -> None:
     assert not replayer.is_valid_path and replayer.error_message
 
 
-def test_finished_game_cannot_be_replayed_from_current(
-    board: Board, full: list[str]
-) -> None:
+def test_finished_game_cannot_be_replayed_from_current(board: Board, full: list[str]) -> None:
     game = Game(board)
     play_manually(game, full)  # đã thắng
     replayer = Replayer(game, [], mode=ReplayMode.FROM_CURRENT)
@@ -198,16 +179,12 @@ def test_invalid_replayer_never_moves_the_game(board: Board) -> None:
 # ---------------------------------------------------------------- phát tự động
 
 
-def test_update_waits_for_the_interval_and_for_animations(
-    board: Board, full: list[str]
-) -> None:
+def test_update_waits_for_the_interval_and_for_animations(board: Board, full: list[str]) -> None:
     replayer = Replayer(Game(board), full, step_interval=0.5)
     replayer.play()
     assert replayer.update(0.2) is False and replayer.current_index == 0
     assert replayer.update(0.4, busy=True) is False  # hoạt cảnh đang chạy: chưa đi
-    assert (
-        replayer.update(0.4) is True and replayer.current_index == 1
-    )  # đã tới hạn khi hoạt cảnh xong
+    assert replayer.update(0.4) is True and replayer.current_index == 1  # đã tới hạn khi hoạt cảnh xong
 
 
 def test_update_does_nothing_while_paused(board: Board, full: list[str]) -> None:

@@ -104,9 +104,7 @@ def test_check_passcode_with_out_of_range_index_is_false(catalog):
 
 def test_stage_without_passcode_cannot_be_unlocked_by_an_empty_code(tmp_path):
     path = tmp_path / "c.json"
-    path.write_text(
-        json.dumps([STAGES[0], {**STAGES[1], "passcode": ""}]), encoding="utf-8"
-    )
+    path.write_text(json.dumps([STAGES[0], {**STAGES[1], "passcode": ""}]), encoding="utf-8")
     catalog = LevelCatalog.from_json(str(path))
     assert not catalog.check_passcode(1, "")
 

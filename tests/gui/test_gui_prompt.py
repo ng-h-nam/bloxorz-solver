@@ -4,9 +4,7 @@ from gui.model.passcode_prompt import PasscodePrompt, digit_from_key
 
 
 def test_digit_from_key_uses_the_real_character_first():
-    assert (
-        digit_from_key(pygame.K_a, "7") == "7"
-    )  # bố cục AZERTY: phím hàng số sinh ra ký tự khác
+    assert digit_from_key(pygame.K_a, "7") == "7"  # bố cục AZERTY: phím hàng số sinh ra ký tự khác
     assert digit_from_key(pygame.K_5) == "5"
     assert digit_from_key(pygame.K_KP3) == "3"
     assert digit_from_key(pygame.K_KP0) == "0"

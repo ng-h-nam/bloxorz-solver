@@ -24,9 +24,7 @@ def parts(
     tmp_path: Path,
 ) -> tuple[GameSession, ScenePresenter, ReplayController, list[str]]:
     catalog = LevelCatalog.from_json()
-    session = GameSession(
-        Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json")
-    )
+    session = GameSession(Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json"))
     presenter = ScenePresenter()
     presenter.reset(session.game)
     full = action_names(BFSSolver(session.game.board).solve().actions)
@@ -36,12 +34,7 @@ def parts(
 def test_start_from_current_begins_playing(parts) -> None:
     _, _, controller, full = parts
     assert controller.start(full, ReplayMode.FROM_CURRENT, "BFS")
-    assert (
-        controller.active
-        and controller.playing
-        and controller.total == len(full)
-        and controller.step == 0
-    )
+    assert controller.active and controller.playing and controller.total == len(full) and controller.step == 0
 
 
 def test_invalid_path_reports_and_stays_inactive(parts) -> None:
@@ -83,9 +76,7 @@ def test_manual_stepping_pauses_and_reports(parts) -> None:
     session, _, controller, full = parts
     controller.start(full, ReplayMode.FROM_CURRENT)
     controller.step_forward()
-    assert (
-        not controller.playing and controller.step == 1 and "bước 1" in session.message
-    )
+    assert not controller.playing and controller.step == 1 and "bước 1" in session.message
     controller.step_backward()
     assert controller.step == 0 and "lùi" in session.message
 
@@ -121,9 +112,7 @@ def test_stop_restores_the_players_position(parts) -> None:
     controller.start(full[3:], ReplayMode.FROM_CURRENT)
     controller.replayer.replay_all_to_end()  # type: ignore[union-attr]
     controller.stop()
-    assert (
-        session.game.state == here and session.game.moves == 3 and not controller.active
-    )
+    assert session.game.state == here and session.game.moves == 3 and not controller.active
     assert not session.assisted
 
 
@@ -154,8 +143,6 @@ def test_play_saved_replays_from_the_start_and_restores_progress(parts) -> None:
     session.players.record_game_session(session.level_name, full, True, MANUAL, 3.0)
     session.game.move(full[0])
     assert controller.play_saved()
-    assert (
-        session.game.moves == 0 and "từ ô xuất phát" in session.message
-    )  # đã về ô xuất phát
+    assert session.game.moves == 0 and "từ ô xuất phát" in session.message  # đã về ô xuất phát
     controller.stop()
     assert session.game.moves == 1  # tiến trình của người chơi được trả lại

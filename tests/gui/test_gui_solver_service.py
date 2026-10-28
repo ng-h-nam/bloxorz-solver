@@ -38,9 +38,7 @@ class RecordingSolver:
     fail_init = False
     delay = 0.0
 
-    def __init__(
-        self, board: Board, initial_state: State | None = None, **kwargs: Any
-    ) -> None:
+    def __init__(self, board: Board, initial_state: State | None = None, **kwargs: Any) -> None:
         if RecordingSolver.fail_init:
             raise ValueError("trạng thái xuất phát không hợp lệ")
         RecordingSolver.last_kwargs = {"initial_state": initial_state, **kwargs}
@@ -109,14 +107,8 @@ def test_service_needs_at_least_one_solver() -> None:
 
 
 def test_cycle_wraps_around_but_not_while_running() -> None:
-    service = SolverService(
-        specs=[SolverSpec("A", RecordingSolver), SolverSpec("B", RecordingSolver)]
-    )  # type: ignore[arg-type]
-    assert (
-        service.selected_name == "A"
-        and service.cycle() == "B"
-        and service.cycle() == "A"
-    )
+    service = SolverService(specs=[SolverSpec("A", RecordingSolver), SolverSpec("B", RecordingSolver)])  # type: ignore[arg-type]
+    assert service.selected_name == "A" and service.cycle() == "B" and service.cycle() == "A"
     assert service.names == ["A", "B"]
 
 
@@ -126,10 +118,7 @@ def test_options_and_limits_reach_the_solver(game: Game) -> None:
     assert service.start(game, "Stage 01")
     wait_outcome(service)
     assert RecordingSolver.last_kwargs["max_depth"] is None
-    assert (
-        RecordingSolver.last_kwargs["node_limit"] == 123
-        and RecordingSolver.last_kwargs["time_limit"] == 4.5
-    )
+    assert RecordingSolver.last_kwargs["node_limit"] == 123 and RecordingSolver.last_kwargs["time_limit"] == 4.5
     assert RecordingSolver.last_kwargs["initial_state"] == game.state
 
 
@@ -137,9 +126,7 @@ def test_solving_starts_from_the_current_state(game: Game) -> None:
     full = action_names(BFSSolver(game.board).solve().actions)
     for name in full[:3]:
         game.move(name)
-    service = SolverService(
-        specs=[spec for spec in discover_available_solvers() if spec.name == "BFS"]
-    )
+    service = SolverService(specs=[spec for spec in discover_available_solvers() if spec.name == "BFS"])
     assert service.start(game, "Stage 01")
     outcome = wait_outcome(service)
     assert outcome.solved and outcome.context.start_state == game.state
@@ -155,11 +142,7 @@ def test_astar_runs_from_the_current_state_and_is_optimal(game: Game) -> None:
     service = SolverService(specs=[spec])
     assert service.start(game, "Stage 01")
     outcome = wait_outcome(service)
-    assert (
-        outcome.errors == []
-        and outcome.solved
-        and len(outcome.result.actions) == expected
-    )  # type: ignore[union-attr]
+    assert outcome.errors == [] and outcome.solved and len(outcome.result.actions) == expected  # type: ignore[union-attr]
 
 
 def test_a_failing_constructor_returns_false_with_a_reason(game: Game) -> None:
@@ -198,10 +181,6 @@ def test_outcome_solved_requires_a_non_empty_solution() -> None:
 
     context = SolverContext(1, "BFS", "Stage 01", State(0, 0), ())
     assert not SolverOutcome(context).solved
-    assert not SolverOutcome(
-        context, SolverResultEvent("BFS", [], is_solved=True)
-    ).solved
+    assert not SolverOutcome(context, SolverResultEvent("BFS", [], is_solved=True)).solved
     assert SolverOutcome(context, SolverResultEvent("BFS", ["UP"])).solved
-    assert SolverOutcome(context, SolverResultEvent("BFS", ["UP"])).full_actions == [
-        "UP"
-    ]
+    assert SolverOutcome(context, SolverResultEvent("BFS", ["UP"])).full_actions == ["UP"]

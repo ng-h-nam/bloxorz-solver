@@ -53,9 +53,7 @@ class FakePanel:
         current_index: int,
         is_unlocked: Callable[[int], bool] | None = None,
     ) -> None:
-        self.calls.append(
-            ("picker", (current_index, is_unlocked(1) if is_unlocked else None))
-        )
+        self.calls.append(("picker", (current_index, is_unlocked(1) if is_unlocked else None)))
 
     def draw_prompt(self, prompt: PasscodePrompt) -> None:
         self.calls.append(("prompt", prompt.title))
@@ -72,9 +70,7 @@ def fast_hashing(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def session(tmp_path: Path) -> GameSession:
     catalog = LevelCatalog.from_json()
-    return GameSession(
-        Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json")
-    )
+    return GameSession(Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json"))
 
 
 def type_text(overlay: Overlay, text: str) -> Overlay | None:
@@ -92,10 +88,7 @@ def test_overlay_is_abstract_and_has_safe_defaults(session: GameSession) -> None
     with pytest.raises(TypeError):
         Overlay()  # type: ignore[abstract]
     overlay = PasscodeOverlay.open(session, 1)
-    assert (
-        overlay.handle_click(1, (0, 0), WINDOW) is overlay
-        and overlay.handle_wheel(3) is None
-    )
+    assert overlay.handle_click(1, (0, 0), WINDOW) is overlay and overlay.handle_wheel(3) is None
 
 
 # ---------------------------------------------------------------- LevelPickerOverlay
@@ -126,10 +119,7 @@ def test_escape_or_n_closes_the_picker(session: GameSession, key: int) -> None:
 
 
 def test_choosing_the_current_level_just_closes(session: GameSession) -> None:
-    assert (
-        LevelPickerOverlay.open(session).handle_key(K_RETURN) is None
-        and session.level_index == 0
-    )
+    assert LevelPickerOverlay.open(session).handle_key(K_RETURN) is None and session.level_index == 0
 
 
 def test_choosing_a_locked_level_opens_the_passcode_box(session: GameSession) -> None:
@@ -152,13 +142,9 @@ def test_clicking_rows_and_outside(session: GameSession) -> None:
     box, rows = overlay.picker.layout(*WINDOW)
     follow_up = overlay.handle_click(1, rows[2].center, WINDOW)
     assert isinstance(follow_up, PasscodeOverlay) and follow_up.target == 2
-    assert (
-        overlay.handle_click(1, (box.x + 2, box.y + 2), WINDOW) is overlay
-    )  # trong khung, không trúng dòng nào
+    assert overlay.handle_click(1, (box.x + 2, box.y + 2), WINDOW) is overlay  # trong khung, không trúng dòng nào
     assert overlay.handle_click(1, (1, 1), WINDOW) is None  # ngoài khung: đóng
-    assert (
-        overlay.handle_click(3, rows[1].center, WINDOW) is overlay
-    )  # nút phải bị bỏ qua
+    assert overlay.handle_click(3, rows[1].center, WINDOW) is overlay  # nút phải bị bỏ qua
 
 
 def test_the_wheel_scrolls_the_list(session: GameSession) -> None:
@@ -187,19 +173,14 @@ def test_digits_are_typed_and_other_keys_ignored(session: GameSession) -> None:
 def test_an_incomplete_code_is_reported_without_loading(session: GameSession) -> None:
     overlay = PasscodeOverlay.open(session, 1)
     type_text(overlay, "12")
-    assert (
-        overlay.handle_key(K_RETURN) is overlay and "6 chữ số" in overlay.prompt.error
-    )
+    assert overlay.handle_key(K_RETURN) is overlay and "6 chữ số" in overlay.prompt.error
     assert session.level_index == 0
 
 
 def test_a_wrong_code_is_rejected(session: GameSession) -> None:
     overlay = PasscodeOverlay.open(session, 1)
     type_text(overlay, "000000")
-    assert (
-        overlay.handle_key(K_RETURN) is overlay
-        and overlay.prompt.error == MSG_WRONG_PASSCODE
-    )
+    assert overlay.handle_key(K_RETURN) is overlay and overlay.prompt.error == MSG_WRONG_PASSCODE
     assert overlay.prompt.text == "" and session.level_index == 0
 
 
@@ -218,9 +199,7 @@ def test_the_right_code_loads_the_level_and_closes(session: GameSession) -> None
 
 
 def test_escape_returns_to_the_level_list(session: GameSession) -> None:
-    assert isinstance(
-        PasscodeOverlay.open(session, 1).handle_key(K_ESCAPE), LevelPickerOverlay
-    )
+    assert isinstance(PasscodeOverlay.open(session, 1).handle_key(K_ESCAPE), LevelPickerOverlay)
 
 
 def test_passcode_box_draws_the_target_title(session: GameSession) -> None:
@@ -236,9 +215,7 @@ def test_typing_letters_digits_and_shifted_letters(session: GameSession) -> None
     overlay = AccountOverlay.open(session)
     type_text(overlay, "an1")
     assert overlay.prompt.username == "an1"
-    shifted = AccountOverlay(
-        session, AccountOverlayPrompt(session), shift_held=lambda: True
-    )
+    shifted = AccountOverlay(session, AccountOverlayPrompt(session), shift_held=lambda: True)
     shifted.handle_key(K_a, "")  # không có ký tự thật: dùng mã phím và Shift
     assert shifted.prompt.username == "A"
 
@@ -258,10 +235,7 @@ def test_tab_and_arrows_switch_fields(session: GameSession) -> None:
 
 def test_an_empty_username_is_refused(session: GameSession) -> None:
     overlay = AccountOverlay.open(session)
-    assert (
-        overlay.handle_key(K_RETURN) is overlay
-        and overlay.prompt.error == MSG_NEED_USERNAME
-    )
+    assert overlay.handle_key(K_RETURN) is overlay and overlay.prompt.error == MSG_NEED_USERNAME
 
 
 def test_new_users_are_registered_and_the_box_closes(session: GameSession) -> None:
@@ -280,10 +254,7 @@ def test_a_wrong_password_keeps_the_box_open(session: GameSession) -> None:
     type_text(overlay, "an")
     overlay.handle_key(K_TAB)
     type_text(overlay, "sai")
-    assert (
-        overlay.handle_key(K_RETURN) is overlay
-        and "không chính xác" in overlay.prompt.error
-    )
+    assert overlay.handle_key(K_RETURN) is overlay and "không chính xác" in overlay.prompt.error
     assert session.players.current_user is None
 
 

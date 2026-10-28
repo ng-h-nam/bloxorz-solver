@@ -28,55 +28,29 @@ def verify_solver_state_key(
 
     base = State(2, 2, Orientation.STANDING)
     if key_fn(base) == key_fn(State(2, 3, Orientation.STANDING)):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được tọa độ (r, c) của khối."
-        )
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được tọa độ (r, c) của khối.")
     if key_fn(base) == key_fn(State(2, 2, Orientation.HORIZONTAL)):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được tư thế (orientation) của khối."
-        )
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được tư thế (orientation) của khối.")
 
     bridges: frozenset[tuple[int, int]] = frozenset([(3, 2), (3, 3)])
-    if key_fn(State(2, 2, Orientation.STANDING)) == key_fn(
-        State(2, 2, Orientation.STANDING, active_bridges=bridges)
-    ):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được trạng thái đóng/mở của cầu (active_bridges)."
-        )
+    if key_fn(State(2, 2, Orientation.STANDING)) == key_fn(State(2, 2, Orientation.STANDING, active_bridges=bridges)):
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được trạng thái đóng/mở của cầu (active_bridges).")
 
-    first = State(
-        2, 2, Orientation.STANDING, active_bridges=frozenset([(3, 2), (3, 3)])
-    )
-    second = State(
-        2, 2, Orientation.STANDING, active_bridges=frozenset([(3, 3), (3, 2)])
-    )
+    first = State(2, 2, Orientation.STANDING, active_bridges=frozenset([(3, 2), (3, 3)]))
+    second = State(2, 2, Orientation.STANDING, active_bridges=frozenset([(3, 3), (3, 2)]))
     if key_fn(first) != key_fn(second):
-        issues.append(
-            "Lỗi khóa trạng thái: Cùng tập cầu mở nhưng khác thứ tự lại sinh ra 2 khóa khác nhau."
-        )
+        issues.append("Lỗi khóa trạng thái: Cùng tập cầu mở nhưng khác thứ tự lại sinh ra 2 khóa khác nhau.")
     try:
         if key_fn(second) not in {key_fn(first)}:
-            issues.append(
-                "Lỗi khóa trạng thái: Khóa trạng thái không hoạt động đúng trong tập visited."
-            )
+            issues.append("Lỗi khóa trạng thái: Khóa trạng thái không hoạt động đúng trong tập visited.")
     except TypeError:
-        issues.append(
-            "Lỗi khóa trạng thái: Giá trị trả về của key_fn không thể băm (unhashable)."
-        )
+        issues.append("Lỗi khóa trạng thái: Giá trị trả về của key_fn không thể băm (unhashable).")
 
     split_a = State(1, 1, Orientation.SPLIT, split_pos=(3, 1), active_cube=0)
-    if key_fn(split_a) == key_fn(
-        State(1, 1, Orientation.SPLIT, split_pos=(3, 2), active_cube=0)
-    ):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được tọa độ khối thứ hai (split_pos) khi tách khối."
-        )
-    if key_fn(split_a) == key_fn(
-        State(1, 1, Orientation.SPLIT, split_pos=(3, 1), active_cube=1)
-    ):
-        issues.append(
-            "Lỗi khóa trạng thái: Không phân biệt được khối đơn đang điều khiển (active_cube 0 vs 1)."
-        )
+    if key_fn(split_a) == key_fn(State(1, 1, Orientation.SPLIT, split_pos=(3, 2), active_cube=0)):
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được tọa độ khối thứ hai (split_pos) khi tách khối.")
+    if key_fn(split_a) == key_fn(State(1, 1, Orientation.SPLIT, split_pos=(3, 1), active_cube=1)):
+        issues.append("Lỗi khóa trạng thái: Không phân biệt được khối đơn đang điều khiển (active_cube 0 vs 1).")
 
     return (not issues, issues)
 
@@ -187,9 +161,7 @@ class BackgroundSolverWorker:
         """Thân luồng nền: kiểm tra khóa, giải, rồi đẩy kết quả hoặc lỗi vào hàng đợi."""
         try:
             if self.audit_state_keys:
-                ok, issues = verify_solver_state_key(
-                    getattr(solver, "get_state_key", state_key)
-                )
+                ok, issues = verify_solver_state_key(getattr(solver, "get_state_key", state_key))
                 if not ok:
                     raise RuntimeError(" | ".join(issues))
             output: Any = solver.solve()
@@ -223,9 +195,7 @@ class BackgroundSolverWorker:
             elapsed_time=float(getattr(output, "execution_time", 0.0)),
             memory_peak_kb=float(getattr(output, "peak_memory", 0)) / 1024.0,
             is_solved=solved,
-            status=str(
-                getattr(output, "status", "SOLVED" if solved else "NO_SOLUTION")
-            ),
+            status=str(getattr(output, "status", "SOLVED" if solved else "NO_SOLUTION")),
             raw_output=output,
         )
 

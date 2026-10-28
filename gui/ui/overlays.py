@@ -71,9 +71,7 @@ class Overlay(ABC):
     def handle_key(self, key: int, text: str = "") -> "Overlay | None":
         """Xử lý một phím; trả về overlay kế tiếp (self: giữ, None: đóng, lớp khác: chuyển)."""
 
-    def handle_click(
-        self, button: int, pos: tuple[int, int], window_size: tuple[int, int]
-    ) -> "Overlay | None":
+    def handle_click(self, button: int, pos: tuple[int, int], window_size: tuple[int, int]) -> "Overlay | None":
         """Xử lý một lần bấm chuột; mặc định bỏ qua và giữ nguyên overlay."""
         return self
 
@@ -117,9 +115,7 @@ class LevelPickerOverlay(Overlay):
             return self._select(self.picker.selected)
         return self
 
-    def handle_click(
-        self, button: int, pos: tuple[int, int], window_size: tuple[int, int]
-    ) -> Overlay | None:
+    def handle_click(self, button: int, pos: tuple[int, int], window_size: tuple[int, int]) -> Overlay | None:
         """Bấm trái vào một dòng để chọn; bấm ra ngoài hộp để đóng."""
         if button != 1:
             return self
@@ -143,17 +139,13 @@ class LevelPickerOverlay(Overlay):
 
     def draw(self, panel: OverlayPanel) -> None:
         """Vẽ danh sách màn kèm nhãn 'đang chơi' và 'khóa'."""
-        panel.draw_picker(
-            self.picker, self.session.level_index, self.session.catalog.is_unlocked
-        )
+        panel.draw_picker(self.picker, self.session.level_index, self.session.catalog.is_unlocked)
 
 
 class PasscodeOverlay(Overlay):
     """Hộp nhập mật khẩu 6 chữ số của một màn bị khóa."""
 
-    def __init__(
-        self, session: GameSession, prompt: PasscodePrompt, target: int
-    ) -> None:
+    def __init__(self, session: GameSession, prompt: PasscodePrompt, target: int) -> None:
         """Gắn hộp với phiên chơi, trạng thái nhập `prompt` và chỉ số màn cần mở."""
         self.session: GameSession = session
         self.prompt: PasscodePrompt = prompt
@@ -242,9 +234,7 @@ class AccountOverlay(Overlay):
         if not username:
             self.prompt.fail(MSG_NEED_USERNAME)
             return self
-        ok, message = self.session.players.authenticate_or_register(
-            username, self.prompt.password
-        )
+        ok, message = self.session.players.authenticate_or_register(username, self.prompt.password)
         if ok:
             self.session.say(message)
             return None

@@ -17,12 +17,8 @@ class FixedTypeface(Typeface):
     def measure(self, text: str) -> tuple[int, int]:
         return len(text) * 6 * self.scale, 9 * self.scale
 
-    def render(
-        self, text: str, color: tuple[int, int, int], shadow: bool = True
-    ) -> pygame.Surface:
-        return pygame.Surface(
-            (max(1, len(text) * 6 * self.scale), 15 * self.scale), pygame.SRCALPHA
-        )
+    def render(self, text: str, color: tuple[int, int, int], shadow: bool = True) -> pygame.Surface:
+        return pygame.Surface((max(1, len(text) * 6 * self.scale), 15 * self.scale), pygame.SRCALPHA)
 
 
 def test_ui_painter_is_abstract() -> None:
@@ -53,33 +49,21 @@ def test_rect_commands_keep_color_and_alpha_and_copy_the_rect() -> None:
     painter.fill_rect(source, (1, 2, 3), 0.25)
     source.x = 99  # sửa rect gốc không được làm đổi lệnh đã ghi
     command = painter.commands[0]
-    assert (
-        command.rect == pygame.Rect(1, 2, 3, 4)
-        and command.color == (1, 2, 3)
-        and command.alpha == 0.25
-    )
+    assert command.rect == pygame.Rect(1, 2, 3, 4) and command.color == (1, 2, 3) and command.alpha == 0.25
 
 
 def test_text_commands_record_the_measured_box() -> None:
     painter = RecordingPainter()
     painter.draw_text(FixedTypeface(2), "abcd", 5, 7, (255, 0, 0), shadow=True)
     command = painter.commands[0]
-    assert (
-        command.rect == pygame.Rect(5, 7, 48, 18)
-        and command.pos == (5, 7)
-        and command.shadow
-    )
+    assert command.rect == pygame.Rect(5, 7, 48, 18) and command.pos == (5, 7) and command.shadow
 
 
 def test_tiles_record_texture_name_and_tile_size() -> None:
     painter = RecordingPainter()
     painter.tile_texture(pygame.Rect(0, 0, 10, 10), "floor", 64, (1, 1, 1))
     command: PaintCommand = painter.commands[0]
-    assert (
-        command.texture == "floor"
-        and command.size == (64, 64)
-        and command.color == (1, 1, 1)
-    )
+    assert command.texture == "floor" and command.size == (64, 64) and command.color == (1, 1, 1)
 
 
 def test_query_helpers_filter_the_commands() -> None:

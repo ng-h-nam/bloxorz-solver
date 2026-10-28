@@ -14,9 +14,7 @@ Pixel = tuple[int, int]
 ELLIPSIS: str = ".."
 
 
-def fit_text(
-    typeface: Typeface, text: str, max_width: int, ellipsis: str = ELLIPSIS
-) -> str:
+def fit_text(typeface: Typeface, text: str, max_width: int, ellipsis: str = ELLIPSIS) -> str:
     """Cắt `text` cho vừa `max_width` điểm ảnh, thêm `ellipsis` vào cuối nếu phải cắt."""
     if typeface.measure(text)[0] <= max_width:
         return text
@@ -27,9 +25,7 @@ def fit_text(
     return text + ellipsis
 
 
-def wrap_text(
-    typeface: Typeface, text: str, max_width: int, max_lines: int | None = None
-) -> list[str]:
+def wrap_text(typeface: Typeface, text: str, max_width: int, max_lines: int | None = None) -> list[str]:
     """Ngắt `text` thành các dòng không rộng quá `max_width`; chữ dài quá một dòng bị chẻ theo ký tự.
 
     Quá `max_lines` dòng thì dòng cuối bị rút gọn và thêm '..' để người đọc biết còn nữa.
@@ -37,9 +33,7 @@ def wrap_text(
     lines: list[str] = []
     line: str = ""
     for word in text.split():
-        while (
-            typeface.measure(word)[0] > max_width and len(word) > 1
-        ):  # chữ đơn dài hơn cả một dòng
+        while typeface.measure(word)[0] > max_width and len(word) > 1:  # chữ đơn dài hơn cả một dòng
             cut: int = len(word) - 1
             while cut > 1 and typeface.measure(word[:cut])[0] > max_width:
                 cut -= 1
@@ -67,9 +61,7 @@ def text_top(rect: pygame.Rect, typeface: Typeface) -> int:
     return rect.y + (rect.h - typeface.measure("A")[1]) // 2
 
 
-def draw_bevel(
-    painter: UiPainter, rect: pygame.Rect, face: RGB, light: RGB, dark: RGB, border: RGB
-) -> None:
+def draw_bevel(painter: UiPainter, rect: pygame.Rect, face: RGB, light: RGB, dark: RGB, border: RGB) -> None:
     """Khung nổi: viền đen, mép sáng trên-trái, mép tối dưới-phải (đổi `light` và `dark` để thành khung lõm)."""
     painter.fill_rect(rect, border)
     inner: pygame.Rect = rect.inflate(-2, -2)
@@ -80,18 +72,12 @@ def draw_bevel(
     painter.fill_rect(pygame.Rect(inner.right - 2, inner.y, 2, inner.h), dark)
 
 
-def draw_outline(
-    painter: UiPainter, rect: pygame.Rect, color: RGB, thickness: int = 2
-) -> None:
+def draw_outline(painter: UiPainter, rect: pygame.Rect, color: RGB, thickness: int = 2) -> None:
     """Viền rỗng quanh `rect` (nằm trong rect)."""
     painter.fill_rect(pygame.Rect(rect.x, rect.y, rect.w, thickness), color)
-    painter.fill_rect(
-        pygame.Rect(rect.x, rect.bottom - thickness, rect.w, thickness), color
-    )
+    painter.fill_rect(pygame.Rect(rect.x, rect.bottom - thickness, rect.w, thickness), color)
     painter.fill_rect(pygame.Rect(rect.x, rect.y, thickness, rect.h), color)
-    painter.fill_rect(
-        pygame.Rect(rect.right - thickness, rect.y, thickness, rect.h), color
-    )
+    painter.fill_rect(pygame.Rect(rect.right - thickness, rect.y, thickness, rect.h), color)
 
 
 def draw_dialog_box(painter: UiPainter, rect: pygame.Rect, theme: Theme) -> None:
@@ -118,9 +104,7 @@ def draw_slot(painter: UiPainter, rect: pygame.Rect, theme: Theme) -> None:
     )
 
 
-def draw_text_field(
-    painter: UiPainter, rect: pygame.Rect, theme: Theme, active: bool
-) -> None:
+def draw_text_field(painter: UiPainter, rect: pygame.Rect, theme: Theme, active: bool) -> None:
     """Ô nhập chữ: nền đen, viền trắng khi đang chọn, viền xám khi không chọn."""
     painter.fill_rect(rect, theme.field_face)
     draw_outline(painter, rect, theme.outline if active else theme.field_idle_border)
@@ -168,9 +152,7 @@ class Button:
 
     def draw(self, painter: UiPainter, faces: Faces, theme: Theme) -> None:
         """Vẽ nút: khung nổi, nhãn ở giữa và (nếu còn chỗ) chú thích phím ở góc phải."""
-        face, light, dark, text_color = theme.button_colors(
-            self.enabled, self.hovered and self.enabled
-        )
+        face, light, dark, text_color = theme.button_colors(self.enabled, self.hovered and self.enabled)
         draw_bevel(painter, self.rect, face, light, dark, theme.border)
         body: Typeface = faces["body"]
         small: Typeface = faces["small"]
@@ -185,9 +167,7 @@ class Button:
         )
         if self.hint_fits(body, small, theme):
             hint_width: int = small.measure(self.hint)[0]
-            hint_color: RGB = (
-                text_color if self.hovered and self.enabled else theme.hint
-            )
+            hint_color: RGB = text_color if self.hovered and self.enabled else theme.hint
             painter.draw_text(
                 small,
                 self.hint,

@@ -2,6 +2,4 @@
 
 from pathlib import Path
 
-PROJECT_ROOT: str = str(
-    Path(__file__).resolve().parents[2]
-)  # gui/shared/paths.py -> thư mục gốc repo
+PROJECT_ROOT: str = str(Path(__file__).resolve().parents[2])  # gui/shared/paths.py -> thư mục gốc repo

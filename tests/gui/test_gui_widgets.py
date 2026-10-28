@@ -32,12 +32,8 @@ class FixedTypeface(Typeface):
     def measure(self, text: str) -> tuple[int, int]:
         return len(text) * 6 * self.scale, 9 * self.scale
 
-    def render(
-        self, text: str, color: tuple[int, int, int], shadow: bool = True
-    ) -> pygame.Surface:
-        return pygame.Surface(
-            (max(1, len(text) * 6 * self.scale), 15 * self.scale), pygame.SRCALPHA
-        )
+    def render(self, text: str, color: tuple[int, int, int], shadow: bool = True) -> pygame.Surface:
+        return pygame.Surface((max(1, len(text) * 6 * self.scale), 15 * self.scale), pygame.SRCALPHA)
 
 
 BODY, SMALL = FixedTypeface(2), FixedTypeface(1)
@@ -74,9 +70,7 @@ def test_wrap_text_breaks_on_words() -> None:
 
 def test_wrap_text_splits_a_word_longer_than_a_line() -> None:
     lines = wrap_text(BODY, "x" * 25, 60)  # 5 ký tự mỗi dòng
-    assert "".join(lines) == "x" * 25 and all(
-        BODY.measure(line)[0] <= 60 for line in lines
-    )
+    assert "".join(lines) == "x" * 25 and all(BODY.measure(line)[0] <= 60 for line in lines)
 
 
 def test_wrap_text_of_empty_text_is_empty() -> None:
@@ -84,14 +78,8 @@ def test_wrap_text_of_empty_text_is_empty() -> None:
 
 
 def test_wrap_text_marks_truncation_when_over_the_line_limit() -> None:
-    lines = wrap_text(
-        BODY, "aa bb cc dd ee ff gg hh", 36, max_lines=2
-    )  # 3 ký tự mỗi dòng
-    assert (
-        len(lines) == 2
-        and lines[-1].endswith("..")
-        and all(BODY.measure(line)[0] <= 36 for line in lines)
-    )
+    lines = wrap_text(BODY, "aa bb cc dd ee ff gg hh", 36, max_lines=2)  # 3 ký tự mỗi dòng
+    assert len(lines) == 2 and lines[-1].endswith("..") and all(BODY.measure(line)[0] <= 36 for line in lines)
 
 
 def test_wrap_text_without_overflow_has_no_ellipsis() -> None:
@@ -116,11 +104,7 @@ def test_bevel_draws_border_face_and_four_edges() -> None:
         (0, 0, 0),
     )
     rects = painter.rects()
-    assert (
-        len(rects) == 6
-        and rects[0] == pygame.Rect(10, 10, 100, 40)
-        and rects[1] == pygame.Rect(11, 11, 98, 38)
-    )
+    assert len(rects) == 6 and rects[0] == pygame.Rect(10, 10, 100, 40) and rects[1] == pygame.Rect(11, 11, 98, 38)
     assert [c.color for c in painter.commands[2:]] == [
         (2, 2, 2),
         (2, 2, 2),
@@ -145,12 +129,8 @@ def test_dialog_box_and_slot_have_opposite_lighting() -> None:
     assert slot_painter.commands[2].color == THEME.dialog_dark  # ô lõm: mép trên tối
 
 
-@pytest.mark.parametrize(
-    "active, border", [(True, THEME.outline), (False, THEME.field_idle_border)]
-)
-def test_text_field_border_shows_whether_it_is_active(
-    active: bool, border: tuple[int, int, int]
-) -> None:
+@pytest.mark.parametrize("active, border", [(True, THEME.outline), (False, THEME.field_idle_border)])
+def test_text_field_border_shows_whether_it_is_active(active: bool, border: tuple[int, int, int]) -> None:
     painter = RecordingPainter()
     draw_text_field(painter, pygame.Rect(0, 0, 100, 40), THEME, active)
     assert painter.commands[0].color == THEME.field_face
@@ -167,11 +147,7 @@ def test_button_colors_differ_between_states() -> None:
         THEME.button_colors(False, False),
     )
     assert len({normal, hover, disabled}) == 3
-    assert (
-        normal[3] == THEME.text
-        and hover[3] == THEME.text_hover
-        and disabled[3] == THEME.text_disabled
-    )
+    assert normal[3] == THEME.text and hover[3] == THEME.text_hover and disabled[3] == THEME.text_disabled
 
 
 def test_a_disabled_button_ignores_hovering_in_the_theme_lookup() -> None:
@@ -187,9 +163,7 @@ def test_theme_is_immutable_and_replaceable() -> None:
 # ---------------------------------------------------------------- Button
 
 
-def make_button(
-    label: str = "Restart", hint: str = "R", enabled: bool = True
-) -> Button:
+def make_button(label: str = "Restart", hint: str = "R", enabled: bool = True) -> Button:
     return Button(pygame.Rect(16, 100, 148, 30), label, "restart", hint, enabled)
 
 
@@ -209,15 +183,9 @@ def test_set_state_changes_only_what_is_given() -> None:
 
 
 def test_hint_shows_only_when_there_is_room_next_to_the_label() -> None:
-    assert make_button("Restart").hint_fits(
-        BODY, SMALL, THEME
-    )  # nhãn 84 px: còn 32 px mỗi bên
-    assert not make_button("Thoát Replay").hint_fits(
-        BODY, SMALL, THEME
-    )  # nhãn 144 px: gần như kín nút
-    assert not make_button("Restart", hint="").hint_fits(
-        BODY, SMALL, THEME
-    )  # không có chú thích
+    assert make_button("Restart").hint_fits(BODY, SMALL, THEME)  # nhãn 84 px: còn 32 px mỗi bên
+    assert not make_button("Thoát Replay").hint_fits(BODY, SMALL, THEME)  # nhãn 144 px: gần như kín nút
+    assert not make_button("Restart", hint="").hint_fits(BODY, SMALL, THEME)  # không có chú thích
 
 
 def test_hint_boundary_is_exact() -> None:
@@ -230,13 +198,9 @@ def test_draw_centers_the_label_and_puts_the_hint_in_the_corner() -> None:
     painter, button = RecordingPainter(), make_button()
     button.draw(painter, FACES, THEME)
     label, hint = painter.text_commands("Restart")[0], painter.text_commands("R")[0]
-    assert label.pos[0] == 16 + (148 - 84) // 2 and label.pos[1] == text_top(
-        button.rect, BODY
-    )
+    assert label.pos[0] == 16 + (148 - 84) // 2 and label.pos[1] == text_top(button.rect, BODY)
     assert (
-        hint.rect.right <= button.rect.right
-        and hint.rect.top >= button.rect.top
-        and hint.rect.left > label.rect.right
+        hint.rect.right <= button.rect.right and hint.rect.top >= button.rect.top and hint.rect.left > label.rect.right
     )
     assert label.color == THEME.text and label.shadow and not hint.shadow
 
@@ -273,8 +237,7 @@ def test_hovered_button_is_highlighted_but_a_disabled_one_is_not() -> None:
     on.draw(hovered, FACES, THEME)
     off.draw(disabled, FACES, THEME)
     assert (
-        hovered.text_commands("Restart")[0].color == THEME.text_hover
-        and hovered.commands[1].color == THEME.hover_face
+        hovered.text_commands("Restart")[0].color == THEME.text_hover and hovered.commands[1].color == THEME.hover_face
     )
     assert disabled.text_commands("Restart")[0].color == THEME.text_disabled
     assert palette.WHITE == THEME.text

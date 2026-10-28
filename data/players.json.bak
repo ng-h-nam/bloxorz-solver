@@ -445,12 +445,14 @@
       "best_scores": {
         "Stage 01": 7,
         "Stage 02": 18,
-        "Stage 03": 48
+        "Stage 03": 48,
+        "Stage 04": 32
       },
       "best_times": {
         "Stage 01": 7.957,
         "Stage 02": 9.842,
-        "Stage 03": 27.082
+        "Stage 03": 27.082,
+        "Stage 04": 22.211
       },
       "level_stats": {
         "Stage 01": {
@@ -469,6 +471,12 @@
           "score": 48,
           "move_count": 48,
           "elapsed_time": 27.082,
+          "mode": "MANUAL"
+        },
+        "Stage 04": {
+          "score": 32,
+          "move_count": 32,
+          "elapsed_time": 22.211,
           "mode": "MANUAL"
         }
       },
@@ -551,6 +559,40 @@
           "DOWN",
           "LEFT",
           "UP"
+        ],
+        "Stage 04": [
+          "UP",
+          "UP",
+          "RIGHT",
+          "LEFT",
+          "DOWN",
+          "LEFT",
+          "UP",
+          "RIGHT",
+          "RIGHT",
+          "UP",
+          "RIGHT",
+          "RIGHT",
+          "RIGHT",
+          "RIGHT",
+          "RIGHT",
+          "RIGHT",
+          "DOWN",
+          "RIGHT",
+          "DOWN",
+          "DOWN",
+          "DOWN",
+          "DOWN",
+          "DOWN",
+          "RIGHT",
+          "UP",
+          "LEFT",
+          "LEFT",
+          "LEFT",
+          "LEFT",
+          "LEFT",
+          "LEFT",
+          "DOWN"
         ]
       },
       "history": [
@@ -2300,6 +2342,83 @@
           "elapsed_time": 27.082,
           "score": 48,
           "timestamp": 1793158962.7975357
+        },
+        {
+          "level_id": "Stage 04",
+          "moves": [
+            "UP",
+            "UP",
+            "RIGHT",
+            "LEFT",
+            "DOWN",
+            "LEFT",
+            "UP",
+            "RIGHT",
+            "RIGHT",
+            "UP",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "DOWN",
+            "RIGHT",
+            "DOWN",
+            "DOWN",
+            "DOWN",
+            "DOWN",
+            "DOWN",
+            "RIGHT",
+            "UP",
+            "LEFT",
+            "LEFT",
+            "LEFT",
+            "LEFT",
+            "LEFT",
+            "LEFT",
+            "DOWN"
+          ],
+          "move_count": 32,
+          "won": true,
+          "mode": "MANUAL",
+          "elapsed_time": 22.211,
+          "score": 32,
+          "timestamp": 1793158988.662441
+        },
+        {
+          "level_id": "Stage 01",
+          "moves": [
+            "RIGHT",
+            "DOWN",
+            "RIGHT",
+            "RIGHT",
+            "RIGHT",
+            "DOWN",
+            "LEFT",
+            "UP",
+            "RIGHT",
+            "DOWN",
+            "DOWN",
+            "DOWN",
+            "LEFT",
+            "UP",
+            "DOWN",
+            "RIGHT",
+            "UP",
+            "UP",
+            "DOWN",
+            "LEFT",
+            "UP",
+            "RIGHT",
+            "DOWN"
+          ],
+          "move_count": 23,
+          "won": true,
+          "mode": "MANUAL",
+          "elapsed_time": 10.399,
+          "score": 23,
+          "timestamp": 1793162252.0321753
         }
       ],
       "ai_solutions": {

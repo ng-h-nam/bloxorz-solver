@@ -24,9 +24,7 @@ ROLL_SECONDS: float = 0.25
 FALL_SECONDS: float = 0.6
 SINK_SECONDS: float = 0.6
 TIP_SECONDS: float = 0.85  # tổng thời gian của chuyển động đổ rồi rơi
-TOPPLE_SECONDS: float = (
-    0.35  # thời gian để khối lật đủ 90 độ quanh mép (nhanh dần như vật đang đổ)
-)
+TOPPLE_SECONDS: float = 0.35  # thời gian để khối lật đủ 90 độ quanh mép (nhanh dần như vật đang đổ)
 GRAVITY: float = 28.0  # gia tốc rơi, tính bằng ô trên giây bình phương
 
 FALL_DROP: float = 8.0  # độ sâu rơi (đơn vị ô) khi hết pha rơi của ô giòn
@@ -81,12 +79,7 @@ class Pose:
     @property
     def sinking(self) -> bool:
         """Đang chìm xuống ô đích (không lăn, không đổ, chỉ dời xuống): phần khối dưới mặt gạch phải bị cắt bỏ."""
-        return (
-            self.direction is None
-            and self.tip is None
-            and self.tile is None
-            and self.drop < 0
-        )
+        return self.direction is None and self.tip is None and self.tile is None and self.drop < 0
 
 
 def ease_in_out(t: float) -> float:
@@ -152,9 +145,7 @@ class Animator:
         """Ô giòn sẽ vỡ ở pha rơi của hoạt cảnh đang chạy (None nếu không có)."""
         return self._broken_tile if self.active else None
 
-    def start_roll(
-        self, old_state: State, direction: Direction, new_state: State
-    ) -> None:
+    def start_roll(self, old_state: State, direction: Direction, new_state: State) -> None:
         """Bắt đầu hoạt cảnh lăn từ `old_state` sang `new_state`."""
         self._start([Phase.ROLL], old_state, direction, new_state, None)
 
@@ -172,20 +163,12 @@ class Animator:
         - Không có cả hai: kiểu cũ, lăn trọn rồi rơi thẳng.
         """
         if broken_tile is None and plan is not None:
-            phases = (
-                [Phase.ROLL, Phase.TIP]
-                if plan.kind == FallKind.PARTIAL
-                else [Phase.TIP]
-            )
+            phases = [Phase.ROLL, Phase.TIP] if plan.kind == FallKind.PARTIAL else [Phase.TIP]
             self._start(phases, old_state, direction, old_state, None, plan)
         else:
-            self._start(
-                [Phase.ROLL, Phase.FALL], old_state, direction, old_state, broken_tile
-            )
+            self._start([Phase.ROLL, Phase.FALL], old_state, direction, old_state, broken_tile)
 
-    def start_win(
-        self, old_state: State, direction: Direction, new_state: State
-    ) -> None:
+    def start_win(self, old_state: State, direction: Direction, new_state: State) -> None:
         """Bắt đầu hoạt cảnh lăn rồi chìm xuống ô đích."""
         self._start([Phase.ROLL, Phase.SINK], old_state, direction, new_state, None)
 
@@ -269,9 +252,7 @@ class Animator:
         axis, sign = ROLL_AXIS[plan.tip_direction]
         tip = Tip(plan.pivot, axis, sign * degrees, shift)
         if plan.kind == FallKind.PARTIAL:
-            return Pose(
-                piece, bounds, self._direction, 90.0, 0.0, tip=tip
-            )  # đã lăn trọn 90 độ rồi mới bập bênh
+            return Pose(piece, bounds, self._direction, 90.0, 0.0, tip=tip)  # đã lăn trọn 90 độ rồi mới bập bênh
         return Pose(piece, bounds, None, 0.0, 0.0, tip=tip)
 
     @property
@@ -290,18 +271,14 @@ class Animator:
         if phase == Phase.TIP:
             return self._tip_pose(piece, bounds)
         if phase == Phase.ROLL:
-            return Pose(
-                piece, bounds, self._direction, 90.0 * ease_in_out(progress), 0.0
-            )
+            return Pose(piece, bounds, self._direction, 90.0 * ease_in_out(progress), 0.0)
 
         u = min(1.0, progress)
         if self._broken_tile is not None and self._direction is not None:
             # Ô giòn vỡ trước và rơi, nghiêng dần; khối đứng trên chỗ trống một nhịp rồi rơi thẳng theo
             axis, sign = ROLL_AXIS[self._direction]
             block_u = max(0.0, (u - TILE_LEAD) / (1.0 - TILE_LEAD))
-            tile = TilePose(
-                self._broken_tile, -FALL_DROP * u * u, axis, sign * TILE_TILT * u
-            )
+            tile = TilePose(self._broken_tile, -FALL_DROP * u * u, axis, sign * TILE_TILT * u)
             return Pose(
                 piece,
                 bounds,

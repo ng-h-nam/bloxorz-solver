@@ -96,11 +96,7 @@ def test_a_state_key_that_distinguishes_everything_passes() -> None:
 
 def test_a_key_that_ignores_orientation_and_bridges_is_flagged() -> None:
     ok, issues = verify_solver_state_key(lambda state: (state.r, state.c))
-    assert (
-        not ok
-        and any("tư thế" in item for item in issues)
-        and any("cầu" in item for item in issues)
-    )
+    assert not ok and any("tư thế" in item for item in issues) and any("cầu" in item for item in issues)
 
 
 def test_an_unhashable_key_is_flagged() -> None:
@@ -119,9 +115,7 @@ def test_a_key_that_ignores_the_split_cube_is_flagged() -> None:
     ok, issues = verify_solver_state_key(
         lambda state: (state.r, state.c, state.orientation.value, state.active_bridges)
     )
-    assert not ok and any(
-        "split_pos" in item or "active_cube" in item for item in issues
-    )
+    assert not ok and any("split_pos" in item or "active_cube" in item for item in issues)
 
 
 # ---------------------------------------------------------------- BackgroundSolverWorker
@@ -132,14 +126,8 @@ def test_a_run_delivers_a_normalized_result_with_its_run_id() -> None:
     run_id = worker.start(FakeSolver(actions=[Direction.UP, "space"]), "BFS")
     result, errors = wait_for(worker)
     assert run_id == 1 == worker.current_run_id and errors == []
-    assert (
-        result is not None and result.actions == ["UP", "SWITCH"] and result.run_id == 1
-    )
-    assert (
-        result.expanded_nodes == 5
-        and result.elapsed_time == 0.25
-        and result.memory_peak_kb == 2.0
-    )
+    assert result is not None and result.actions == ["UP", "SWITCH"] and result.run_id == 1
+    assert result.expanded_nodes == 5 and result.elapsed_time == 0.25 and result.memory_peak_kb == 2.0
     assert result.algorithm_name == "BFS" and result.is_solved
 
 
@@ -166,11 +154,7 @@ def test_exceptions_become_error_events() -> None:
     worker = BackgroundSolverWorker()
     worker.start(FakeSolver(error=RuntimeError("hỏng")), "X")
     result, errors = wait_for(worker)
-    assert (
-        result is None
-        and errors[0].error_type == "RuntimeError"
-        and errors[0].error_message == "hỏng"
-    )
+    assert result is None and errors[0].error_type == "RuntimeError" and errors[0].error_message == "hỏng"
     assert "Traceback" in errors[0].traceback_str
 
 
@@ -230,11 +214,7 @@ def test_unsolved_results_are_reported_as_such() -> None:
     worker = BackgroundSolverWorker()
     worker.start(Unsolved())
     result, _ = wait_for(worker)
-    assert (
-        result is not None
-        and not result.is_solved
-        and result.status == "NODE_LIMIT_EXCEEDED"
-    )
+    assert result is not None and not result.is_solved and result.status == "NODE_LIMIT_EXCEEDED"
 
 
 def test_join_without_a_run_is_harmless() -> None:

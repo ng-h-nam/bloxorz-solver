@@ -57,9 +57,7 @@ NAMES: list[str] = [
 ]
 
 
-def cuboid_faces(
-    x0: float, x1: float, y0: float, y1: float, z0: float, z1: float
-) -> dict[str, Quad]:
+def cuboid_faces(x0: float, x1: float, y0: float, y1: float, z0: float, z1: float) -> dict[str, Quad]:
     """Bốn đỉnh của từng mặt trong sáu mặt của hộp (theo thứ tự khớp với UV)."""
     return {
         "top": ((x0, y1, z1), (x1, y1, z1), (x1, y1, z0), (x0, y1, z0)),
@@ -82,9 +80,7 @@ def load_texture(path: str) -> int:
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-    glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data
-    )
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
     glGenerateMipmap(GL_TEXTURE_2D)
     return int(texture)
 

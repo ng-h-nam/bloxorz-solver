@@ -18,9 +18,7 @@ Bounds = tuple[float, float, float, float, float, float]
 Vec3 = tuple[float, float, float]
 Cell = tuple[int, int]
 
-TILE_HEIGHT: float = (
-    1.0  # độ dày của gạch (nguồn duy nhất: mọi nơi khác đọc hằng số này)
-)
+TILE_HEIGHT: float = 1.0  # độ dày của gạch (nguồn duy nhất: mọi nơi khác đọc hằng số này)
 TILE_INSET: float = 0.02  # gạch nhỏ hơn ô một chút mỗi bên để lộ khe giữa các gạch
 
 # Pháp tuyến của sáu mặt hộp, trong hệ tọa độ của chính hộp
@@ -153,9 +151,7 @@ def shade_for_normal(normal: Vec3, base: dict[str, float]) -> float:
     return weight_x * nx * nx + weight_y * ny * ny + weight_z * nz * nz
 
 
-def composed_face_shades(
-    base: dict[str, float], rotations: Sequence[tuple[Vec3, float]]
-) -> dict[str, float]:
+def composed_face_shades(base: dict[str, float], rotations: Sequence[tuple[Vec3, float]]) -> dict[str, float]:
     """Độ sáng các mặt của hộp sau một chuỗi phép quay (trục, độ) áp dụng lần lượt theo thứ tự."""
     if not rotations:
         return dict(base)
@@ -168,18 +164,14 @@ def composed_face_shades(
     return shades
 
 
-def rotated_face_shades(
-    base: dict[str, float], axis: Vec3, degrees: float
-) -> dict[str, float]:
+def rotated_face_shades(base: dict[str, float], axis: Vec3, degrees: float) -> dict[str, float]:
     """Độ sáng của từng mặt khi hộp đã xoay `degrees` độ quanh `axis`."""
     if degrees == 0:
         return dict(base)
     return composed_face_shades(base, [(axis, degrees)])
 
 
-def roll_face_shades(
-    base: dict[str, float], direction: Direction, angle: float
-) -> dict[str, float]:
+def roll_face_shades(base: dict[str, float], direction: Direction, angle: float) -> dict[str, float]:
     """Độ sáng các mặt của khối đang lăn theo `direction`, đã xoay `angle` độ (0 đến 90 hoặc hơn)."""
     axis, sign = ROLL_AXIS[direction]
     return rotated_face_shades(base, axis, sign * angle)
@@ -189,10 +181,7 @@ def broken_fragile_cell(board: Board, state: State) -> Cell | None:
     """Ô giòn bị vỡ nếu `state` (trạng thái khối vừa rơi) là khối đứng thẳng trên ô giòn."""
     if state.orientation != Orientation.STANDING:
         return None
-    if (
-        board.in_board(state.r, state.c)
-        and board.get_tile(state.r, state.c) == TileType.FRAGILE
-    ):
+    if board.in_board(state.r, state.c) and board.get_tile(state.r, state.c) == TileType.FRAGILE:
         return (state.r, state.c)
     return None
 
@@ -204,9 +193,7 @@ class FallKind(Enum):
     """Cách khối rơi khỏi gạch."""
 
     UNSUPPORTED = "UNSUPPORTED"  # lăn ra khỏi mép: không còn ô nào đỡ, khối đổ quanh chính cạnh đang lăn
-    PARTIAL = (
-        "PARTIAL"  # lăn xong nhưng chỉ nằm trên một ô: khối bập bênh quanh mép ô đỡ nó
-    )
+    PARTIAL = "PARTIAL"  # lăn xong nhưng chỉ nằm trên một ô: khối bập bênh quanh mép ô đỡ nó
 
 
 @dataclass(frozen=True)
@@ -251,11 +238,7 @@ def plan_fall(board: Board, state: State, direction: Direction) -> FallPlan | No
     - Hai ô mà chỉ một ô đỡ: PARTIAL, trục xoay là mép giữa ô đỡ và ô trống.
     """
     rolled = roll_block(state, direction)
-    cells = (
-        [rolled.get_active_cube_pos()]
-        if state.is_split()
-        else rolled.get_occupied_cells()
-    )
+    cells = [rolled.get_active_cube_pos()] if state.is_split() else rolled.get_occupied_cells()
     supported = [supports_block(board, state, cell) for cell in cells]
     if (
         not state.is_split()
@@ -267,9 +250,7 @@ def plan_fall(board: Board, state: State, direction: Direction) -> FallPlan | No
     count = sum(supported)
     if count == 0:
         x0, x1, y0, y1, z0, z1 = block_pieces(state)[active_piece(state)]
-        extent = (
-            (x1 - x0) if direction in (Direction.LEFT, Direction.RIGHT) else (z1 - z0)
-        )
+        extent = (x1 - x0) if direction in (Direction.LEFT, Direction.RIGHT) else (z1 - z0)
         critical = math.degrees(
             math.atan2(extent / 2, (y1 - y0) / 2)
         )  # trọng tâm qua mép khi tan = (nửa bề ngang)/(độ cao trọng tâm)

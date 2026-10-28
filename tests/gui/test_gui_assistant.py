@@ -43,9 +43,7 @@ class ScriptedSolver:
     mode = "unsolved"
     delay = 0.0
 
-    def __init__(
-        self, board: Board, initial_state: State | None = None, **kwargs: Any
-    ) -> None:
+    def __init__(self, board: Board, initial_state: State | None = None, **kwargs: Any) -> None:
         pass
 
     def get_state_key(self, state: State) -> State:
@@ -67,17 +65,11 @@ def build(
     tmp_path: Path, specs: list[SolverSpec] | None = None
 ) -> tuple[AiAssistant, GameSession, ScenePresenter, ReplayController]:
     catalog = LevelCatalog.from_json()
-    session = GameSession(
-        Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json")
-    )
+    session = GameSession(Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json"))
     presenter = ScenePresenter()
     presenter.reset(session.game)
     replays = ReplayController(session, presenter)
-    chosen = (
-        specs
-        if specs is not None
-        else [s for s in discover_available_solvers() if s.name == "BFS"]
-    )
+    chosen = specs if specs is not None else [s for s in discover_available_solvers() if s.name == "BFS"]
     return (
         AiAssistant(session, presenter, replays, SolverService(specs=chosen)),
         session,
@@ -97,9 +89,7 @@ def wait_until_done(assistant: AiAssistant, timeout: float = 15.0) -> None:
     raise AssertionError("lượt giải không kết thúc")
 
 
-def finish_replay(
-    replays: ReplayController, presenter: ScenePresenter, session: GameSession
-) -> None:
+def finish_replay(replays: ReplayController, presenter: ScenePresenter, session: GameSession) -> None:
     for _ in range(200):
         replays.update(1.0)
         presenter.update(5.0, session.game)
@@ -119,15 +109,10 @@ def test_toggle_solves_from_the_current_position_and_replays(tmp_path: Path) -> 
     for name in best_moves(session)[:3]:
         session.game.move(name)
     assistant.toggle()
-    assert (
-        "BFS" in session.message and "còn 2 lượt" in session.message
-    )  # BFS có thể xong trước khi kiểm tra running
+    assert "BFS" in session.message and "còn 2 lượt" in session.message  # BFS có thể xong trước khi kiểm tra running
     wait_until_done(assistant)
     assert replays.active and replays.total == 4  # chỉ 4 bước còn lại, không phải 7
-    assert (
-        assistant.uses_left == MAX_AI_USES_PER_LEVEL - 1
-        and "còn 1 lượt AI" in session.message
-    )
+    assert assistant.uses_left == MAX_AI_USES_PER_LEVEL - 1 and "còn 1 lượt AI" in session.message
 
 
 def test_the_ai_solution_is_stored_separately_from_the_players_records(
@@ -137,9 +122,7 @@ def test_the_ai_solution_is_stored_separately_from_the_players_records(
     assistant.toggle()
     wait_until_done(assistant)
     profile = session.players.get_current_profile() or session.players.players["guest"]
-    assert (
-        profile.ai_solutions["Stage 01"]["BFS"]["cost"] == 7
-    )  # đường đi đầy đủ từ ô xuất phát
+    assert profile.ai_solutions["Stage 01"]["BFS"]["cost"] == 7  # đường đi đầy đủ từ ô xuất phát
     assert session.players.get_level_score_info("Stage 01") is None
 
 
@@ -195,16 +178,11 @@ def test_failed_and_stale_runs_do_not_cost_a_use(tmp_path: Path) -> None:
     assistant, session, _, _ = build(tmp_path, [SolverSpec("S", ScriptedSolver)])  # type: ignore[arg-type]
     assistant.toggle()
     wait_until_done(assistant)
-    assert (
-        "thất bại" in session.message and assistant.uses_left == MAX_AI_USES_PER_LEVEL
-    )
+    assert "thất bại" in session.message and assistant.uses_left == MAX_AI_USES_PER_LEVEL
     ScriptedSolver.mode = "error"
     assistant.toggle()
     wait_until_done(assistant)
-    assert (
-        "Lỗi S (RuntimeError)" in session.message
-        and assistant.uses_left == MAX_AI_USES_PER_LEVEL
-    )
+    assert "Lỗi S (RuntimeError)" in session.message and assistant.uses_left == MAX_AI_USES_PER_LEVEL
 
 
 def test_a_result_that_arrives_after_the_player_moved_is_discarded(
@@ -212,9 +190,7 @@ def test_a_result_that_arrives_after_the_player_moved_is_discarded(
 ) -> None:
     assistant, session, _, replays = build(tmp_path)
     assistant.toggle()
-    session.game.move(
-        best_moves(session)[0]
-    )  # người chơi đi tiếp trong lúc AI đang giải
+    session.game.move(best_moves(session)[0])  # người chơi đi tiếp trong lúc AI đang giải
     wait_until_done(assistant)
     assert session.message == MSG_AI_STALE and not replays.active
     assert assistant.uses_left == MAX_AI_USES_PER_LEVEL
@@ -248,9 +224,7 @@ def test_a_fallen_game_is_revived_and_solved_from_before_the_fall(
     session.move(next(d for d in Direction if d not in valid))
     assert session.game.status == GameStatus.LOST
     assistant.toggle()
-    assert (
-        session.game.status == GameStatus.PLAYING
-    )  # đã khôi phục về vị trí trước lúc rơi
+    assert session.game.status == GameStatus.PLAYING  # đã khôi phục về vị trí trước lúc rơi
     wait_until_done(assistant)
     assert assistant.uses_left == MAX_AI_USES_PER_LEVEL - 1
 
@@ -277,7 +251,5 @@ def test_starting_a_new_solve_exits_an_active_replay_first(tmp_path: Path) -> No
     wait_until_done(assistant)
     replays.replayer.seek(3)  # type: ignore[union-attr]
     assistant.toggle()
-    assert (
-        not replays.active and session.game.moves == 0
-    )  # đã khôi phục về vị trí ban đầu
+    assert not replays.active and session.game.moves == 0  # đã khôi phục về vị trí ban đầu
     assistant.cancel()

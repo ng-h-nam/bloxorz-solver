@@ -65,9 +65,7 @@ MIN_CAMERA_DISTANCE: float = 10.0
 MAX_CAMERA_DISTANCE: float = 120.0
 CAMERA_MARGIN: float = 0.95  # chừa 5% mép khung
 BLOCK_HEIGHT: float = 2.0
-PAN_MARGIN: float = (
-    4.0  # được dịch điểm nhìn ra ngoài vùng bản đồ tối đa bằng ngần này ô
-)
+PAN_MARGIN: float = 4.0  # được dịch điểm nhìn ra ngoài vùng bản đồ tối đa bằng ngần này ô
 
 TEXTURE_DIR: str = os.path.join(PROJECT_ROOT, "assets", "textures")
 TEXTURE_NAMES: list[str] = [
@@ -127,12 +125,7 @@ def _normalize(a: Vec3) -> Vec3:
 
 def content_bounds(board: Board) -> tuple[float, float, float, float]:
     """(cột đầu, cột cuối + 1, hàng đầu, hàng cuối + 1) của vùng có ô thật, bỏ qua viền ô trống."""
-    cells = [
-        (r, c)
-        for r in range(board.rows)
-        for c in range(board.cols)
-        if board.grid[r][c] != TileType.VOID
-    ]
+    cells = [(r, c) for r in range(board.rows) for c in range(board.cols) if board.grid[r][c] != TileType.VOID]
     if not cells:
         return (0.0, float(board.cols), 0.0, float(board.rows))
     rows = [r for r, _ in cells]
@@ -145,26 +138,17 @@ def content_bounds(board: Board) -> tuple[float, float, float, float]:
     )
 
 
-def fit_camera_distance(
-    bounds: tuple[float, float, float, float], aspect: float
-) -> float:
+def fit_camera_distance(bounds: tuple[float, float, float, float], aspect: float) -> float:
     """Khoảng cách camera nhỏ nhất để vùng có ô (kể cả khối cao 2) nằm trong khung nhìn."""
     c0, c1, r0, r1 = bounds
     center_x, center_z = (c0 + c1) / 2, (r0 + r1) / 2
     target: Vec3 = (center_x, 0.0, center_z)
     tan_half = math.tan(math.radians(FOV_DEGREES) / 2)
-    corners = [
-        (x, y, z)
-        for x in (c0, c1)
-        for z in (r0, r1)
-        for y in (-TILE_HEIGHT, BLOCK_HEIGHT)
-    ]
+    corners = [(x, y, z) for x in (c0, c1) for z in (r0, r1) for y in (-TILE_HEIGHT, BLOCK_HEIGHT)]
     distance = MIN_CAMERA_DISTANCE
     while distance < MAX_CAMERA_DISTANCE:
         eye = OrbitCamera(center_x, center_z, distance).eye
-        forward = _normalize(
-            (target[0] - eye[0], target[1] - eye[1], target[2] - eye[2])
-        )
+        forward = _normalize((target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]))
         right = _normalize(_cross(forward, (0.0, 1.0, 0.0)))
         up = _cross(right, forward)
         fits = True
@@ -185,10 +169,7 @@ def fit_camera_distance(
 
 def load_textures() -> dict[str, int]:
     """Nạp hình một lần (cần có cửa sổ OpenGL). Dùng chung cho mọi Renderer."""
-    return {
-        name: load_texture(os.path.join(TEXTURE_DIR, name + ".png"))
-        for name in TEXTURE_NAMES
-    }
+    return {name: load_texture(os.path.join(TEXTURE_DIR, name + ".png")) for name in TEXTURE_NAMES}
 
 
 def apply_roll(bounds: Bounds, direction: Direction, angle: float) -> None:
@@ -199,9 +180,7 @@ def apply_roll(bounds: Bounds, direction: Direction, angle: float) -> None:
     glTranslatef(-px, 0.0, -pz)
 
 
-def draw_shaded_box(
-    bounds: Bounds, top_texture: int, side_texture: int, shades: dict[str, float]
-) -> None:
+def draw_shaded_box(bounds: Bounds, top_texture: int, side_texture: int, shades: dict[str, float]) -> None:
     """Hộp có texture, độ sáng từng mặt lấy từ `shades` (tính theo hướng thật của mặt)."""
     glEnable(GL_TEXTURE_2D)
     for name, quad in cuboid_faces(*bounds).items():
@@ -231,10 +210,7 @@ class Renderer:
         # Cần có cửa sổ OpenGL trước khi tải hình và tạo display list
         self.tex: dict[str, int] = textures if textures is not None else load_textures()
         self.bridge_cells: list[Cell] = [
-            (r, c)
-            for r in range(board.rows)
-            for c in range(board.cols)
-            if board.grid[r][c] == TileType.BRIDGE
+            (r, c) for r in range(board.rows) for c in range(board.cols) if board.grid[r][c] == TileType.BRIDGE
         ]
 
         c0, c1, r0, r1 = content_bounds(board)
@@ -307,9 +283,7 @@ class Renderer:
         """Vẽ các cầu đang mở theo trạng thái công tắc."""
         for r, c in self.bridge_cells:
             if (r, c) in state.active_bridges:
-                draw_textured_box(
-                    tile_bounds(r, c), self.tex["bridge"], self.tex["floor_side"]
-                )
+                draw_textured_box(tile_bounds(r, c), self.tex["bridge"], self.tex["floor_side"])
 
     def _apply_pose(self, pose: Pose) -> dict[str, float]:
         """Áp ma trận của `pose` (dời y, đổ quanh mép, lăn) và trả về độ sáng các mặt tương ứng.
@@ -352,9 +326,7 @@ class Renderer:
             else:
                 self._draw_piece(bounds, BASE_SHADE, outline)
 
-    def _draw_piece(
-        self, bounds: Bounds, shades: dict[str, float], outline: bool
-    ) -> None:
+    def _draw_piece(self, bounds: Bounds, shades: dict[str, float], outline: bool) -> None:
         """Vẽ một mảnh khối, kèm viền vàng nếu đó là khối đơn đang được điều khiển."""
         draw_shaded_box(bounds, self.tex["block"], self.tex["block"], shades)
         if outline:
@@ -383,9 +355,7 @@ class Renderer:
         e = 0.01
         glLineWidth(3.0)
         glColor3f(*OUTLINE_COLOR)
-        for quad in cuboid_faces(
-            x0 - e, x1 + e, y0 - e, y1 + e, z0 - e, z1 + e
-        ).values():
+        for quad in cuboid_faces(x0 - e, x1 + e, y0 - e, y1 + e, z0 - e, z1 + e).values():
             glBegin(GL_LINE_LOOP)
             for vertex in quad:
                 glVertex3f(*vertex)

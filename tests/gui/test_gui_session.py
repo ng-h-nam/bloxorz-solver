@@ -24,9 +24,7 @@ from gui.shared.actions import action_names
 @pytest.fixture
 def session(tmp_path: Path) -> GameSession:
     catalog = LevelCatalog.from_json()
-    return GameSession(
-        Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json")
-    )
+    return GameSession(Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json"))
 
 
 def solution(session: GameSession) -> list[str]:
@@ -35,9 +33,7 @@ def solution(session: GameSession) -> list[str]:
 
 def invalid_direction(game: Game) -> Direction:
     """Một hướng chắc chắn làm khối rơi từ trạng thái hiện tại."""
-    valid = {
-        action for action, _ in game.get_valid_moves() if isinstance(action, Direction)
-    }
+    valid = {action for action, _ in game.get_valid_moves() if isinstance(action, Direction)}
     return next(direction for direction in Direction if direction not in valid)
 
 
@@ -71,20 +67,12 @@ def test_best_record_text_before_and_after_winning(session: GameSession) -> None
 def test_a_valid_move_reports_a_roll(session: GameSession) -> None:
     report = session.move(Direction(solution(session)[0]))
     assert report is not None and report.kind == MoveKind.ROLL
-    assert (
-        report.old_state != report.state
-        and report.win is None
-        and session.game.moves == 1
-    )
+    assert report.old_state != report.state and report.win is None and session.game.moves == 1
 
 
 def test_stepping_off_the_board_reports_a_fall(session: GameSession) -> None:
     report = session.move(invalid_direction(session.game))
-    assert (
-        report is not None
-        and report.kind == MoveKind.FALL
-        and report.broken_tile is None
-    )
+    assert report is not None and report.kind == MoveKind.FALL and report.broken_tile is None
     assert session.game.status == GameStatus.LOST and report.message
 
 
@@ -99,11 +87,7 @@ def test_winning_records_the_score_and_unlocks_the_next_level(
     reports = [session.move(Direction(name)) for name in solution(session)]
     final = reports[-1]
     assert final is not None and final.kind == MoveKind.WIN and final.win is not None
-    assert (
-        final.win.score == 7
-        and final.win.next_name == "Stage 02"
-        and not final.win.all_done
-    )
+    assert final.win.score == 7 and final.win.next_name == "Stage 02" and not final.win.all_done
     assert session.catalog.is_unlocked(1) and session.next_index == 1
     info = session.players.get_level_score_info("Stage 01")
     assert info is not None and info["score"] == 7
@@ -120,12 +104,7 @@ def test_an_assisted_win_neither_records_nor_unlocks(session: GameSession) -> No
 def test_the_last_level_has_no_next(session: GameSession) -> None:
     session.load_stage(len(session.catalog) - 1)
     final = [session.move(Direction(name)) for name in solution(session)][-1]
-    assert (
-        final is not None
-        and final.win is not None
-        and final.win.all_done
-        and final.win.next_name is None
-    )
+    assert final is not None and final.win is not None and final.win.all_done and final.win.next_name is None
 
 
 def test_switch_block_only_works_when_split(session: GameSession) -> None:
@@ -137,10 +116,7 @@ def test_switch_block_only_works_when_split(session: GameSession) -> None:
 
 def test_undo_after_a_first_move_fall_restarts(session: GameSession) -> None:
     session.move(invalid_direction(session.game))
-    assert (
-        session.undo() == UndoResult.RESTARTED
-        and session.game.status == GameStatus.PLAYING
-    )
+    assert session.undo() == UndoResult.RESTARTED and session.game.status == GameStatus.PLAYING
 
 
 def test_undo_after_a_fall_revives_then_steps_back(session: GameSession) -> None:
@@ -172,10 +148,7 @@ def test_restart_resets_the_game_and_flags(session: GameSession) -> None:
 def test_select_stage_outcomes(session: GameSession) -> None:
     assert session.select_stage(0) == StageSelection.CURRENT
     assert session.select_stage(1) == StageSelection.NEEDS_PASSCODE
-    assert (
-        session.select_stage(-1) == StageSelection.INVALID
-        and session.select_stage(999) == StageSelection.INVALID
-    )
+    assert session.select_stage(-1) == StageSelection.INVALID and session.select_stage(999) == StageSelection.INVALID
     session.catalog.unlock(1)
     assert session.select_stage(1) == StageSelection.LOADED
     assert session.level_name == "Stage 02" and session.revision == 1
@@ -183,9 +156,7 @@ def test_select_stage_outcomes(session: GameSession) -> None:
 
 def test_passcode_must_match_the_chosen_level_exactly(session: GameSession) -> None:
     assert not session.submit_passcode(2, "000000")
-    assert not session.submit_passcode(
-        2, session.catalog.entries[1].passcode
-    )  # mật khẩu của màn khác
+    assert not session.submit_passcode(2, session.catalog.entries[1].passcode)  # mật khẩu của màn khác
     assert not session.submit_passcode(2, "3")  # số thứ tự màn không phải mật khẩu
     assert session.submit_passcode(2, session.catalog.entries[2].passcode)
     assert session.level_name == "Stage 03"
@@ -220,14 +191,10 @@ def test_a_broken_stage_keeps_the_current_level_and_reports(tmp_path: Path) -> N
     path = tmp_path / "coolmath.json"
     path.write_text(json.dumps(stages), encoding="utf-8")
     catalog = LevelCatalog.from_json(str(path))
-    broken = GameSession(
-        Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json")
-    )
+    broken = GameSession(Game(catalog.board(0)), catalog, PlayerDataManager(tmp_path / "p.json"))
     broken.catalog.unlock(1)
     assert broken.load_stage(1) is False
-    assert (
-        broken.level_name == "Stage 01" and "Không nạp được Stage 02" in broken.message
-    )
+    assert broken.level_name == "Stage 01" and "Không nạp được Stage 02" in broken.message
 
 
 # ---------------------------------------------------------------- đồng hồ

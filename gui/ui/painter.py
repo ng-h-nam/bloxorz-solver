@@ -42,9 +42,7 @@ class UiPainter(ABC):
         """Vẽ `text` bằng `typeface`; (x, y) là góc trên-trái của hàng chữ đầu tiên (không tính chỗ chừa cho dấu)."""
 
     @abstractmethod
-    def tile_texture(
-        self, rect: pygame.Rect, texture: str, tile_size: int, tint: RGB
-    ) -> None:
+    def tile_texture(self, rect: pygame.Rect, texture: str, tile_size: int, tint: RGB) -> None:
         """Lát texture tên `texture` kín `rect` theo ô vuông `tile_size` pixel, nhân với màu `tint`."""
 
 
@@ -80,9 +78,7 @@ class RecordingPainter(UiPainter):
 
     def fill_rect(self, rect: pygame.Rect, color: RGB, alpha: float = 1.0) -> None:
         """Ghi một lệnh tô hình chữ nhật."""
-        self.commands.append(
-            PaintCommand("rect", rect=pygame.Rect(rect), color=color, alpha=alpha)
-        )
+        self.commands.append(PaintCommand("rect", rect=pygame.Rect(rect), color=color, alpha=alpha))
 
     def draw_text(
         self,
@@ -107,9 +103,7 @@ class RecordingPainter(UiPainter):
             )
         )
 
-    def tile_texture(
-        self, rect: pygame.Rect, texture: str, tile_size: int, tint: RGB
-    ) -> None:
+    def tile_texture(self, rect: pygame.Rect, texture: str, tile_size: int, tint: RGB) -> None:
         """Ghi một lệnh lát texture."""
         self.commands.append(
             PaintCommand(
@@ -133,18 +127,12 @@ class RecordingPainter(UiPainter):
 
     def text_commands(self, text: str | None = None) -> list[PaintCommand]:
         """Các lệnh vẽ chữ, hoặc chỉ những lệnh vẽ đúng chuỗi `text` nếu có chỉ định."""
-        return [
-            cmd
-            for cmd in self.commands
-            if cmd.kind == "text" and (text is None or cmd.text == text)
-        ]
+        return [cmd for cmd in self.commands if cmd.kind == "text" and (text is None or cmd.text == text)]
 
     def rects(self, color: RGB | None = None) -> list[pygame.Rect]:
         """Các hình chữ nhật đã tô, hoặc chỉ những hình có màu `color` nếu có chỉ định."""
         return [
             cmd.rect
             for cmd in self.commands
-            if cmd.kind == "rect"
-            and cmd.rect is not None
-            and (color is None or cmd.color == color)
+            if cmd.kind == "rect" and cmd.rect is not None and (color is None or cmd.color == color)
         ]

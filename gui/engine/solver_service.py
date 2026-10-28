@@ -105,11 +105,7 @@ class SolverOutcome:
     @property
     def solved(self) -> bool:
         """Có lời giải hợp lệ và không rỗng."""
-        return (
-            self.result is not None
-            and self.result.is_solved
-            and bool(self.result.actions)
-        )
+        return self.result is not None and self.result.is_solved and bool(self.result.actions)
 
     @property
     def full_actions(self) -> list[str]:
@@ -128,14 +124,10 @@ class SolverService:
         time_limit: float = DEFAULT_TIME_LIMIT,
     ) -> None:
         """Dùng danh sách thuật toán `specs` (mặc định: tự phát hiện) và giới hạn nút, thời gian cho mỗi lượt."""
-        self.specs: list[SolverSpec] = (
-            specs if specs is not None else discover_available_solvers()
-        )
+        self.specs: list[SolverSpec] = specs if specs is not None else discover_available_solvers()
         if not self.specs:
             raise ValueError("Cần ít nhất một thuật toán giải.")
-        self.worker: BackgroundSolverWorker = (
-            worker if worker is not None else BackgroundSolverWorker()
-        )
+        self.worker: BackgroundSolverWorker = worker if worker is not None else BackgroundSolverWorker()
         self.node_limit: int = node_limit
         self.time_limit: float = time_limit
         self.selected_index: int = 0

@@ -12,33 +12,23 @@ Khớp 100% với Báo cáo kỹ thuật:
 - Thuật toán A* giải ra độ dài đường đi tối ưu trùng khớp 100% với BFS trên toàn bộ các bản đồ.
 """
 
-from collections import deque
-import math
-import os
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
 import unittest
 
 from algorithms.astar import AStarSolver
 from algorithms.bfs import BFSSolver
 from algorithms.heuristic import (
     bloxorz_advanced_heuristic,
-    bloxorz_heuristic,
-    compute_all_true_distances_bfs,
     compute_orientation_penalty,
     get_representative_point,
-    is_direct_goal_predecessor,
-    manhattan_distance,
     manhattan_heuristic,
     split_state_heuristic,
     uniform_cost,
     verify_heuristic_admissibility,
     weighted_switch_cost,
 )
-from core.board import Board, TileType
 from core.map_loader import load_level
 from core.state import Orientation, State
-from core.transition import get_next_state, get_successors, is_goal_state
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 

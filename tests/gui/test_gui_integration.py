@@ -1,4 +1,9 @@
-import os
+"""Kiểm thử tích hợp (map thật, solver thật) cho phát lại, giải nền, tài khoản và khóa trạng thái.
+
+Chuyển từ tests/test_replayer.py cũ sang API mới: Replayer(game, actions, ...) không còn nhận animator
+(hoạt cảnh nhận qua on_step), BackgroundSolverWorker.start(solver, tên), discover_available_solvers() trả về SolverSpec.
+"""
+
 import sys
 import tempfile
 import unittest
@@ -6,61 +11,54 @@ from pathlib import Path
 
 import pygame
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+PROJECT_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "core").is_dir())
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from algorithms.bfs import BFSSolver  # noqa: E402
-from algorithms.dfs import DFSSolver  # noqa: E402
-from core.block import Direction  # noqa: E402
-from core.game import Game, GameStatus  # noqa: E402
-from core.map_loader import load_coolmath_stage  # noqa: E402
-from core.state import State, state_key  # noqa: E402
-from gui.animator import Animator  # noqa: E402
-from gui.passcode_prompt import char_from_key  # noqa: E402
-from gui.replayer import (  # noqa: E402
-    AccountPrompt,
-    BackgroundSolverWorker,
-    PlayerDataManager,
-    Replayer,
-    calculate_level_score,
-    verify_solver_state_key,
-)
-from gui.window import discover_available_solvers  # noqa: E402
+from algorithms.bfs import BFSSolver
+from algorithms.dfs import DFSSolver
+from core.block import Direction
+from core.game import Game, GameStatus
+from core.map_loader import load_coolmath_stage
+from core.state import State, state_key
+from gui.engine.replay import Replayer, ReplayFrame
+from gui.engine.solver_service import discover_available_solvers
+from gui.engine.solver_worker import BackgroundSolverWorker, verify_solver_state_key
+from gui.model.account_prompt import AccountPrompt
+from gui.model.passcode_prompt import char_from_key
+from gui.model.player_data import PlayerDataManager, calculate_level_score
+
+
+class FailingSolver:
+    """Solver giả luôn ném ngoại lệ trong luồng nền."""
+
+    def solve(self) -> None:
+        raise ValueError("Lỗi mô phỏng trong luồng Solver")
 
 
 class TestReplayerAndSolverIntegration(unittest.TestCase):
     """
-    Bộ kiểm thử toàn diện cho gui/replayer.py và tích hợp GUI:
-      1. Rà soát khóa trạng thái của solver (verify_solver_state_key) gồm cầu và tách khối.
-      2. Quản lý tài khoản, tính điểm dựa trên số bước đi (calculate_level_score)
-         và lưu/đọc dữ liệu người chơi (PlayerDataManager).
-      3. Hộp thoại tài khoản (AccountPrompt) và xử lý phím nhập liệu (char_from_key).
-      4. Replayer phát lại đúng đường đi (Stage 01 cơ bản & Stage 08 tách/gộp khối + SWITCH),
-         đồng bộ chuẩn với core.game.Game và gui.animator.Animator.
+    Kiểm thử tích hợp cho phát lại và giải nền:
+      1. Khóa trạng thái của solver thật (BFS, DFS) qua verify_solver_state_key.
+      2. Tài khoản, điểm theo số bước, lưu và đọc lại đường đi tốt nhất (PlayerDataManager).
+      3. Hộp thoại tài khoản (AccountPrompt) và đọc phím (char_from_key).
+      4. Replayer phát lại đúng đường đi thắng ở Stage 01 và Stage 08 (tách, gộp khối và SWITCH).
       5. Replayer phát hiện đường đi không hợp lệ (rơi khối).
-      6. Chạy solver nền (BackgroundSolverWorker) với BFS, DFS cùng hàng đợi kết quả (result_queue)
-         và hàng đợi lỗi (error_queue).
+      6. Giải nền (BackgroundSolverWorker) với BFS, DFS thật và bắt lỗi của solver hỏng.
     """
 
     def test_01_verify_solver_state_key_bridges_and_split(self):
-        """Kiểm tra hàm rà soát khóa trạng thái phát hiện đúng cả state_key chuẩn và hàm lỗi."""
+        """Khóa trạng thái chuẩn và của solver thật đạt kiểm tra; hàm khóa thiếu cầu và khối tách bị phát hiện."""
         ok, issues = verify_solver_state_key(state_key)
         self.assertTrue(ok)
         self.assertEqual(issues, [])
 
-        # Kiểm tra tương thích với BaseSolver.get_state_key (BFS & DFS)
         stage_01 = load_coolmath_stage(1)
-        bfs = BFSSolver(stage_01)
-        dfs = DFSSolver(stage_01)
-        ok_bfs, issues_bfs = verify_solver_state_key(bfs.get_state_key)
-        ok_dfs, issues_dfs = verify_solver_state_key(dfs.get_state_key)
-        self.assertTrue(ok_bfs)
-        self.assertEqual(issues_bfs, [])
-        self.assertTrue(ok_dfs)
-        self.assertEqual(issues_dfs, [])
+        for solver in (BFSSolver(stage_01), DFSSolver(stage_01)):
+            ok_solver, issues_solver = verify_solver_state_key(solver.get_state_key)
+            self.assertTrue(ok_solver, issues_solver)
+            self.assertEqual(issues_solver, [])
 
-        # Giả lập một hàm khóa trạng thái thiếu cầu và tách khối -> phải bị phát hiện lỗi
         def broken_key(s: State):
             return (s.r, s.c, s.orientation)
 
@@ -69,7 +67,7 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
         self.assertGreaterEqual(len(issues_bad), 3)
 
     def test_02_player_data_manager_save_and_load_replay(self):
-        """Kiểm tra đăng ký, đăng nhập, tính điểm theo số bước và lưu/tải dữ liệu Replay."""
+        """Đăng ký, đăng nhập, tính điểm theo số bước (không tính SWITCH) và lưu, tải đường đi."""
         with tempfile.TemporaryDirectory() as tmpdir:
             json_path = Path(tmpdir) / "players.json"
             manager = PlayerDataManager(storage_path=json_path)
@@ -78,7 +76,7 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
             self.assertTrue(ok)
             self.assertEqual(manager.current_user, "phong")
 
-            # Lưu lịch sử từ game.move_history (chứa cả Direction enum và chuỗi 'SWITCH')
+            # game.move_history chứa cả Direction và chuỗi 'SWITCH'
             moves_first = [
                 Direction.RIGHT,
                 Direction.RIGHT,
@@ -89,15 +87,16 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
             manager.record_game_session("Stage 08", moves_first, won=True, mode="MANUAL", elapsed_time=6.4)
             self.assertEqual(manager.get_level_score_info("Stage 08")["score"], 4)
 
-            # Lượt chơi tốt hơn (3 bước < 4 bước) -> Kỷ lục phải được cập nhật xuống 3 bước
+            # Lượt tốt hơn (3 bước < 4 bước) thì kỷ lục phải cập nhật xuống 3 bước
             moves_better = [Direction.RIGHT, Direction.RIGHT, "SWITCH", Direction.DOWN]
             manager.record_game_session("Stage 08", moves_better, won=True, mode="MANUAL", elapsed_time=5.2)
 
-            saved = manager.get_saved_replay("Stage 08")
-            self.assertEqual(saved, ["RIGHT", "RIGHT", "SWITCH", "DOWN"])
+            self.assertEqual(
+                manager.get_saved_replay("Stage 08"),
+                ["RIGHT", "RIGHT", "SWITCH", "DOWN"],
+            )
             profile = manager.get_current_profile()
             self.assertIsNotNone(profile)
-            # Điểm chỉ dựa duy nhất trên số bước đi (base_level_score = move_count = 3)
             self.assertEqual(calculate_level_score(move_count=3, won=True), 3)
             self.assertEqual(calculate_level_score(move_count=10, won=False), 0)
             self.assertEqual(profile.best_scores["Stage 08"], 3)
@@ -109,7 +108,6 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
             self.assertEqual(score_info["move_count"], 3)
             self.assertEqual(score_info["elapsed_time"], 5.2)
 
-            # Kiểm tra đăng xuất và đọc lại từ đĩa
             manager.logout()
             self.assertIsNone(manager.current_user)
 
@@ -122,7 +120,7 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
             )
 
     def test_03_account_prompt_and_key_input(self):
-        """Kiểm tra hộp thoại AccountPrompt và hàm đọc ký tự bàn phím char_from_key."""
+        """Hộp thoại AccountPrompt và hàm đọc ký tự bàn phím char_from_key."""
         prompt = AccountPrompt()
         prompt.open(current_user="guest")
         self.assertTrue(prompt.is_open)
@@ -149,37 +147,41 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
         self.assertEqual(prompt.password, "")
 
     def test_04_replayer_stage_01_and_stage_08_split_merge(self):
-        """Kiểm tra Replayer phát lại chuẩn xác đường đi thắng trên Stage 01 và Stage 08 (có tách khối)."""
+        """Replayer phát lại chuẩn xác đường đi thắng ở Stage 01 và Stage 08 (có tách khối và SWITCH)."""
         stage_01 = load_coolmath_stage(1)
         bfs_res = BFSSolver(stage_01).solve()
         self.assertTrue(bfs_res.is_solved)
 
         game_01 = Game(stage_01)
-        animator = Animator()
-        replayer_01 = Replayer(game_01, bfs_res.actions, step_interval=0.1, animator=animator)
+        shown: list[tuple[int, bool]] = []
 
+        def on_step(frame: ReplayFrame, animate: bool) -> None:
+            shown.append((frame.step_index, animate))
+
+        replayer_01 = Replayer(game_01, bfs_res.actions, step_interval=0.1, on_step=on_step)
         self.assertTrue(replayer_01.is_valid_path)
         self.assertTrue(replayer_01.reaches_goal)
         self.assertEqual(replayer_01.total_steps, 7)
+        self.assertEqual(game_01.moves, 0)  # tạo Replayer chưa đụng tới ván
 
-        # Tua từng bước tiến / lùi và kiểm tra đồng bộ với Game + Animator
+        # Tiến, lùi từng bước: đồng bộ với Game, và bước tiến yêu cầu hoạt cảnh (animate=True)
         replayer_01.step_forward()
         self.assertEqual(replayer_01.current_index, 1)
         self.assertEqual(game_01.moves, 1)
-        self.assertTrue(animator.active)
-        animator.cancel()
+        self.assertEqual(shown[-1], (1, True))
 
         replayer_01.step_backward()
         self.assertEqual(replayer_01.current_index, 0)
         self.assertEqual(game_01.moves, 0)
+        self.assertEqual(shown[-1], (0, False))  # lùi thì nhảy thẳng, không hoạt cảnh
 
         replayer_01.replay_all_to_end()
         self.assertTrue(replayer_01.is_finished)
         self.assertTrue(game_01.is_won())
         self.assertEqual(game_01.moves, 7)
-        self.assertEqual(game_01.block.to_state(game_01.state.active_bridges), replayer_01.current_state)
+        self.assertEqual(game_01.state, replayer_01.current_state)
 
-        # Kiểm tra Stage 08 với cổng tách khối T, lệnh SWITCH và gộp khối
+        # Stage 08: cổng tách khối, lệnh SWITCH (viết là SPACE) và gộp khối
         stage_08 = load_coolmath_stage(8)
         solution_08 = [
             "RIGHT",
@@ -196,7 +198,7 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
             "RIGHT",
             "RIGHT",
         ]
-        replayer_08 = Replayer(stage_08, solution_08, step_interval=0.05)
+        replayer_08 = Replayer(Game(stage_08), solution_08, step_interval=0.05)
         self.assertTrue(replayer_08.is_valid_path)
         self.assertTrue(replayer_08.reaches_goal)
 
@@ -210,31 +212,30 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
 
         self.assertEqual(steps_advanced, len(solution_08))
         self.assertEqual(replayer_08.game.status, GameStatus.WON)
-        # 13 hành động tổng cộng nhưng có 1 hành động SPACE/SWITCH -> 12 bước lăn vật lý
+        # 13 hành động nhưng có 1 SWITCH nên chỉ 12 bước lăn vật lý
         self.assertEqual(replayer_08.game.moves, 12)
 
     def test_05_replayer_detects_invalid_path(self):
-        """Kiểm tra Replayer phát hiện chính xác bước đi làm rơi khối xuống vực."""
-        stage_01 = load_coolmath_stage(1)
-        replayer = Replayer(stage_01, ["UP", "UP"])
+        """Replayer phát hiện chính xác bước đi làm rơi khối và không đụng tới ván."""
+        game = Game(load_coolmath_stage(1))
+        replayer = Replayer(game, ["UP", "UP"])
         self.assertFalse(replayer.is_valid_path)
         self.assertFalse(replayer.reaches_goal)
         self.assertIn("không hợp lệ", replayer.error_message)
         self.assertEqual(replayer.timeline[-1].status, GameStatus.LOST)
+        self.assertEqual(game.moves, 0)
 
     def test_06_background_solver_worker_and_error_queue(self):
-        """Kiểm tra chạy Solver nền (BFS & DFS) và xử lý hàng đợi lỗi (error_queue)."""
-        solvers = dict(discover_available_solvers())
+        """Giải nền với BFS, DFS thật và bắt ngoại lệ của solver hỏng thành sự kiện lỗi."""
+        solvers = {spec.name: spec for spec in discover_available_solvers()}
         self.assertIn("BFS", solvers)
         self.assertIn("DFS", solvers)
 
         stage_01 = load_coolmath_stage(1)
-        worker = BackgroundSolverWorker(check_state_key_before_run=True)
+        worker = BackgroundSolverWorker(audit_state_keys=True)
 
-        # 1. Truyền trực tiếp đối tượng BFSSolver(stage_01)
-        solver = BFSSolver(stage_01)
-        started = worker.start_solver(solver, algorithm_name="BFS")
-        self.assertTrue(started)
+        run_id = worker.start(BFSSolver(stage_01), algorithm_name="BFS")
+        self.assertIsNotNone(run_id)
         worker.join(timeout=5.0)
 
         res_event, err_events = worker.poll_events()
@@ -245,9 +246,7 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
         self.assertGreater(res_event.expanded_nodes, 0)
         self.assertGreaterEqual(res_event.memory_peak_kb, 0.0)
 
-        # 2. Chạy DFSSolver(stage_01) trên luồng nền
-        dfs_solver = DFSSolver(stage_01)
-        worker.start_solver(dfs_solver, algorithm_name="DFS")
+        worker.start(DFSSolver(stage_01), algorithm_name="DFS")
         worker.join(timeout=5.0)
         res_dfs, err_dfs = worker.poll_events()
         self.assertEqual(err_dfs, [])
@@ -255,11 +254,7 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
         self.assertTrue(res_dfs.is_solved)
         self.assertGreater(len(res_dfs.actions), 0)
 
-        # 3. Kiểm tra bắt ngoại lệ vào error_queue khi Solver gặp lỗi
-        def failing_solver():
-            raise ValueError("Lỗi mô phỏng trong luồng Solver")
-
-        worker.start_solver(failing_solver, algorithm_name="BROKEN_SOLVER")
+        worker.start(FailingSolver(), algorithm_name="BROKEN_SOLVER")
         worker.join(timeout=5.0)
         res_event_2, err_events_2 = worker.poll_events()
         self.assertIsNone(res_event_2)

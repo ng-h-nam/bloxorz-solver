@@ -27,9 +27,7 @@ def test_gradient_bands_tile_the_area_exactly() -> None:
 
 def test_gradient_goes_from_the_top_color_to_the_horizon_color() -> None:
     colors = [color for _, color in SkyBackdrop().gradient_bands(AREA)]
-    assert (
-        colors[0] == SkyBackdrop.TOP_COLOR and colors[-1] == SkyBackdrop.HORIZON_COLOR
-    )
+    assert colors[0] == SkyBackdrop.TOP_COLOR and colors[-1] == SkyBackdrop.HORIZON_COLOR
     assert colors == sorted(colors)  # sáng dần xuống phía chân trời
 
 
@@ -48,9 +46,7 @@ def test_clouds_drift_to_the_right_over_time() -> None:
     sky.update(1.0)
     after = sky.cloud_rects(wide)
     assert len(before) == len(after)
-    moved = [
-        a.x - b.x for a, b in zip(after, before) if b.x > 0 and a.right < wide.right
-    ]  # bỏ mảnh bị cắt ở mép
+    moved = [a.x - b.x for a, b in zip(after, before) if b.x > 0 and a.right < wide.right]  # bỏ mảnh bị cắt ở mép
     assert moved and all(shift > 0 for shift in moved)
 
 
@@ -68,6 +64,5 @@ def test_draw_paints_the_sky_then_translucent_clouds() -> None:
     assert len(rects) == SkyBackdrop.BANDS + cloud_count
     assert all(c.alpha == 1.0 for c in rects[: SkyBackdrop.BANDS])
     assert all(
-        c.color == SkyBackdrop.CLOUD_COLOR and c.alpha == SkyBackdrop.CLOUD_ALPHA
-        for c in rects[SkyBackdrop.BANDS :]
+        c.color == SkyBackdrop.CLOUD_COLOR and c.alpha == SkyBackdrop.CLOUD_ALPHA for c in rects[SkyBackdrop.BANDS :]
     )

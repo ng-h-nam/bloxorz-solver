@@ -18,9 +18,7 @@ def dist(cam):
 
 def test_default_eye_matches_the_old_fixed_camera_formula():
     cam = OrbitCamera(8.5, 5.0, 20.0)
-    assert cam.eye == pytest.approx(
-        (8.5, 20 * math.sin(DEFAULT_ELEVATION), 5.0 + 20 * math.cos(DEFAULT_ELEVATION))
-    )
+    assert cam.eye == pytest.approx((8.5, 20 * math.sin(DEFAULT_ELEVATION), 5.0 + 20 * math.cos(DEFAULT_ELEVATION)))
 
 
 def test_orbit_keeps_distance_and_clamps_elevation():

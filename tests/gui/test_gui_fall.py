@@ -89,13 +89,9 @@ def collect_falls() -> list[FallCase]:
 FALLS = collect_falls()
 
 
-def pick(
-    kind: FallKind | None, count: int, predicate=lambda case: True
-) -> list[FallCase]:
+def pick(kind: FallKind | None, count: int, predicate=lambda case: True) -> list[FallCase]:
     """Chọn đều `count` ca thuộc loại `kind` (None: ca không có kế hoạch) để test chạy nhanh mà vẫn phủ nhiều màn."""
-    pool = [
-        c for c in FALLS if (c.plan.kind if c.plan else None) == kind and predicate(c)
-    ]
+    pool = [c for c in FALLS if (c.plan.kind if c.plan else None) == kind and predicate(c)]
     assert pool, f"không có ca nào thuộc loại {kind}"
     step = max(1, len(pool) // count)
     return pool[::step][:count]
@@ -125,10 +121,7 @@ def test_renderer_and_primitives_use_the_shared_definition() -> None:
         from gui.scene import primitives, renderer
     except ImportError:  # máy không có thư viện OpenGL
         pytest.skip("thiếu OpenGL")
-    assert (
-        renderer.tile_bounds is geometry.tile_bounds
-        and renderer.TILE_HEIGHT == geometry.TILE_HEIGHT
-    )
+    assert renderer.tile_bounds is geometry.tile_bounds and renderer.TILE_HEIGHT == geometry.TILE_HEIGHT
     assert not hasattr(primitives, "TILE_THICKNESS")  # hằng số trùng đã bị xóa
 
 
@@ -139,36 +132,20 @@ def test_supports_block_rules() -> None:
     board = CATALOG.board(0)
     state = Game(board).initial_state
     assert supports_block(board, state, (state.r, state.c))
-    assert not supports_block(board, state, (-1, 0)) and not supports_block(
-        board, state, (board.rows, 0)
-    )
-    void = next(
-        (r, c)
-        for r in range(board.rows)
-        for c in range(board.cols)
-        if board.grid[r][c] == TileType.VOID
-    )
+    assert not supports_block(board, state, (-1, 0)) and not supports_block(board, state, (board.rows, 0))
+    void = next((r, c) for r in range(board.rows) for c in range(board.cols) if board.grid[r][c] == TileType.VOID)
     assert not supports_block(board, state, void)
 
 
 def test_a_bridge_supports_only_while_open() -> None:
     index = next(
-        i
-        for i in range(len(CATALOG))
-        if any(t == TileType.BRIDGE for row in CATALOG.board(i).grid for t in row)
+        i for i in range(len(CATALOG)) if any(t == TileType.BRIDGE for row in CATALOG.board(i).grid for t in row)
     )
     board = CATALOG.board(index)
-    cell = next(
-        (r, c)
-        for r in range(board.rows)
-        for c in range(board.cols)
-        if board.grid[r][c] == TileType.BRIDGE
-    )
+    cell = next((r, c) for r in range(board.rows) for c in range(board.cols) if board.grid[r][c] == TileType.BRIDGE)
     closed = State(0, 0, Orientation.STANDING)
     opened = State(0, 0, Orientation.STANDING, active_bridges=frozenset([cell]))
-    assert not supports_block(board, closed, cell) and supports_block(
-        board, opened, cell
-    )
+    assert not supports_block(board, closed, cell) and supports_block(board, opened, cell)
 
 
 # ---------------------------------------------------------------- plan_fall
@@ -177,26 +154,18 @@ def test_a_bridge_supports_only_while_open() -> None:
 def test_every_kind_of_fall_exists_in_the_real_levels() -> None:
     kinds = {c.plan.kind for c in FALLS if c.plan}
     assert kinds == {FallKind.UNSUPPORTED, FallKind.PARTIAL}
-    assert len(FALLS) > 1000 and any(
-        c.plan is None for c in FALLS
-    )  # ô giòn và ca hiếm không có kế hoạch
+    assert len(FALLS) > 1000 and any(c.plan is None for c in FALLS)  # ô giòn và ca hiếm không có kế hoạch
 
 
 def test_a_valid_move_has_no_fall_plan() -> None:
     board = CATALOG.board(0)
     state = Game(board).initial_state
-    direction = next(
-        d for d in Direction if get_next_state(state, d, board=board) is not None
-    )
+    direction = next(d for d in Direction if get_next_state(state, d, board=board) is not None)
     assert plan_fall(board, state, direction) is None
 
 
 def test_standing_on_a_fragile_tile_keeps_its_own_animation() -> None:
-    fragile = [
-        c
-        for c in FALLS
-        if broken_fragile_cell(c.board, roll_block(c.state, c.direction)) is not None
-    ]
+    fragile = [c for c in FALLS if broken_fragile_cell(c.board, roll_block(c.state, c.direction)) is not None]
     assert fragile and all(c.plan is None for c in fragile)
 
 
@@ -207,33 +176,23 @@ def test_standing_on_a_fragile_tile_keeps_its_own_animation() -> None:
 )
 def test_rolling_off_an_edge_tips_around_the_rolling_edge(case: FallCase) -> None:
     plan = case.plan
-    assert (
-        plan is not None
-        and plan.kind == FallKind.UNSUPPORTED
-        and plan.tip_direction == case.direction
-    )
+    assert plan is not None and plan.kind == FallKind.UNSUPPORTED and plan.tip_direction == case.direction
     bounds = block_pieces(case.state)[active_piece(case.state)]
     px, pz, _, _ = roll_pivot(bounds, case.direction)
     assert plan.pivot == (px, 0.0, pz)
     x0, x1, y0, y1, z0, z1 = bounds
-    along = (
-        (x1 - x0) if case.direction in (Direction.LEFT, Direction.RIGHT) else (z1 - z0)
-    )
-    assert plan.critical_degrees == pytest.approx(
-        math.degrees(math.atan2(along / 2, (y1 - y0) / 2))
-    )
+    along = (x1 - x0) if case.direction in (Direction.LEFT, Direction.RIGHT) else (z1 - z0)
+    assert plan.critical_degrees == pytest.approx(math.degrees(math.atan2(along / 2, (y1 - y0) / 2)))
 
 
 def test_critical_angles_for_each_shape_of_block() -> None:
     def first(predicate) -> FallPlan:
-        return next(
-            c.plan for c in pick(FallKind.UNSUPPORTED, 10**6, predicate) if c.plan
-        )
+        return next(c.plan for c in pick(FallKind.UNSUPPORTED, 10**6, predicate) if c.plan)
 
     along_x = lambda c: c.direction in (Direction.LEFT, Direction.RIGHT)
-    assert first(
-        lambda c: c.state.orientation == Orientation.STANDING
-    ).critical_degrees == pytest.approx(26.565, abs=1e-3)
+    assert first(lambda c: c.state.orientation == Orientation.STANDING).critical_degrees == pytest.approx(
+        26.565, abs=1e-3
+    )
     assert first(
         lambda c: c.state.orientation == Orientation.HORIZONTAL and not along_x(c)
     ).critical_degrees == pytest.approx(45.0)
@@ -252,11 +211,7 @@ def test_lying_across_an_edge_seesaws_around_the_supporting_tile(
     case: FallCase,
 ) -> None:
     plan = case.plan
-    assert (
-        plan is not None
-        and plan.kind == FallKind.PARTIAL
-        and plan.critical_degrees == 0.0
-    )
+    assert plan is not None and plan.kind == FallKind.PARTIAL and plan.critical_degrees == 0.0
     cells = roll_block(case.state, case.direction).get_occupied_cells()
     holding = [c for c in cells if supports_block(case.board, case.state, c)]
     empty = [c for c in cells if not supports_block(case.board, case.state, c)]
@@ -274,9 +229,7 @@ def test_lying_across_an_edge_seesaws_around_the_supporting_tile(
         Direction.UP: holding[0][0],
     }[plan.tip_direction]
     assert (
-        plan.pivot[0]
-        if plan.tip_direction in (Direction.LEFT, Direction.RIGHT)
-        else plan.pivot[2]
+        plan.pivot[0] if plan.tip_direction in (Direction.LEFT, Direction.RIGHT) else plan.pivot[2]
     ) == edge and plan.pivot[1] == 0.0
 
 
@@ -295,18 +248,12 @@ def test_move_report_and_presenter_carry_the_plan() -> None:
     ):
         case = pick(kind, 1, lambda c: c.map_index == 0)[0]
         game = Game(case.board)
-        session = GameSession(
-            game, CATALOG, PlayerDataManager(os.path.join(tempfile.mkdtemp(), "p.json"))
-        )
+        session = GameSession(game, CATALOG, PlayerDataManager(os.path.join(tempfile.mkdtemp(), "p.json")))
         for step in case.path:
             assert session.move(step) is not None
         session.game.status  # noqa: B018 - chắc chắn ván còn đang chơi
         report = session.move(case.direction)
-        assert (
-            report is not None
-            and report.kind == MoveKind.FALL
-            and report.fall_plan == case.plan
-        )
+        assert report is not None and report.kind == MoveKind.FALL and report.fall_plan == case.plan
         presenter = ScenePresenter()
         presenter.show_move(session.game, report)
         assert presenter.animator.phase == first_phase
@@ -318,22 +265,15 @@ def test_move_report_and_presenter_carry_the_plan() -> None:
 def test_rotate_about_keeps_the_pivot_fixed() -> None:
     pivot = (2.0, 0.0, 5.0)
     assert rotate_about(pivot, pivot, (0.0, 0.0, 1.0), 77.0) == pivot
-    x, y, z = rotate_about(
-        (3.0, 0.0, 5.0), pivot, (0.0, 0.0, 1.0), 90.0
-    )  # (+1,0) quay +90 độ quanh z -> (0,+1)
+    x, y, z = rotate_about((3.0, 0.0, 5.0), pivot, (0.0, 0.0, 1.0), 90.0)  # (+1,0) quay +90 độ quanh z -> (0,+1)
     assert (round(x, 9), round(y, 9), round(z, 9)) == (2.0, 1.0, 5.0)
 
 
 def test_composed_shades_match_the_single_rotation_helpers() -> None:
     base = geometry.DEFAULT_FACE_SHADE
     axis = (1.0, 0.0, 0.0)
-    assert (
-        composed_face_shades(base, []) == base
-        and composed_face_shades(base, []) is not base
-    )
-    assert composed_face_shades(base, [(axis, 40.0)]) == rotated_face_shades(
-        base, axis, 40.0
-    )
+    assert composed_face_shades(base, []) == base and composed_face_shades(base, []) is not base
+    assert composed_face_shades(base, [(axis, 40.0)]) == rotated_face_shades(base, axis, 40.0)
     twice = composed_face_shades(base, [(axis, 90.0), (axis, 90.0)])
     flipped = composed_face_shades(base, [(axis, 180.0)])
     assert all(twice[name] == pytest.approx(flipped[name]) for name in base)
@@ -345,9 +285,7 @@ FRAME = 1 / 60
 MARGIN = 0.03  # bỏ qua mép chạm nhẹ giữa khối và gạch
 
 
-def sample_points(
-    bounds: tuple[float, float, float, float, float, float], step: float = 0.25
-) -> list[Vec3]:
+def sample_points(bounds: tuple[float, float, float, float, float, float], step: float = 0.25) -> list[Vec3]:
     """Lưới điểm nằm trong thể tích khối (đại diện cho cả khối khi kiểm tra va chạm)."""
     x0, x1, y0, y1, z0, z1 = bounds
 
@@ -365,9 +303,7 @@ def inside_a_tile(case: FallCase, point: Vec3, height: float) -> bool:
     if not case.board.in_board(row, col):
         return False
     tile = case.board.get_tile(row, col)
-    if tile == TileType.VOID or (
-        tile == TileType.BRIDGE and (row, col) not in case.state.active_bridges
-    ):
+    if tile == TileType.VOID or (tile == TileType.BRIDGE and (row, col) not in case.state.active_bridges):
         return False
     return (
         col + 0.02 + MARGIN < x < col + 0.98 - MARGIN
@@ -389,9 +325,7 @@ def poses(animator: Animator) -> list[Pose]:
 
 def start(case: FallCase, with_plan: bool = True) -> Animator:
     animator = Animator()
-    animator.start_fall(
-        case.state, case.direction, None, case.plan if with_plan else None
-    )
+    animator.start_fall(case.state, case.direction, None, case.plan if with_plan else None)
     return animator
 
 
@@ -409,9 +343,7 @@ def penetrating_frames(case: FallCase, height: float, with_plan: bool = True) ->
 
 @pytest.mark.parametrize("kind", [FallKind.UNSUPPORTED, FallKind.PARTIAL])
 @pytest.mark.parametrize("height", [TILE_HEIGHT, 0.2, 0.5])
-def test_the_new_fall_never_passes_through_a_tile(
-    kind: FallKind, height: float
-) -> None:
+def test_the_new_fall_never_passes_through_a_tile(kind: FallKind, height: float) -> None:
     cases = pick(kind, 60)
     assert len({c.map_index for c in cases}) > 10  # mẫu trải trên nhiều màn
     assert [c for c in cases if penetrating_frames(c, height) > 0] == []
@@ -463,12 +395,7 @@ def test_a_fragile_tile_still_uses_the_old_animation_even_with_a_plan() -> None:
 
 def test_unsupported_pose_has_no_separate_roll() -> None:
     pose = start(case_of(FallKind.UNSUPPORTED)).pose
-    assert (
-        pose is not None
-        and pose.direction is None
-        and pose.angle == 0.0
-        and pose.tip is not None
-    )
+    assert pose is not None and pose.direction is None and pose.angle == 0.0 and pose.tip is not None
     assert pose.tip.degrees == 0.0 and pose.tip.shift == (0.0, 0.0, 0.0)
 
 
@@ -477,12 +404,7 @@ def test_partial_pose_keeps_the_finished_roll() -> None:
     animator = start(case)
     animator.update(ROLL_SECONDS + FRAME)
     pose = animator.pose
-    assert (
-        pose is not None
-        and pose.direction == case.direction
-        and pose.angle == 90.0
-        and pose.tip is not None
-    )
+    assert pose is not None and pose.direction == case.direction and pose.angle == 90.0 and pose.tip is not None
 
 
 @pytest.mark.parametrize("kind", [FallKind.UNSUPPORTED, FallKind.PARTIAL])
@@ -492,24 +414,16 @@ def test_the_block_topples_faster_and_faster_up_to_exactly_ninety_degrees(
     tips = [p.tip for p in poses(start(case_of(kind))) if p.tip is not None]
     angles = [abs(t.degrees) for t in tips]
     assert (
-        angles == sorted(angles)
-        and angles[0] < 0.5
-        and angles[-1] == pytest.approx(90.0)
+        angles == sorted(angles) and angles[0] < 0.5 and angles[-1] == pytest.approx(90.0)
     )  # khung đầu có thể lệch tối đa một khung
     topple_frames = round(TOPPLE_SECONDS / FRAME)
-    assert angles[topple_frames - 1] < 90.0 and angles[
-        topple_frames + 2
-    ] == pytest.approx(90.0)
+    assert angles[topple_frames - 1] < 90.0 and angles[topple_frames + 2] == pytest.approx(90.0)
     gaps = [b - a for a, b in itertools.pairwise(angles[:topple_frames])]
-    assert all(
-        later >= earlier - 1e-9 for earlier, later in itertools.pairwise(gaps)
-    )  # tốc độ góc tăng dần
+    assert all(later >= earlier - 1e-9 for earlier, later in itertools.pairwise(gaps))  # tốc độ góc tăng dần
 
 
 def test_the_block_only_slides_after_its_centre_of_mass_passes_the_edge() -> None:
-    case = pick(
-        FallKind.UNSUPPORTED, 1, lambda c: c.state.orientation.name == "STANDING"
-    )[0]
+    case = pick(FallKind.UNSUPPORTED, 1, lambda c: c.state.orientation.name == "STANDING")[0]
     assert case.plan is not None
     contact_end = TOPPLE_SECONDS * math.sqrt(case.plan.critical_degrees / 90.0)
     for index, pose in enumerate(poses(start(case))):
@@ -527,9 +441,7 @@ def test_the_block_ends_far_below_the_tiles_and_keeps_falling() -> None:
         tips = [p.tip for p in poses(start(case_of(kind))) if p.tip is not None]
         heights = [t.shift[1] for t in tips]
         assert heights == sorted(heights, reverse=True) and heights[-1] < -4.0
-        free_fall = (
-            0.5 * GRAVITY * (TIP_SECONDS - TOPPLE_SECONDS) ** 2
-        )  # sau 90 độ: rơi tự do thẳng xuống
+        free_fall = 0.5 * GRAVITY * (TIP_SECONDS - TOPPLE_SECONDS) ** 2  # sau 90 độ: rơi tự do thẳng xuống
         assert -heights[-1] > free_fall * 0.95
 
 
@@ -551,17 +463,9 @@ def test_partial_tip_starts_exactly_where_the_roll_ended() -> None:
     last_roll = animator.pose
     animator.update(2e-6)
     first_tip = animator.pose
-    assert (
-        last_roll is not None
-        and first_tip is not None
-        and last_roll.tip is None
-        and first_tip.tip is not None
-    )
+    assert last_roll is not None and first_tip is not None and last_roll.tip is None and first_tip.tip is not None
     for p in sample_points(last_roll.bounds)[:8]:
-        assert (
-            math.dist(transform_point(last_roll, p), transform_point(first_tip, p))
-            < 1e-3
-        )
+        assert math.dist(transform_point(last_roll, p), transform_point(first_tip, p)) < 1e-3
 
 
 def test_transform_point_is_the_identity_when_nothing_moves() -> None:
@@ -576,9 +480,7 @@ def test_transform_point_is_the_identity_when_nothing_moves() -> None:
 def test_cancel_forgets_the_plan() -> None:
     animator = start(case_of(FallKind.PARTIAL))
     animator.cancel()
-    assert (
-        not animator.active and animator.pose is None and animator.phase == Phase.IDLE
-    )
+    assert not animator.active and animator.pose is None and animator.phase == Phase.IDLE
     assert len(FALLS) > 0 and isinstance(FALLS[0].state, State)
 
 

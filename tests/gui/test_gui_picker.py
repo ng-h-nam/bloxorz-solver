@@ -5,9 +5,7 @@ def test_open_selects_current_and_scrolls_it_into_view():
     picker = LevelPicker([f"m{i}" for i in range(40)])
     picker.open(30)
     start, end = picker.visible_range()
-    assert (
-        picker.selected == 30 and start <= 30 < end and end - start == MAX_VISIBLE_ROWS
-    )
+    assert picker.selected == 30 and start <= 30 < end and end - start == MAX_VISIBLE_ROWS
 
 
 def test_move_and_page_clamp_at_both_ends():
@@ -36,9 +34,7 @@ def test_row_at_returns_global_index_even_when_scrolled():
     for i, rect in enumerate(rows):
         assert picker.row_at(rect.center, 1280, 768) == start + i
     assert picker.row_at((0, 0), 1280, 768) is None
-    assert picker.box_contains(box.center, 1280, 768) and not picker.box_contains(
-        (0, 0), 1280, 768
-    )
+    assert picker.box_contains(box.center, 1280, 768) and not picker.box_contains((0, 0), 1280, 768)
 
 
 def test_scroll_by_stays_in_range():

@@ -42,16 +42,10 @@ def test_score_counts_moves_only_when_won() -> None:
 
 def test_from_dict_ignores_unknown_keys_and_fills_defaults() -> None:
     profile = PlayerProfile.from_dict({"username": "an", "avatar": "steve"})
-    assert (
-        profile.username == "an"
-        and profile.best_scores == {}
-        and profile.schema_version == 2
-    )
+    assert profile.username == "an" and profile.best_scores == {} and profile.schema_version == 2
 
 
-@pytest.mark.parametrize(
-    "bad", [None, [], {"username": ""}, {"username": "  "}, {"name": "x"}]
-)
+@pytest.mark.parametrize("bad", [None, [], {"username": ""}, {"username": "  "}, {"name": "x"}])
 def test_from_dict_rejects_profiles_without_a_username(bad: object) -> None:
     with pytest.raises(ValueError):
         PlayerProfile.from_dict(bad)
@@ -115,14 +109,10 @@ def test_legacy_profile_records_are_rebuilt_from_history() -> None:
 def test_manual_win_keeps_the_best_score_and_its_replay() -> None:
     profile = PlayerProfile("a")
     profile.apply_manual_win("S1", ["UP"] * 9, 9, 9, 10.0)
-    profile.apply_manual_win(
-        "S1", ["UP"] * 12, 12, 12, 8.0
-    )  # tệ hơn: kỷ lục giữ nguyên
+    profile.apply_manual_win("S1", ["UP"] * 12, 12, 12, 8.0)  # tệ hơn: kỷ lục giữ nguyên
     assert profile.best_scores["S1"] == 9 and profile.saved_replays["S1"] == ["UP"] * 9
     assert profile.best_times["S1"] == 8.0  # thời gian tốt nhất tính riêng
-    profile.apply_manual_win(
-        "S1", ["DOWN"] * 9, 9, 9, 9.0
-    )  # bằng điểm: lượt mới thay thế
+    profile.apply_manual_win("S1", ["DOWN"] * 9, 9, 9, 9.0)  # bằng điểm: lượt mới thay thế
     assert profile.saved_replays["S1"] == ["DOWN"] * 9
     profile.apply_manual_win("S1", ["UP"] * 5, 5, 5, 3.0)
     assert profile.best_scores["S1"] == 5
@@ -140,10 +130,7 @@ def test_ai_run_keeps_the_shortest_per_algorithm_without_touching_records() -> N
     profile.apply_ai_run("S1", "BFS", ["UP"] * 7, 7, 0.01)
     profile.apply_ai_run("S1", "BFS", ["UP"] * 9, 9, 0.02)  # dài hơn: bỏ
     profile.apply_ai_run("S1", "DFS", ["UP"] * 30, 30, 0.05)
-    assert (
-        profile.ai_solutions["S1"]["BFS"]["cost"] == 7
-        and profile.ai_solutions["S1"]["DFS"]["cost"] == 30
-    )
+    assert profile.ai_solutions["S1"]["BFS"]["cost"] == 7 and profile.ai_solutions["S1"]["DFS"]["cost"] == 30
     assert profile.best_scores == {} and profile.level_stats == {}
 
 
@@ -186,9 +173,7 @@ def test_hash_is_deterministic_and_depends_on_salt() -> None:
 def test_verify_accepts_only_the_right_password() -> None:
     digest = PasswordHasher.hash("abc", "salt", PasswordHasher.SCHEME_CURRENT)
     assert PasswordHasher.verify("abc", "salt", digest, PasswordHasher.SCHEME_CURRENT)
-    assert not PasswordHasher.verify(
-        "abd", "salt", digest, PasswordHasher.SCHEME_CURRENT
-    )
+    assert not PasswordHasher.verify("abd", "salt", digest, PasswordHasher.SCHEME_CURRENT)
 
 
 def test_legacy_sha256_hashes_still_verify() -> None:
@@ -279,9 +264,7 @@ def test_login_checks_user_and_password(tmp_path: Path) -> None:
 def test_legacy_account_logs_in_and_upgrades_its_hash(tmp_path: Path) -> None:
     manager = make_manager(tmp_path)
     salt = "abcd"
-    manager.players["cu"] = PlayerProfile(
-        "cu", PasswordHasher.hash("matkhau", salt, "sha256"), salt, hash_scheme=""
-    )
+    manager.players["cu"] = PlayerProfile("cu", PasswordHasher.hash("matkhau", salt, "sha256"), salt, hash_scheme="")
     assert manager.login("cu", "matkhau")[0]
     assert manager.players["cu"].hash_scheme == PasswordHasher.SCHEME_CURRENT
     assert manager.login("cu", "matkhau")[0]  # vẫn đăng nhập được bằng băm mới
@@ -293,9 +276,7 @@ def test_authenticate_or_register_covers_both_paths(tmp_path: Path) -> None:
     manager.logout()
     assert manager.authenticate_or_register("an", "abc")[0]  # đã có: đăng nhập
     assert not manager.authenticate_or_register("an", "sai")[0]
-    manager.record_game_session(
-        "S1", ["UP"], False, MANUAL, 1.0, username="guest"
-    )  # tạo hồ sơ guest không mật khẩu
+    manager.record_game_session("S1", ["UP"], False, MANUAL, 1.0, username="guest")  # tạo hồ sơ guest không mật khẩu
     assert "đã tồn tại" in manager.authenticate_or_register("guest", "abc")[1]
 
 
@@ -311,9 +292,7 @@ def test_manual_win_updates_records_and_history(tmp_path: Path) -> None:
     manager.register("an", "abc")
     manager.record_game_session("S1", ["UP", "SWITCH", "DOWN"], True, MANUAL, 4.5)
     info = manager.get_level_score_info("S1")
-    assert (
-        info is not None and info["score"] == 2 and info["mode"] == MANUAL
-    )  # SWITCH không tính bước
+    assert info is not None and info["score"] == 2 and info["mode"] == MANUAL  # SWITCH không tính bước
     assert manager.get_saved_replay("S1") == ["UP", "SWITCH", "DOWN"]
     assert manager.players["an"].history[-1]["move_count"] == 2
 
@@ -327,9 +306,7 @@ def test_records_fall_back_to_the_guest_account(tmp_path: Path) -> None:
 def test_solver_runs_never_become_player_records(tmp_path: Path) -> None:
     manager = make_manager(tmp_path)
     manager.record_solver_run("S1", "BFS", ["UP"] * 7, True, 0.01, 48)
-    manager.record_game_session(
-        "S1", ["UP"] * 7, True, "DFS", 0.02
-    )  # chế độ khác MANUAL cũng là của thuật toán
+    manager.record_game_session("S1", ["UP"] * 7, True, "DFS", 0.02)  # chế độ khác MANUAL cũng là của thuật toán
     assert manager.get_level_score_info("S1") is None
     assert manager.get_best_replay("S1") == (["UP"] * 7, "BFS")
     manager.record_game_session("S1", ["UP"] * 9, True, MANUAL, 5.0)
@@ -359,11 +336,7 @@ def test_unreadable_profiles_are_skipped_and_reported(tmp_path: Path) -> None:
     data["players"]["hong"] = {"username": ""}
     manager.storage_path.write_text(json.dumps(data), encoding="utf-8")
     reloaded = make_manager(tmp_path)
-    assert (
-        "an" in reloaded.players
-        and "hong" not in reloaded.players
-        and "Bỏ qua 1" in reloaded.load_notice
-    )
+    assert "an" in reloaded.players and "hong" not in reloaded.players and "Bỏ qua 1" in reloaded.load_notice
 
 
 def test_truncated_data_file_is_recovered_not_lost(tmp_path: Path) -> None:
@@ -375,9 +348,7 @@ def test_truncated_data_file_is_recovered_not_lost(tmp_path: Path) -> None:
     assert "an" in recovered.players and recovered.load_notice
 
 
-def test_save_reports_failure_without_raising(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_save_reports_failure_without_raising(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     manager = make_manager(tmp_path)
 
     def boom(payload: dict) -> None:
@@ -397,6 +368,4 @@ def test_ai_quota_is_per_level_per_player_and_persistent(tmp_path: Path) -> None
     assert manager.ai_uses_left("S2") == MAX_AI_USES_PER_LEVEL
     assert make_manager(tmp_path).ai_uses_left("S1") == 0  # đã lưu xuống file
     manager.register("binh", "abc")
-    assert (
-        manager.ai_uses_left("S1") == MAX_AI_USES_PER_LEVEL
-    )  # người khác có hạn mức riêng
+    assert manager.ai_uses_left("S1") == MAX_AI_USES_PER_LEVEL  # người khác có hạn mức riêng

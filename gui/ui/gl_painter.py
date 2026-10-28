@@ -53,9 +53,7 @@ TextEntry = tuple[int, int, int]
 class GLPainter(UiPainter):
     """Vẽ giao diện 2D lên cảnh OpenGL đang có; chữ được dựng một lần rồi giữ trong bộ nhớ đệm LRU."""
 
-    def __init__(
-        self, textures: Mapping[str, int] | None = None, max_cached_texts: int = 400
-    ) -> None:
+    def __init__(self, textures: Mapping[str, int] | None = None, max_cached_texts: int = 400) -> None:
         """`textures` là bảng tên texture -> mã OpenGL (dùng cho nền lát); `max_cached_texts` là số chuỗi chữ giữ lại."""
         self._textures: Mapping[str, int] = textures or {}
         self._max_cached: int = max_cached_texts
@@ -120,9 +118,7 @@ class GLPainter(UiPainter):
         mode: int = GL_NEAREST if pixelated else GL_LINEAR
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mode)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode)
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data
-        )
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
         return texture, width, height
 
     def draw_text(
@@ -140,9 +136,7 @@ class GLPainter(UiPainter):
         key: TextKey = (typeface, text, color, shadow)
         entry: TextEntry | None = self._cache.get(key)
         if entry is None:
-            entry = self._upload(
-                typeface.render(text, color, shadow), typeface.pixelated
-            )
+            entry = self._upload(typeface.render(text, color, shadow), typeface.pixelated)
             self._cache[key] = entry
             while len(self._cache) > self._max_cached:
                 _, (old, _, _) = self._cache.popitem(last=False)
@@ -166,9 +160,7 @@ class GLPainter(UiPainter):
         glEnd()
         glDisable(GL_TEXTURE_2D)
 
-    def tile_texture(
-        self, rect: pygame.Rect, texture: str, tile_size: int, tint: RGB
-    ) -> None:
+    def tile_texture(self, rect: pygame.Rect, texture: str, tile_size: int, tint: RGB) -> None:
         """Lát texture kín `rect`; thiếu texture thì tô màu đặc theo `tint`."""
         handle: int | None = self._textures.get(texture)
         if handle is None:

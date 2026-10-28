@@ -58,18 +58,9 @@ class SkyBackdrop(Backdrop):
             bottom: int = rect.y + rect.h * (index + 1) // self.BANDS
             mix: float = index / max(1, self.BANDS - 1)
             color: RGB = (
-                round(
-                    self.TOP_COLOR[0]
-                    + (self.HORIZON_COLOR[0] - self.TOP_COLOR[0]) * mix
-                ),
-                round(
-                    self.TOP_COLOR[1]
-                    + (self.HORIZON_COLOR[1] - self.TOP_COLOR[1]) * mix
-                ),
-                round(
-                    self.TOP_COLOR[2]
-                    + (self.HORIZON_COLOR[2] - self.TOP_COLOR[2]) * mix
-                ),
+                round(self.TOP_COLOR[0] + (self.HORIZON_COLOR[0] - self.TOP_COLOR[0]) * mix),
+                round(self.TOP_COLOR[1] + (self.HORIZON_COLOR[1] - self.TOP_COLOR[1]) * mix),
+                round(self.TOP_COLOR[2] + (self.HORIZON_COLOR[2] - self.TOP_COLOR[2]) * mix),
             )
             bands.append((pygame.Rect(rect.x, top, rect.w, bottom - top), color))
         return bands

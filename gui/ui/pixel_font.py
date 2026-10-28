@@ -55,9 +55,7 @@ MODIFIERS: tuple[str, ...] = (CIRCUMFLEX, BREVE, HORN)
 class Typeface(ABC):
     """Một bộ chữ ở một cỡ nhất định."""
 
-    top_padding: int = (
-        0  # số điểm ảnh trống phía trên hàng đầu của chữ trong ảnh trả về
-    )
+    top_padding: int = 0  # số điểm ảnh trống phía trên hàng đầu của chữ trong ảnh trả về
     pixelated: bool = True  # True: phóng ảnh theo kiểu gần nhất (giữ nét vuông)
 
     @abstractmethod
@@ -90,12 +88,7 @@ class MinecraftTypeface(Typeface):
             return cached
         surface = self._font.render(ch, False, (255, 255, 255), (0, 0, 0))
         width, height = surface.get_size()
-        pixels = frozenset(
-            (x, y)
-            for y in range(height)
-            for x in range(width)
-            if surface.get_at((x, y))[0] > 127
-        )
+        pixels = frozenset((x, y) for y in range(height) for x in range(width) if surface.get_at((x, y))[0] > 127)
         self._ink_cache[ch] = pixels
         return pixels
 
@@ -105,17 +98,12 @@ class MinecraftTypeface(Typeface):
 
     # ------------------------------------------------------------------ ghép chữ
 
-    def _mark_above(
-        self, pixels: set[tuple[int, int]], mark: str, gap: int
-    ) -> set[tuple[int, int]]:
+    def _mark_above(self, pixels: set[tuple[int, int]], mark: str, gap: int) -> set[tuple[int, int]]:
         """Thêm dấu `mark` phía trên chữ, giữa chữ, cách `gap` hàng."""
         shape = MARKS[mark]
         height = max(y for _, y in shape) + 1
         top = min((y for _, y in pixels), default=3)
-        center = (
-            min((x for x, _ in pixels), default=0)
-            + max((x for x, _ in pixels), default=4)
-        ) // 2
+        center = (min((x for x, _ in pixels), default=0) + max((x for x, _ in pixels), default=4)) // 2
         origin_x, origin_y = center - BASE_CENTER, top - gap - height
         return {(origin_x + dx, origin_y + dy) for dx, dy in shape}
 
@@ -156,9 +144,7 @@ class MinecraftTypeface(Typeface):
         """Chữ đ và Đ: chữ d, D có thêm nét ngang."""
         if ch == "đ":
             return frozenset(set(self._ink("d")) | {(2, 2), (3, 2)})
-        shifted = {
-            (x + 1, y) for x, y in self._ink("D")
-        }  # dời sang phải để nhường chỗ cho nét ngang
+        shifted = {(x + 1, y) for x, y in self._ink("D")}  # dời sang phải để nhường chỗ cho nét ngang
         return frozenset(shifted | {(0, 4)})
 
     def _glyph(self, ch: str) -> tuple[Pixels, int]:
@@ -223,9 +209,7 @@ class TrueTypeTypeface(Typeface):
             return body
         dark = (color[0] // 4, color[1] // 4, color[2] // 4)
         back = self._font.render(text or " ", True, dark)
-        out = pygame.Surface(
-            (body.get_width() + 1, body.get_height() + 1), pygame.SRCALPHA
-        )
+        out = pygame.Surface((body.get_width() + 1, body.get_height() + 1), pygame.SRCALPHA)
         out.blit(back, (1, 1))
         out.blit(body, (0, 0))
         return out
@@ -240,9 +224,7 @@ ROLE_SCALES: dict[str, tuple[int, int]] = {
 }
 
 
-def build_typefaces(
-    monocraft: str = MONOCRAFT_PATH, fallback: str = FALLBACK_PATH
-) -> Mapping[str, Typeface]:
+def build_typefaces(monocraft: str = MONOCRAFT_PATH, fallback: str = FALLBACK_PATH) -> Mapping[str, Typeface]:
     """Bộ chữ cho từng vai trò (banner, title, body, small); dùng Monocraft nếu có, ngược lại dùng TrueType."""
     faces: dict[str, Typeface] = {}
     for role, (scale, size) in ROLE_SCALES.items():

@@ -15,9 +15,7 @@ SPEED_PRESETS: list[tuple[str, float]] = [
     ("4x", 0.01),
 ]
 DEFAULT_SPEED_INDEX: int = 1
-MSG_NO_SAVED_REPLAY: str = (
-    "Chưa có Replay lưu cho màn này. Hãy tự thắng màn hoặc dùng AI (F)!"
-)
+MSG_NO_SAVED_REPLAY: str = "Chưa có Replay lưu cho màn này. Hãy tự thắng màn hoặc dùng AI (F)!"
 
 
 class ReplayController:
@@ -66,9 +64,7 @@ class ReplayController:
 
     # ------------------------------------------------------------------ vòng đời
 
-    def start(
-        self, actions: Sequence[ActionInput], mode: ReplayMode, source: str = "AI"
-    ) -> bool:
+    def start(self, actions: Sequence[ActionInput], mode: ReplayMode, source: str = "AI") -> bool:
         """Bắt đầu phát `actions`. Trả về False (kèm thông báo) nếu đường đi không hợp lệ."""
         if self.replayer is not None:
             self.stop(restore=True)  # trả ván về như cũ trước khi bắt đầu lượt mới
@@ -99,9 +95,7 @@ class ReplayController:
         actions, source = best
         if not self.start(actions, ReplayMode.FROM_START, source):
             return False
-        self.session.say(
-            f"Đang phát Replay lưu ({source}): {len(actions)} bước từ ô xuất phát."
-        )
+        self.session.say(f"Đang phát Replay lưu ({source}): {len(actions)} bước từ ô xuất phát.")
         return True
 
     def stop(self, restore: bool = True) -> None:
@@ -120,9 +114,7 @@ class ReplayController:
         self.replayer.release()
         self.replayer = None
         self.session.assisted = True
-        self.session.say(
-            "Đã thoát Replay; bạn điều khiển tiếp từ vị trí này (không tính kỷ lục)."
-        )
+        self.session.say("Đã thoát Replay; bạn điều khiển tiếp từ vị trí này (không tính kỷ lục).")
 
     def discard(self) -> None:
         """Bỏ phát lại mà không đụng tới ván (khi ván đã bị thay hoặc chơi lại)."""
@@ -142,9 +134,7 @@ class ReplayController:
             return
         if replayer.is_playing:
             replayer.pause()
-            self.session.say(
-                f"Đã tạm dừng Replay ở bước {replayer.current_index}/{replayer.total_steps}."
-            )
+            self.session.say(f"Đã tạm dừng Replay ở bước {replayer.current_index}/{replayer.total_steps}.")
         else:
             replayer.play(restart_if_finished=True)
             self.session.say("Tiếp tục phát Replay.")
@@ -165,9 +155,7 @@ class ReplayController:
             return
         self.replayer.pause()
         frame = self.replayer.step_backward()
-        self.session.say(
-            f"Replay lùi: bước {frame.step_index}/{self.replayer.total_steps}"
-        )
+        self.session.say(f"Replay lùi: bước {frame.step_index}/{self.replayer.total_steps}")
 
     def cycle_speed(self) -> None:
         """Chuyển sang mức tốc độ kế tiếp (áp dụng ngay cho lượt đang phát)."""

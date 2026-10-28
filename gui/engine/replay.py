@@ -51,22 +51,16 @@ class ReplayFrame:
     move_count: int = 0  # số bước lăn khối đã phát từ khung 0
 
 
-def build_timeline(
-    board: Board, start: State, actions: Sequence[str]
-) -> tuple[list[ReplayFrame], bool, str]:
+def build_timeline(board: Board, start: State, actions: Sequence[str]) -> tuple[list[ReplayFrame], bool, str]:
     """Dựng và kiểm tra toàn bộ quỹ đạo từ `start`. Trả về (các khung, hợp lệ, thông báo lỗi)."""
-    initial_status: GameStatus = (
-        GameStatus.WON if is_goal_state(board, start) else GameStatus.PLAYING
-    )
+    initial_status: GameStatus = GameStatus.WON if is_goal_state(board, start) else GameStatus.PLAYING
     frames: list[ReplayFrame] = [ReplayFrame(0, None, start, initial_status, True)]
     current: State = start
     rolls: int = 0
     for index, name in enumerate(actions, start=1):
         if frames[-1].status == GameStatus.WON:
             return frames, False, MSG_EXTRA_STEPS
-        direction: Direction | None = (
-            None if name == SWITCH_ACTION else normalize_action(name)
-        )
+        direction: Direction | None = None if name == SWITCH_ACTION else normalize_action(name)
         following: State | None = get_next_state(current, name, board=board)
         if following is None:
             frames.append(
@@ -88,12 +82,8 @@ def build_timeline(
             )
         if name != SWITCH_ACTION:
             rolls += 1
-        status: GameStatus = (
-            GameStatus.WON if is_goal_state(board, following) else GameStatus.PLAYING
-        )
-        frames.append(
-            ReplayFrame(index, name, following, status, True, current, direction, rolls)
-        )
+        status: GameStatus = GameStatus.WON if is_goal_state(board, following) else GameStatus.PLAYING
+        frames.append(ReplayFrame(index, name, following, status, True, current, direction, rolls))
         current = following
     return frames, True, ""
 
@@ -128,13 +118,9 @@ class Replayer:
         self._accumulator: float = 0.0
         self._snapshot: list[Direction | str] = list(game.move_history)
 
-        start: State = (
-            game.state if mode == ReplayMode.FROM_CURRENT else game.initial_state
-        )
+        start: State = game.state if mode == ReplayMode.FROM_CURRENT else game.initial_state
         self.actions: list[str] = []
-        self.timeline: list[ReplayFrame] = [
-            ReplayFrame(0, None, start, game.status, True)
-        ]
+        self.timeline: list[ReplayFrame] = [ReplayFrame(0, None, start, game.status, True)]
         self.is_valid_path: bool = False
         self.error_message: str = ""
         try:
@@ -142,14 +128,8 @@ class Replayer:
         except ValueError as error:
             self.error_message = str(error)
             return
-        self.timeline, self.is_valid_path, self.error_message = build_timeline(
-            self.board, start, self.actions
-        )
-        if (
-            self.is_valid_path
-            and mode == ReplayMode.FROM_CURRENT
-            and game.status != GameStatus.PLAYING
-        ):
+        self.timeline, self.is_valid_path, self.error_message = build_timeline(self.board, start, self.actions)
+        if self.is_valid_path and mode == ReplayMode.FROM_CURRENT and game.status != GameStatus.PLAYING:
             self.is_valid_path, self.error_message = False, MSG_GAME_OVER
         if self.is_valid_path and mode == ReplayMode.FROM_START:
             game.restart()

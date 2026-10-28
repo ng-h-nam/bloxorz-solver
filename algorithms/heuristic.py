@@ -31,7 +31,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from core.board import Board, TileType
+from core.board import Board
 from core.state import Coordinates, Orientation, State
 from core.transition import get_successors, is_goal_state
 
@@ -43,6 +43,7 @@ HeuristicFunction = Callable[[State, Coordinates], float]
 # ============================================================================
 # 1. COST FUNCTION (HÀM CHI PHÍ BƯỚC ĐI - g(n))
 # ============================================================================
+
 
 def uniform_cost(state: State, action: Any, next_state: State) -> float:
     """
@@ -72,6 +73,7 @@ def weighted_switch_cost(
 # ============================================================================
 # 2. ĐIỂM RÚT GỌN (REPRESENTATIVE POINT)
 # ============================================================================
+
 
 def get_representative_point(state: State) -> Tuple[float, float]:
     """
@@ -105,6 +107,7 @@ def manhattan_distance(p1: Tuple[float, float], p2: Tuple[float, float]) -> floa
 # 3. HÀM 1: MANHATTAN HEURISTIC (H1 - BASELINE)
 # ============================================================================
 
+
 def manhattan_heuristic(state: State, goal_pos: Coordinates) -> int:
     """
     Hàm Heuristic cơ sở H1 (Baseline):
@@ -130,6 +133,7 @@ def manhattan_div2_heuristic(state: State, goal_pos: Coordinates) -> float:
 # ============================================================================
 # 4. HÀM 2: BLOXORZ ADVANCED HEURISTIC (H2 - ADVANCED)
 # ============================================================================
+
 
 def split_state_heuristic(state: State, goal_pos: Coordinates) -> int:
     """
@@ -259,6 +263,7 @@ def make_heuristic(
 # 5. SCRIPT KIỂM TRA TÍNH CHẤP NHẬN ĐƯỢC (ADMISSIBILITY CHECKER BẰNG BFS)
 # ============================================================================
 
+
 def compute_all_true_distances_bfs(board: Board) -> Tuple[Dict[State, int], Set[State]]:
     """
     Chạy BFS từ trạng thái xuất phát để xác định:
@@ -326,12 +331,14 @@ def verify_heuristic_admissibility(
         differences.append(diff)
 
         if h_val > h_star:
-            violations.append({
-                "state": s,
-                "h_val": h_val,
-                "h_star": h_star,
-                "overestimate": h_val - h_star,
-            })
+            violations.append(
+                {
+                    "state": s,
+                    "h_val": h_val,
+                    "h_star": h_star,
+                    "overestimate": h_val - h_star,
+                }
+            )
 
     is_admissible = len(violations) == 0
     avg_error = sum(differences) / len(differences) if differences else 0.0

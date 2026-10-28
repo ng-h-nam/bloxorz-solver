@@ -16,17 +16,11 @@ from gui.shared.viewmodels import Banner
 SUBTITLE_FALL: str = "Khối đã rơi."
 SUBTITLE_WON: str = "Bạn đã đưa khối vào ô đích."
 SUBTITLE_ALL_DONE: str = "Bạn đã hoàn thành tất cả các màn."
-SUBTITLE_ASSISTED: str = (
-    "Bạn đã đưa khối vào ô đích (có nhờ AI nên không tính kỷ lục, màn kế chưa mở)."
-)
+SUBTITLE_ASSISTED: str = "Bạn đã đưa khối vào ô đích (có nhờ AI nên không tính kỷ lục, màn kế chưa mở)."
 HINT_LOST: str = "Nhấn Z để hoàn tác, R để chơi lại, hoặc N để chọn màn khác."
 HINT_WON: str = "Nhấn N để chọn màn khác, V để xem lại Replay, hoặc R để chơi lại."
-HINT_WON_NEXT: str = (
-    "Enter: sang màn kế tiếp  -  V: xem Replay  -  N: chọn màn  -  R: chơi lại"
-)
-HINT_REPLAY_DONE: str = (
-    "Nhấn Z để lùi từng bước, R để chơi lại màn này, hoặc N để chọn màn khác."
-)
+HINT_WON_NEXT: str = "Enter: sang màn kế tiếp  -  V: xem Replay  -  N: chọn màn  -  R: chơi lại"
+HINT_REPLAY_DONE: str = "Nhấn Z để lùi từng bước, R để chơi lại màn này, hoặc N để chọn màn khác."
 
 
 def win_banner(report: WinReport) -> Banner:
@@ -99,21 +93,15 @@ class ScenePresenter:
         self._pending = None
         if report.kind == MoveKind.FALL:
             self._pending_broken = report.broken_tile
-            self.animator.start_fall(
-                report.old_state, report.direction, report.broken_tile, report.fall_plan
-            )
-            self._pending = Banner(
-                "THUA!", report.message or SUBTITLE_FALL, HINT_LOST, LOSE_COLOR
-            )
+            self.animator.start_fall(report.old_state, report.direction, report.broken_tile, report.fall_plan)
+            self._pending = Banner("THUA!", report.message or SUBTITLE_FALL, HINT_LOST, LOSE_COLOR)
         elif report.kind == MoveKind.WIN and report.win is not None:
             self.animator.start_win(report.old_state, report.direction, report.state)
             self._pending = win_banner(report.win)
         else:
             self.animator.start_roll(report.old_state, report.direction, report.state)
 
-    def show_replay_step(
-        self, game: Game, frame: ReplayFrame, animate: bool, source: str = "AI"
-    ) -> None:
+    def show_replay_step(self, game: Game, frame: ReplayFrame, animate: bool, source: str = "AI") -> None:
         """Hiển thị một bước của phát lại: có hoạt cảnh khi tiến một bước, ngược lại nhảy thẳng tới vị trí."""
         won: bool = frame.status == GameStatus.WON
         if animate and frame.prev_state is not None and frame.direction is not None:
@@ -134,14 +122,8 @@ class ScenePresenter:
         if self.animator.update(dt):
             self._finish(game)
             return True
-        if (
-            self.animator.active
-            and self.animator.phase == Phase.FALL
-            and self._pending_broken is not None
-        ):
-            self.broken_tiles = frozenset(
-                {self._pending_broken}
-            )  # ô giòn vỡ đúng lúc khối bắt đầu rơi
+        if self.animator.active and self.animator.phase == Phase.FALL and self._pending_broken is not None:
+            self.broken_tiles = frozenset({self._pending_broken})  # ô giòn vỡ đúng lúc khối bắt đầu rơi
         return False
 
     def _finish(self, game: Game) -> None:

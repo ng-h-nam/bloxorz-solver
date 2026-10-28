@@ -52,9 +52,7 @@ BANNER_MARGIN: int = 40
 PROMPT_BOX_SIZE: tuple[int, int] = (520, 220)
 ACCOUNT_BOX_SIZE: tuple[int, int] = (560, 290)
 PROMPT_FOOTER: str = "Enter: xác nhận  -  Backspace: xóa  -  Esc: quay lại"
-ACCOUNT_FOOTER: str = (
-    "Tab: đổi ô  -  Enter: Đăng nhập/Đăng ký  -  F2: Đăng xuất  -  Esc: đóng"
-)
+ACCOUNT_FOOTER: str = "Tab: đổi ô  -  Enter: Đăng nhập/Đăng ký  -  F2: Đăng xuất  -  Esc: đóng"
 PICKER_FOOTER: str = "Lên/Xuống: chọn  -  Enter: vào  -  Esc: đóng"
 HELP_LINES: list[str] = [
     "Mũi tên / WASD: lăn khối  |  Space: đổi khối",
@@ -119,9 +117,7 @@ class ControlPanel:
         self.height: int = height
         self.painter: UiPainter = painter
         self.theme: Theme = theme
-        chosen: dict[str, Typeface] = dict(
-            faces if faces is not None else build_typefaces()
-        )
+        chosen: dict[str, Typeface] = dict(faces if faces is not None else build_typefaces())
         chosen.setdefault("banner", chosen["title"])
         self.faces: Faces = chosen
         self._mouse: Pixel = (-1, -1)
@@ -140,9 +136,7 @@ class ControlPanel:
             self._button_map[action] = button
 
         self.help_lines: list[str] = [
-            part
-            for line in HELP_LINES
-            for part in wrap_text(chosen["small"], line, self.content_width)
+            part for line in HELP_LINES for part in wrap_text(chosen["small"], line, self.content_width)
         ]
 
     # ------------------------------------------------------------------ bố cục
@@ -179,31 +173,21 @@ class ControlPanel:
     def _sync_buttons(self, hud: HudData) -> None:
         """Đồng bộ nhãn và trạng thái bật/tắt của các nút theo trạng thái hiện hành."""
         buttons: dict[str, Button] = self._button_map
-        buttons["cycle_algo"].set_state(
-            f"AI: {hud.solver_name}", enabled=not hud.solver_running
-        )
-        buttons["run_solver"].set_state(
-            "Hủy giải" if hud.solver_running else "Giải AI", enabled=True
-        )
+        buttons["cycle_algo"].set_state(f"AI: {hud.solver_name}", enabled=not hud.solver_running)
+        buttons["run_solver"].set_state("Hủy giải" if hud.solver_running else "Giải AI", enabled=True)
         buttons["replay_saved"].set_state(enabled=not hud.solver_running)
         playing: bool = hud.replay_active and hud.replay_playing
-        buttons["replay_toggle"].set_state(
-            "Tạm dừng" if playing else "Tiếp tục", enabled=hud.replay_active
-        )
+        buttons["replay_toggle"].set_state("Tạm dừng" if playing else "Tiếp tục", enabled=hud.replay_active)
         buttons["step_back"].set_state(enabled=hud.replay_active)
         buttons["step_fwd"].set_state(enabled=hud.replay_active)
-        buttons["cycle_speed"].set_state(
-            f"Tốc độ {hud.replay_speed_label}", enabled=True
-        )
+        buttons["cycle_speed"].set_state(f"Tốc độ {hud.replay_speed_label}", enabled=True)
         buttons["stop_replay"].set_state(enabled=hud.replay_active)
         for button in self.buttons:
             button.hovered = button.enabled and button.contains(self._mouse)
 
     # ------------------------------------------------------------------ vẽ tiện ích
 
-    def _text(
-        self, role: str, text: str, x: int, y: int, color: RGB, shadow: bool = True
-    ) -> None:
+    def _text(self, role: str, text: str, x: int, y: int, color: RGB, shadow: bool = True) -> None:
         """Vẽ `text` bằng bộ chữ của vai trò `role` với góc trên-trái ở (x, y)."""
         self.painter.draw_text(self.faces[role], text, x, y, color, shadow)
 
@@ -222,9 +206,7 @@ class ControlPanel:
 
     def _dim_window(self) -> None:
         """Làm tối toàn cửa sổ phía sau một hộp thoại."""
-        self.painter.fill_rect(
-            pygame.Rect(0, 0, self.width, self.height), (0, 0, 0), self.theme.dim_alpha
-        )
+        self.painter.fill_rect(pygame.Rect(0, 0, self.width, self.height), (0, 0, 0), self.theme.dim_alpha)
 
     def _dialog_rect(self, size: tuple[int, int]) -> pygame.Rect:
         """Hình chữ nhật cỡ `size` đặt giữa cửa sổ."""
@@ -237,13 +219,9 @@ class ControlPanel:
     def _info_rows(self, hud: HudData) -> list[tuple[str, str, RGB]]:
         """Các dòng thông tin (nhãn, giá trị, màu giá trị)."""
         moves: str = (
-            f"{hud.moves} (Replay {hud.replay_step}/{hud.replay_total})"
-            if hud.replay_active
-            else str(hud.moves)
+            f"{hud.moves} (Replay {hud.replay_step}/{hud.replay_total})" if hud.replay_active else str(hud.moves)
         )
-        record_color: RGB = (
-            palette.WHITE if hud.best_record == NO_RECORD else palette.GOLD
-        )
+        record_color: RGB = palette.WHITE if hud.best_record == NO_RECORD else palette.GOLD
         uses_color: RGB = palette.GREEN if hud.ai_uses_left > 0 else palette.RED
         return [
             ("Màn", hud.level_name, palette.WHITE),
@@ -268,12 +246,8 @@ class ControlPanel:
             theme.panel_tile,
             theme.panel_tint,
         )
-        painter.fill_rect(
-            pygame.Rect(PANEL_WIDTH - 4, 0, 2, self.height), theme.panel_edge_light
-        )
-        painter.fill_rect(
-            pygame.Rect(PANEL_WIDTH - 2, 0, 2, self.height), theme.panel_edge
-        )
+        painter.fill_rect(pygame.Rect(PANEL_WIDTH - 4, 0, 2, self.height), theme.panel_edge_light)
+        painter.fill_rect(pygame.Rect(PANEL_WIDTH - 2, 0, 2, self.height), theme.panel_edge)
 
         self._text("title", "BLOXORZ", PANEL_PADDING, TITLE_Y, palette.GOLD)
         for index, (label, value, color) in enumerate(self._info_rows(hud)):
@@ -293,9 +267,7 @@ class ControlPanel:
             button.draw(painter, self.faces, theme)
 
         if message:
-            for index, line in enumerate(
-                wrap_text(body, message, self.content_width, self.message_capacity)
-            ):
+            for index, line in enumerate(wrap_text(body, message, self.content_width, self.message_capacity)):
                 self._text(
                     "body",
                     line,
@@ -331,9 +303,7 @@ class ControlPanel:
         )
         self._text_centered("banner", banner.title, center_x, top + 20, banner.color)
         for index, line in enumerate(wrap_text(body, banner.subtitle, text_width, 3)):
-            self._text_centered(
-                "body", line, center_x, top + 82 + index * 22, palette.WHITE
-            )
+            self._text_centered("body", line, center_x, top + 82 + index * 22, palette.WHITE)
         for index, line in enumerate(wrap_text(body, banner.hint, text_width, 2)):
             self._text_centered(
                 "body",
@@ -358,25 +328,15 @@ class ControlPanel:
         self.painter.begin(self.width, self.height)
         self._dim_window()
         draw_dialog_box(self.painter, box, theme)
-        title: str = fit_text(
-            body, f"Chọn màn  ({picker.selected + 1}/{len(picker.names)})", box.w - 32
-        )
-        self._text(
-            "body", title, box.x + 16, box.y + 16, theme.dialog_text, shadow=False
-        )
+        title: str = fit_text(body, f"Chọn màn  ({picker.selected + 1}/{len(picker.names)})", box.w - 32)
+        self._text("body", title, box.x + 16, box.y + 16, theme.dialog_text, shadow=False)
 
         start, end = picker.visible_range()
         for slot, row in enumerate(rows):
             index: int = start + slot
             selected: bool = index == picker.selected
             hovered: bool = row.collidepoint(self._mouse)
-            face: RGB = (
-                theme.row_selected
-                if selected
-                else theme.row_hover
-                if hovered
-                else theme.row_face
-            )
+            face: RGB = theme.row_selected if selected else theme.row_hover if hovered else theme.row_face
             self.painter.fill_rect(row.inflate(-4, -2), face)
             if selected:
                 draw_outline(self.painter, row.inflate(-4, -2), theme.outline)
@@ -387,13 +347,9 @@ class ControlPanel:
             elif locked:
                 tag, tag_color = "(khóa)", palette.RED
             tag_width: int = body.measure(tag)[0] if tag else 0
-            name: str = fit_text(
-                body, picker.names[index], row.w - 24 - tag_width - (12 if tag else 0)
-            )
+            name: str = fit_text(body, picker.names[index], row.w - 24 - tag_width - (12 if tag else 0))
             y: int = text_top(row, body)
-            self._text(
-                "body", name, row.x + 10, y, palette.GRAY if locked else palette.WHITE
-            )
+            self._text("body", name, row.x + 10, y, palette.GRAY if locked else palette.WHITE)
             if tag:
                 self._text("body", tag, row.right - 10 - tag_width, y, tag_color)
         self._text_centered(
@@ -415,17 +371,13 @@ class ControlPanel:
         self._dim_window()
         draw_dialog_box(self.painter, box, theme)
         heading: str = fit_text(body, f"Nhập mật khẩu của {prompt.title}", box.w - 32)
-        self._text_centered(
-            "body", heading, box.centerx, box.y + 18, theme.dialog_text, shadow=False
-        )
+        self._text_centered("body", heading, box.centerx, box.y + 18, theme.dialog_text, shadow=False)
 
         slot_w, slot_h, gap = 46, 54, 10
         total: int = prompt.max_length * slot_w + (prompt.max_length - 1) * gap
         left: int = box.centerx - total // 2
         for index in range(prompt.max_length):
-            slot = pygame.Rect(
-                left + index * (slot_w + gap), box.y + 66, slot_w, slot_h
-            )
+            slot = pygame.Rect(left + index * (slot_w + gap), box.y + 66, slot_w, slot_h)
             draw_slot(self.painter, slot, theme)
             if index == len(prompt.text) and index < prompt.max_length:
                 draw_outline(self.painter, slot, theme.outline)
@@ -464,12 +416,8 @@ class ControlPanel:
         self.painter.begin(self.width, self.height)
         self._dim_window()
         draw_dialog_box(self.painter, box, theme)
-        heading: str = fit_text(
-            body, "Tài khoản người chơi (Đăng nhập / Đăng ký)", box.w - 32
-        )
-        self._text_centered(
-            "body", heading, box.centerx, box.y + 16, theme.dialog_text, shadow=False
-        )
+        heading: str = fit_text(body, "Tài khoản người chơi (Đăng nhập / Đăng ký)", box.w - 32)
+        self._text_centered("body", heading, box.centerx, box.y + 16, theme.dialog_text, shadow=False)
         self._text_centered(
             "body",
             fit_text(body, prompt.info, box.w - 32),

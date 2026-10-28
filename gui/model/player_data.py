@@ -78,9 +78,7 @@ class PlayerProfile:
         if not isinstance(data, dict) or not str(data.get("username", "")).strip():
             raise ValueError("Hồ sơ người chơi thiếu tên tài khoản.")
         known: set[str] = {item.name for item in fields(cls)}
-        values: dict[str, Any] = {
-            key: value for key, value in data.items() if key in known
-        }
+        values: dict[str, Any] = {key: value for key, value in data.items() if key in known}
         values.setdefault("schema_version", 1)  # file cũ chưa có trường này
         profile = cls(**values)
         profile._sanitize()
@@ -108,9 +106,7 @@ class PlayerProfile:
             self.history = []
         self.history = [item for item in self.history if isinstance(item, dict)]
         self.ai_uses = {
-            str(key): max(0, int(value))
-            for key, value in self.ai_uses.items()
-            if isinstance(value, int | float)
+            str(key): max(0, int(value)) for key, value in self.ai_uses.items() if isinstance(value, int | float)
         }
         for text_field in ("password_hash", "salt", "hash_scheme"):
             if not isinstance(getattr(self, text_field), str):
@@ -178,9 +174,7 @@ class PlayerProfile:
         expanded_nodes: int = 0,
     ) -> None:
         """Lưu lời giải ngắn nhất của từng thuật toán cho một màn; không đụng vào kỷ lục của người chơi."""
-        per_level: dict[str, dict[str, Any]] = self.ai_solutions.setdefault(
-            level_id, {}
-        )
+        per_level: dict[str, dict[str, Any]] = self.ai_solutions.setdefault(level_id, {})
         previous: dict[str, Any] | None = per_level.get(algorithm)
         if previous is None or cost <= int(previous.get("cost", cost)):
             per_level[algorithm] = {
@@ -199,9 +193,7 @@ class PlayerProfile:
         candidates: dict[str, dict[str, Any]] = self.ai_solutions.get(level_id, {})
         if not candidates:
             return None
-        algorithm, entry = min(
-            candidates.items(), key=lambda pair: int(pair[1].get("cost", 10**9))
-        )
+        algorithm, entry = min(candidates.items(), key=lambda pair: int(pair[1].get("cost", 10**9)))
         return list(entry.get("moves", [])), algorithm
 
     def add_history(self, record: LevelRecord) -> None:
@@ -209,10 +201,7 @@ class PlayerProfile:
         entry: dict[str, Any] = asdict(record)
         if self.history:
             last: dict[str, Any] = self.history[-1]
-            if all(
-                last.get(key) == entry[key]
-                for key in ("level_id", "moves", "mode", "won")
-            ):
+            if all(last.get(key) == entry[key] for key in ("level_id", "moves", "mode", "won")):
                 return
         self.history.append(entry)
         del self.history[:-MAX_HISTORY]
@@ -246,9 +235,7 @@ class PasswordHasher:
         chosen: str = scheme or cls.SCHEME_CURRENT
         if chosen == cls.SCHEME_LEGACY:
             return hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
-        return hashlib.pbkdf2_hmac(
-            "sha256", password.encode(), salt.encode(), cls.ITERATIONS
-        ).hex()
+        return hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), cls.ITERATIONS).hex()
 
     @classmethod
     def verify(cls, password: str, salt: str, expected: str, scheme: str = "") -> bool:
@@ -300,9 +287,8 @@ class JsonFileStore:
         ) as error:
             kept: str = self._quarantine()
             recovered: dict[str, Any] | None = self._try_backup()
-            self.notice = (
-                f"File dữ liệu bị hỏng ({type(error).__name__}); đã giữ lại bản sao '{kept}'"
-                + (" và khôi phục từ bản sao lưu." if recovered is not None else ".")
+            self.notice = f"File dữ liệu bị hỏng ({type(error).__name__}); đã giữ lại bản sao '{kept}'" + (
+                " và khôi phục từ bản sao lưu." if recovered is not None else "."
             )
             return recovered
 
@@ -334,9 +320,7 @@ class JsonFileStore:
     def save(self, payload: dict[str, Any]) -> None:
         """Ghi `payload` nguyên tử: file tạm, sao lưu bản cũ, rồi thay thế."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        handle, temp_name = tempfile.mkstemp(
-            dir=self.path.parent, prefix=self.path.name, suffix=".tmp"
-        )
+        handle, temp_name = tempfile.mkstemp(dir=self.path.parent, prefix=self.path.name, suffix=".tmp")
         try:
             with os.fdopen(handle, "w", encoding="utf-8") as stream:
                 json.dump(payload, stream, ensure_ascii=False, indent=2)
@@ -353,9 +337,7 @@ class JsonFileStore:
 class PlayerDataManager:
     """Quản lý tài khoản (đăng ký, đăng nhập, đăng xuất), kết quả chơi và lượt dùng AI của từng người."""
 
-    def __init__(
-        self, storage_path: str | Path | None = None, store: JsonFileStore | None = None
-    ) -> None:
+    def __init__(self, storage_path: str | Path | None = None, store: JsonFileStore | None = None) -> None:
         """Nạp dữ liệu từ `storage_path` (mặc định `data/players.json`) hoặc từ `store` được truyền vào."""
         if store is None:
             default: Path = Path(PROJECT_ROOT) / "data" / "players.json"
@@ -391,12 +373,10 @@ class PlayerDataManager:
         for name, data in players.items() if isinstance(players, dict) else []:
             try:
                 self.players[str(name)] = PlayerProfile.from_dict(data)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 skipped += 1
         if skipped:
-            self.load_notice = (
-                self.load_notice + f" Bỏ qua {skipped} hồ sơ không đọc được."
-            ).strip()
+            self.load_notice = (self.load_notice + f" Bỏ qua {skipped} hồ sơ không đọc được.").strip()
         last: Any = raw.get("last_active_user")
         self.current_user = last if last in self.players else None
 
@@ -404,9 +384,7 @@ class PlayerDataManager:
         """Ghi toàn bộ dữ liệu xuống file. Trả về False (không ném lỗi) nếu không ghi được."""
         payload: dict[str, Any] = {
             "last_active_user": self.current_user,
-            "players": {
-                name: profile.to_dict() for name, profile in self.players.items()
-            },
+            "players": {name: profile.to_dict() for name, profile in self.players.items()},
         }
         try:
             self._store.save(payload)
@@ -461,9 +439,7 @@ class PlayerDataManager:
         self.current_user = None
         self.save()
 
-    def authenticate_or_register(
-        self, username: str, password: str
-    ) -> tuple[bool, str]:
+    def authenticate_or_register(self, username: str, password: str) -> tuple[bool, str]:
         """Có tài khoản (có mật khẩu) thì đăng nhập, chưa có thì đăng ký mới."""
         name: str = username.strip()
         profile: PlayerProfile | None = self.players.get(name)
@@ -473,11 +449,7 @@ class PlayerDataManager:
 
     def get_current_profile(self) -> PlayerProfile | None:
         """Hồ sơ của người đang đăng nhập, hoặc None nếu đang là khách chưa có hồ sơ."""
-        return (
-            self.players.get(self.current_user)
-            if self.current_user is not None
-            else None
-        )
+        return self.players.get(self.current_user) if self.current_user is not None else None
 
     def _profile_for(self, username: str | None) -> PlayerProfile:
         """Hồ sơ cần ghi: tài khoản chỉ định, hoặc tài khoản hiện tại, nếu không có thì khách (guest)."""
@@ -500,17 +472,13 @@ class PlayerDataManager:
     ) -> bool:
         """Ghi kết quả một lượt. Chỉ lượt MANUAL thắng mới cập nhật kỷ lục; chế độ khác là của thuật toán."""
         if mode != MANUAL:
-            return self.record_solver_run(
-                level_id, mode, moves, won, elapsed_time, username=username
-            )
+            return self.record_solver_run(level_id, mode, moves, won, elapsed_time, username=username)
         profile: PlayerProfile = self._profile_for(username)
         names: list[str] = action_names(moves)
         move_count: int = count_moves(names)
         seconds: float = round(max(0.0, float(elapsed_time)), 3)
         score: int = calculate_level_score(move_count, won)
-        profile.add_history(
-            LevelRecord(level_id, names, move_count, won, MANUAL, seconds, score)
-        )
+        profile.add_history(LevelRecord(level_id, names, move_count, won, MANUAL, seconds, score))
         if won:
             profile.apply_manual_win(level_id, names, score, move_count, seconds)
         return self.save()
@@ -541,48 +509,30 @@ class PlayerDataManager:
             )
         )
         if solved:
-            profile.apply_ai_run(
-                level_id, algorithm, names, move_count, solver_time, expanded_nodes
-            )
+            profile.apply_ai_run(level_id, algorithm, names, move_count, solver_time, expanded_nodes)
         return self.save()
 
-    def get_level_score_info(
-        self, level_id: str, username: str | None = None
-    ) -> dict[str, Any] | None:
+    def get_level_score_info(self, level_id: str, username: str | None = None) -> dict[str, Any] | None:
         """Kỷ lục tự chơi của người chơi ở một màn (score, move_count, elapsed_time, mode)."""
-        profile: PlayerProfile | None = self.players.get(
-            username or self.current_user or GUEST
-        )
+        profile: PlayerProfile | None = self.players.get(username or self.current_user or GUEST)
         return None if profile is None else profile.level_stats.get(level_id)
 
-    def get_saved_replay(
-        self, level_id: str, username: str | None = None
-    ) -> list[str] | None:
+    def get_saved_replay(self, level_id: str, username: str | None = None) -> list[str] | None:
         """Đường đi tốt nhất do người chơi tự đi ở một màn, hoặc None."""
-        profile: PlayerProfile | None = self.players.get(
-            username or self.current_user or GUEST
-        )
+        profile: PlayerProfile | None = self.players.get(username or self.current_user or GUEST)
         return None if profile is None else profile.saved_replays.get(level_id)
 
-    def get_best_replay(
-        self, level_id: str, username: str | None = None
-    ) -> tuple[list[str], str] | None:
+    def get_best_replay(self, level_id: str, username: str | None = None) -> tuple[list[str], str] | None:
         """(đường đi, nguồn) nên phát lại: lượt tốt nhất của người chơi, nếu chưa có thì của thuật toán."""
-        profile: PlayerProfile | None = self.players.get(
-            username or self.current_user or GUEST
-        )
+        profile: PlayerProfile | None = self.players.get(username or self.current_user or GUEST)
         return None if profile is None else profile.best_replay(level_id)
 
     # ------------------------------------------------------------------ lượt dùng AI
 
     def ai_uses_left(self, level_id: str, username: str | None = None) -> int:
         """Số lượt dùng AI còn lại ở một màn (mặc định `MAX_AI_USES_PER_LEVEL` nếu chưa dùng)."""
-        profile: PlayerProfile | None = self.players.get(
-            username or self.current_user or GUEST
-        )
-        return (
-            MAX_AI_USES_PER_LEVEL if profile is None else profile.ai_uses_left(level_id)
-        )
+        profile: PlayerProfile | None = self.players.get(username or self.current_user or GUEST)
+        return MAX_AI_USES_PER_LEVEL if profile is None else profile.ai_uses_left(level_id)
 
     def consume_ai_use(self, level_id: str, username: str | None = None) -> int:
         """Trừ một lượt dùng AI ở màn này, lưu lại, và trả về số lượt còn lại."""

@@ -52,9 +52,7 @@ class WinReport:
 
     score: int
     best_score: int
-    next_name: (
-        str | None
-    )  # màn kế tiếp vừa mở khóa (None nếu hết màn hoặc không được mở)
+    next_name: str | None  # màn kế tiếp vừa mở khóa (None nếu hết màn hoặc không được mở)
     all_done: bool
     assisted: bool = False  # đã nhờ thuật toán: không tính kỷ lục và không mở khóa
 
@@ -70,9 +68,7 @@ class MoveReport:
     message: str = ""
     broken_tile: Cell | None = None
     win: WinReport | None = None
-    fall_plan: FallPlan | None = (
-        None  # cách dựng hoạt cảnh khi rơi khỏi gạch (None: ô giòn hoặc kiểu rơi cũ)
-    )
+    fall_plan: FallPlan | None = None  # cách dựng hoạt cảnh khi rơi khỏi gạch (None: ô giòn hoặc kiểu rơi cũ)
 
 
 class GameSession:
@@ -96,9 +92,7 @@ class GameSession:
         self.message: str = ""
         self.assisted: bool = False  # đã nhờ thuật toán trong ván này
         self.next_index: int | None = None
-        self.revision: int = (
-            0  # tăng mỗi lần đổi màn để giao diện biết cần dựng lại cảnh
-        )
+        self.revision: int = 0  # tăng mỗi lần đổi màn để giao diện biết cần dựng lại cảnh
 
     # ------------------------------------------------------------------ thông tin
 
@@ -164,11 +158,7 @@ class GameSession:
         if index == self.level_index:
             return StageSelection.CURRENT
         if self.catalog.is_unlocked(index):
-            return (
-                StageSelection.LOADED
-                if self.load_stage(index)
-                else StageSelection.INVALID
-            )
+            return StageSelection.LOADED if self.load_stage(index) else StageSelection.INVALID
         return StageSelection.NEEDS_PASSCODE
 
     def submit_passcode(self, index: int, code: str) -> bool:
@@ -190,11 +180,7 @@ class GameSession:
         self.message = ""
         if outcome.result == MoveResult.FALL:
             broken: Cell | None = broken_fragile_cell(self.game.board, outcome.state)
-            plan: FallPlan | None = (
-                None
-                if broken is not None
-                else plan_fall(self.game.board, old_state, direction)
-            )
+            plan: FallPlan | None = None if broken is not None else plan_fall(self.game.board, old_state, direction)
             return MoveReport(
                 MoveKind.FALL,
                 direction,
@@ -214,9 +200,7 @@ class GameSession:
                 None,
                 self._on_win(),
             )
-        return MoveReport(
-            MoveKind.ROLL, direction, old_state, self.game.state, outcome.message
-        )
+        return MoveReport(MoveKind.ROLL, direction, old_state, self.game.state, outcome.message)
 
     def switch_block(self) -> bool:
         """Đổi khối đang điều khiển khi đang tách; không có hoạt cảnh."""
@@ -231,14 +215,10 @@ class GameSession:
         if self.assisted:
             self.next_index = None
             return WinReport(score, score, None, False, assisted=True)
-        self.players.record_game_session(
-            self.level_name, self.game.move_history, True, MANUAL, self.elapsed
-        )
+        self.players.record_game_session(self.level_name, self.game.move_history, True, MANUAL, self.elapsed)
         info = self.players.get_level_score_info(self.level_name)
         best: int = int(info["score"]) if info is not None else score
-        following: int | None = (
-            self.catalog.next_index(self.level_index) if self.level_index >= 0 else None
-        )
+        following: int | None = self.catalog.next_index(self.level_index) if self.level_index >= 0 else None
         self.next_index = following
         if following is None:
             return WinReport(score, best, None, True)
