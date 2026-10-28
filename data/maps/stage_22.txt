@@ -1,0 +1,76 @@
+      ..    ...
+      ......  .H.
+......O.......
+.S..O     .....b 
+...      ...  
+ .        .   
+ .        .   
+ .b       B.  
+ ..       ..  
+  X       X   
+---
+{
+  "passcode": "987319",
+  "bridges": {
+    "a": [
+      [
+        3,
+        12
+      ]
+    ],
+    "b": [
+      [
+        7,
+        2
+      ]
+    ],
+    "c": [
+      [
+        7,
+        9
+      ]
+    ]
+  },
+  "switches": {
+    "2,6": {
+      "targets": [
+        {
+          "bridge": "a",
+          "mode": "off"
+        },
+        {
+          "bridge": "b",
+          "mode": "off"
+        }
+      ]
+    },
+    "3,4": {
+      "targets": [
+        {
+          "bridge": "a",
+          "mode": "off"
+        },
+        {
+          "bridge": "b",
+          "mode": "off"
+        }
+      ]
+    },
+    "9,2": {
+      "targets": [
+        {
+          "bridge": "a",
+          "mode": "swap"
+        }
+      ]
+    },
+    "9,9": {
+      "targets": [
+        {
+          "bridge": "b",
+          "mode": "swap"
+        }
+      ]
+    }
+  }
+}

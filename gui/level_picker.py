@@ -11,7 +11,7 @@ FOOTER_HEIGHT: int = 40
 
 
 class LevelPicker:
-    """Hộp chọn màn bật lên. Chỉ giữ trạng thái và bố cục; việc vẽ nằm ở ControlPanel."""
+    """Hộp chọn màn. Chỉ giữ trạng thái và bố cục; việc vẽ nằm ở ControlPanel."""
 
     def __init__(self, names: List[str]) -> None:
         self.names: List[str] = list(names)

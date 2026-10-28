@@ -1,0 +1,113 @@
+         O      
+..O.   .        
+.....  .        
+.OS.....bb..bb.
+.....b  .   .  
+..O.    .   .  
+.       O   ... 
+.          ..H. 
+.bbX      .... 
+---
+{
+  "passcode": "284933",
+  "bridges": {
+    "a": [
+      [
+        3,
+        8
+      ],
+      [
+        3,
+        9
+      ]
+    ],
+    "b": [
+      [
+        3,
+        12
+      ],
+      [
+        3,
+        13
+      ]
+    ],
+    "c": [
+      [
+        4,
+        5
+      ]
+    ],
+    "d": [
+      [
+        8,
+        1
+      ],
+      [
+        8,
+        2
+      ]
+    ]
+  },
+  "switches": {
+    "0,7": {
+      "targets": [
+        {
+          "bridge": "a",
+          "mode": "on"
+        }
+      ]
+    },
+    "1,2": {
+      "targets": [
+        {
+          "bridge": "b",
+          "mode": "off"
+        },
+        {
+          "bridge": "d",
+          "mode": "off"
+        }
+      ]
+    },
+    "3,1": {
+      "targets": [
+        {
+          "bridge": "a",
+          "mode": "off"
+        }
+      ]
+    },
+    "5,2": {
+      "targets": [
+        {
+          "bridge": "b",
+          "mode": "off"
+        },
+        {
+          "bridge": "d",
+          "mode": "off"
+        }
+      ]
+    },
+    "6,8": {
+      "targets": [
+        {
+          "bridge": "b",
+          "mode": "on"
+        },
+        {
+          "bridge": "d",
+          "mode": "on"
+        }
+      ]
+    },
+    "8,3": {
+      "targets": [
+        {
+          "bridge": "c",
+          "mode": "swap"
+        }
+      ]
+    }
+  }
+}
