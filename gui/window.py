@@ -153,8 +153,9 @@ class Window:
      - elapsed: thời gian đã chơi (tính bằng giây).
      - message: thông báo trạng thái ván chơi.
      - banner: thông báo thắng/thua.
-     - block_visible: cờ hiển thị khối (ẩn khi thắng/thua). 
+     - block_visible: cờ hiển thị khối (ẩn khi thắng/thua).
     """
+
     def __init__(
         self,
         game: Game,

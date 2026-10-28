@@ -267,6 +267,22 @@ class TestReplayerAndSolverIntegration(unittest.TestCase):
         self.assertEqual(err_events_2[0].error_type, "ValueError")
         self.assertIn("Lỗi mô phỏng", err_events_2[0].error_message)
 
+    def test_07_architecture_fixes_board_and_transition(self):
+        """
+        Kiểm tra 2 mục cải tiến kiến trúc ở core:
+          1. Board: có goal_pos (bí danh end_pos); khai báo name và passcode trong __init__.
+          2. core/transition.py: đã loại bỏ biến toàn cục _CURRENT_BOARD.
+        """
+        import core.transition as transition_mod
+
+        stage_01 = load_coolmath_stage(1)
+        self.assertEqual(stage_01.goal_pos, stage_01.end_pos)
+        self.assertEqual(stage_01.name, "Stage 01")
+        self.assertEqual(stage_01.passcode, "780464")
+
+        self.assertFalse(hasattr(transition_mod, "_CURRENT_BOARD"))
+        self.assertFalse(hasattr(transition_mod, "set_active_board"))
+
 
 if __name__ == "__main__":
     unittest.main()

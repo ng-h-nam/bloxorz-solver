@@ -87,6 +87,8 @@ class Board:
         bridge_metadata: Optional[Dict[str, BridgeMetadata]] = None,
         switch_metadata: Optional[Dict[Coordinates, SwitchMetadata]] = None,
         raw_metadata: Optional[Dict[str, Any]] = None,
+        name: str = "",
+        passcode: str = "",
     ):
         self.grid = grid
         self.symbols = symbols
@@ -104,6 +106,8 @@ class Board:
 
         self.splits: Dict[Coordinates, Tuple[Coordinates, Coordinates]] = splits or {}
         self.raw_metadata: Dict[str, Any] = raw_metadata or {}
+        self.name: str = name or str(self.raw_metadata.get("name", ""))
+        self.passcode: str = passcode or str(self.raw_metadata.get("passcode", ""))
         self.bridge_groups: Dict[str, List[Coordinates]] = self._collect_bridge_groups()
 
         if switches is not None:
@@ -126,6 +130,15 @@ class Board:
             if b_meta.initial_open:
                 open_cells.update(b_meta.cells)
         self.initial_active_bridges: FrozenSet[Coordinates] = frozenset(open_cells)
+
+    @property
+    def goal_pos(self) -> Coordinates:
+        """Bí danh (alias) cho end_pos để tương thích với các thuật toán tìm kiếm (BFS, DFS, A*)."""
+        return self.end_pos
+
+    @goal_pos.setter
+    def goal_pos(self, value: Coordinates) -> None:
+        self.end_pos = value
 
     def _collect_bridge_groups(self) -> Dict[str, List[Coordinates]]:
         """Gom các tọa độ ô cầu có cùng ký tự định danh ('a'..'z') thành từng cụm cầu."""
@@ -284,10 +297,6 @@ class Board:
         if not self.in_board(r, c):
             return TileType.VOID
         return self.grid[r][c]
-
-    def get_symbol(self, r: int, c: int) -> str:
-        """Trả về ký hiệu gốc trong file map, ví dụ 'A' hoặc 'c'."""
-        return self.symbols[r][c]
 
     def apply_switch(self, switch_pos: Coordinates, current_bridges: FrozenSet[Coordinates]) -> FrozenSet[Coordinates]:
         """

@@ -281,7 +281,7 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
         "teleports": raw_teleports,
     }
 
-    board = Board(
+    return Board(
         grid=grid,
         symbols=symbols,
         start_pos=start_pos,
@@ -292,10 +292,9 @@ def parse_coolmath_stage(stage_data: Dict[str, Any]) -> Board:
         bridge_metadata=bridge_metadata,
         switch_metadata=switch_metadata,
         raw_metadata=raw_metadata,
+        name=stage_name,
+        passcode=passcode,
     )
-    board.name = stage_name
-    board.passcode = passcode
-    return board
 
 
 def resolve_coolmath_path(filepath: Optional[str] = None) -> str:

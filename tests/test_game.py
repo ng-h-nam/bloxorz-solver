@@ -16,7 +16,6 @@ from core.transition import (
     get_next_state,
     get_successors,
     is_goal_state,
-    set_active_board,
 )
 
 
@@ -55,7 +54,6 @@ class TestBloxorzAdvancedGameMechanics(unittest.TestCase):
             ],
         }
         self.board = parse_level(self.stage_data)
-        set_active_board(self.board)
 
     def test_01_split_switch_teleports_to_predefined_positions(self):
         """
