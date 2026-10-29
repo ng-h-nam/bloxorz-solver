@@ -1,19 +1,17 @@
 """Thuật toán BFS (Breadth-First Search)."""
 
-from collections import deque
 import os
-import sys
-from typing import List, Optional, Set
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
+from collections import deque
 from algorithms.base_solver import BaseSolver, Node, SolveResult
 from core.board import Board
 from core.map_loader import load_level
 from core.state import State
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+# if PROJECT_ROOT not in sys.path:
+#     sys.path.insert(0, PROJECT_ROOT)
 
 
 class BFSSolver(BaseSolver):
@@ -24,9 +22,9 @@ class BFSSolver(BaseSolver):
     def __init__(
         self,
         board: Board,
-        initial_state: Optional[State] = None,
-        node_limit: Optional[int] = None,
-        time_limit: Optional[float] = None,
+        initial_state: State | None = None,
+        node_limit: int | None = None,
+        time_limit: float | None = None,
     ) -> None:
         super().__init__(board, initial_state, node_limit=node_limit, time_limit=time_limit)
 
@@ -57,7 +55,7 @@ class BFSSolver(BaseSolver):
 
         root_node = self.create_root_node()
         queue: deque[Node] = deque([root_node])
-        visited: Set[State] = {self.get_state_key(self.initial_state)}
+        visited: set[State] = {self.get_state_key(self.initial_state)}
 
         self.nodes_explored = 0
         self.max_frontier_size = 1
@@ -79,8 +77,7 @@ class BFSSolver(BaseSolver):
                     status=limit_reason,
                 )
 
-            if len(queue) > self.max_frontier_size:
-                self.max_frontier_size = len(queue)
+            self.max_frontier_size = max(self.max_frontier_size, len(queue))
 
             current_node: Node = queue.popleft()
             self.nodes_explored += 1
@@ -133,7 +130,7 @@ class BFSSolver(BaseSolver):
         )
 
 
-def run_bfs_experiments(map_paths: List[str]) -> None:
+def run_bfs_experiments(map_paths: list[str]) -> None:
     """
     Chạy thực nghiệm BFS trên danh sách bản đồ và in báo cáo chi tiết.
     """
@@ -153,7 +150,7 @@ def run_bfs_experiments(map_paths: List[str]) -> None:
 
         if result.is_solved:
             # Phát lại lời giải để kiểm tra tính đúng đắn trên core
-            valid, _, msg = solver.replay(result.actions)
+            _, _, msg = solver.replay(result.actions)
             print("  -> Trạng thái          : THÀNH CÔNG")
             print(f"  -> Số bước tối ưu      : {result.cost} bước")
             print(f"  -> Phát lại            : {msg}")

@@ -13,6 +13,7 @@ from algorithms.base_solver import (
 )
 from algorithms.bfs import BFSSolver
 from algorithms.dfs import DFSSolver
+from algorithms.ucs import UCSSolver
 from algorithms.heuristic import (
     CostFunction,
     HeuristicFunction,
@@ -28,13 +29,16 @@ from algorithms.heuristic import (
 
 __all__ = [
     "ActionType",
+    "BFSSolver",
     "BaseSolver",
+    "DFSSolver",
     "Node",
-    "SolveResult",
     "Solution",
+    "SolveResult",
     "replay_path",
     "BFSSolver",
     "DFSSolver",
+    "UCSSolver",
     "AStarSolver",
     "CostFunction",
     "HeuristicFunction",
