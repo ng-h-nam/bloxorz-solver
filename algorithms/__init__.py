@@ -3,6 +3,7 @@ Package algorithms chứa các thuật toán tìm kiếm và giải bài toán B
 """
 
 from algorithms.astar import AStarSolver
+from algorithms.astar import AStarSolver
 from algorithms.base_solver import (
     ActionType,
     BaseSolver,

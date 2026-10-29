@@ -88,6 +88,8 @@ class Board:
         bridge_metadata: Optional[Dict[str, BridgeMetadata]] = None,
         switch_metadata: Optional[Dict[Coordinates, SwitchMetadata]] = None,
         raw_metadata: Optional[Dict[str, Any]] = None,
+        name: str = "",
+        passcode: str = "",
     ):
         self.grid = grid
         self.symbols = symbols
@@ -285,10 +287,6 @@ class Board:
         if not self.in_board(r, c):
             return TileType.VOID
         return self.grid[r][c]
-
-    def get_symbol(self, r: int, c: int) -> str:
-        """Trả về ký hiệu gốc trong file map, ví dụ 'A' hoặc 'c'."""
-        return self.symbols[r][c]
 
     def apply_switch(self, switch_pos: Coordinates, current_bridges: FrozenSet[Coordinates]) -> FrozenSet[Coordinates]:
         """
