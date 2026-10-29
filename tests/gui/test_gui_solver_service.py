@@ -1,5 +1,6 @@
 """Test cho gui.engine.solver_service: danh sách thuật toán, bản đồ có goal_pos và dịch vụ giải từ vị trí hiện tại."""
 
+import copy
 import time
 from typing import Any, ClassVar
 
@@ -86,7 +87,14 @@ def test_discovered_solvers_include_bfs_dfs_and_astar() -> None:
 
 
 def test_with_goal_pos_returns_a_copy_without_touching_the_original(game: Game) -> None:
-    board = game.board
+    class LegacyBoard(Board):
+        def __getattribute__(self, name: str) -> Any:
+            if name == "goal_pos" and type(self) is LegacyBoard:
+                raise AttributeError("goal_pos")
+            return super().__getattribute__(name)
+
+    board = copy.copy(game.board)
+    board.__class__ = LegacyBoard
     adapted = with_goal_pos(board)
     assert isinstance(adapted, Board) and isinstance(adapted, GoalAwareBoard)
     assert adapted.goal_pos == board.end_pos and adapted is not board

@@ -16,7 +16,7 @@ from core.transition import (
     is_valid_state,
     normalize_action,
     roll_block,
-    set_active_board,
+
 )
 
 
@@ -44,7 +44,7 @@ class Game:
         initial_state: State | None = None,
     ) -> None:
         self.board: Board = board
-        set_active_board(board)
+
 
         if initial_state is not None:
             self.initial_state: State = initial_state
@@ -217,7 +217,7 @@ class Game:
 
     def restart(self) -> State:
         """Đưa ván chơi về lại trạng thái xuất phát ban đầu."""
-        set_active_board(self.board)
+
         self.state = self.initial_state
         self.moves = 0
         self.history.clear()

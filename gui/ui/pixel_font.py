@@ -20,7 +20,7 @@ FONT_DIR: str = os.path.join(PROJECT_ROOT, "assets", "fonts")
 MONOCRAFT_PATH: str = os.path.join(FONT_DIR, "Monocraft.ttf")
 FALLBACK_PATH: str = os.path.join(FONT_DIR, "DejaVuSans.ttf")
 
-NATIVE_SIZE: int = 8  # cỡ mà Monocraft vẽ đúng một điểm ảnh gốc
+NATIVE_SIZE: int = 9  # cỡ mà Monocraft vẽ đúng một điểm ảnh gốc
 GLYPH_ROWS: int = 9  # số hàng của một chữ Monocraft (hàng 7 là đường cơ sở)
 HEAD_ROWS: int = 4  # chỗ trống phía trên cho dấu chồng (ví dụ ấ trên chữ hoa)
 TAIL_ROWS: int = 4  # chỗ trống phía dưới cho dấu nặng

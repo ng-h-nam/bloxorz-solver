@@ -18,7 +18,6 @@ from core.transition import (
     is_out_of_bounds,
     is_valid_move,
     roll_block,
-    set_active_board,
 )
 
 
@@ -74,7 +73,6 @@ class TestBloxorzTransition(unittest.TestCase):
                 "teleports": [],
             }
         )
-        set_active_board(self.board)
 
     # =========================================================================
     # 1. KIỂM THỬ 12 PHÉP LĂN CƠ BẢN (3 ORIENTATIONS x 4 DIRECTIONS)

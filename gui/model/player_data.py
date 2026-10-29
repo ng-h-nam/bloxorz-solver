@@ -373,7 +373,7 @@ class PlayerDataManager:
         for name, data in players.items() if isinstance(players, dict) else []:
             try:
                 self.players[str(name)] = PlayerProfile.from_dict(data)
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 skipped += 1
         if skipped:
             self.load_notice = (self.load_notice + f" Bỏ qua {skipped} hồ sơ không đọc được.").strip()
