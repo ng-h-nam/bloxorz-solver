@@ -11,10 +11,13 @@ Khớp 100% với Báo cáo kỹ thuật:
 - Kiểm tra công thức SPLIT: h_split = max(d_merge, d_goal).
 - Thuật toán A* giải ra độ dài đường đi tối ưu trùng khớp 100% với BFS trên toàn bộ các bản đồ.
 """
-
+import sys
 from pathlib import Path
 import unittest
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 from algorithms.astar import AStarSolver
 from algorithms.bfs import BFSSolver
 from algorithms.heuristic import (
@@ -30,7 +33,7 @@ from algorithms.heuristic import (
 from core.map_loader import load_level
 from core.state import Orientation, State
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 
 _LEGACY_MAP_ALIASES = {
     "level0.txt": "stage_01.txt",

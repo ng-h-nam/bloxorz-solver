@@ -20,7 +20,7 @@ if PROJECT_ROOT not in sys.path:
 
 from core.game import Game  # noqa: E402
 from core.map_loader import load_coolmath_stage  # noqa: E402
-from tests.test_replayer import TestReplayerAndSolverIntegration  # noqa: E402
+from tests.gui.test_gui_integration import TestReplayerAndSolverIntegration  # noqa: E402
 
 
 def run_visual_demo(stage_num: int = 1) -> None:

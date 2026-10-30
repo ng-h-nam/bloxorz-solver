@@ -364,9 +364,9 @@ def run_admissibility_verification_on_small_maps() -> bool:
     from core.map_loader import load_level
 
     maps_to_test = [
-        ("Level 0 (6x5)", os.path.join(PROJECT_ROOT, "data", "maps", "level0.txt")),
-        ("Level 1 (6x17)", os.path.join(PROJECT_ROOT, "data", "maps", "level1.txt")),
-        ("Level 3 (9x17)", os.path.join(PROJECT_ROOT, "data", "maps", "level3.txt")),
+        ("Stage 01 (Level 0)", os.path.join(PROJECT_ROOT, "data", "maps", "stage_01.txt")),
+        ("Stage 02 (Level 1)", os.path.join(PROJECT_ROOT, "data", "maps", "stage_02.txt")),
+        ("Stage 04 (Level 3)", os.path.join(PROJECT_ROOT, "data", "maps", "stage_04.txt")),
     ]
 
     print("=" * 80)

@@ -197,3 +197,7 @@ class SolverService:
         context: SolverContext = self._context
         self._context = None
         return SolverOutcome(context, result, errors)
+
+    @property
+    def context(self):
+        return self._context
