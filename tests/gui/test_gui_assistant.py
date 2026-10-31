@@ -83,7 +83,7 @@ def wait_until_done(assistant: AiAssistant, timeout: float = 15.0) -> None:
     deadline = time.time() + timeout
     while time.time() < deadline:
         assistant.poll()
-        if not assistant.running and assistant.solver._context is None:
+        if not assistant.running and assistant.solver.context is None:
             return
         time.sleep(0.01)
     raise AssertionError("lượt giải không kết thúc")

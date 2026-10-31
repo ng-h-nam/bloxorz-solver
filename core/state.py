@@ -2,7 +2,42 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import FrozenSet, List, Tuple, Optional
 
-Coordinates = tuple[int, int]
+from typing import NamedTuple, Union
+
+class Coord(NamedTuple):
+    r: int
+    c: int
+
+    @property
+    def row(self) -> int:
+        return self.r
+
+    @property
+    def col(self) -> int:
+        return self.c
+
+    @property
+    def x(self) -> int:
+        return self.c
+
+    @property
+    def y(self) -> int:
+        return self.r
+
+    def offset(self, dr: int, dc: int) -> "Coord":
+        return Coord(self.r + dr, self.c + dc)
+
+    def manhattan_to(self, other: Union["Coord", tuple[int, int]]) -> int:
+        return abs(self.r - other[0]) + abs(self.c - other[1])
+
+    def __add__(self, other: tuple[int, int]) -> "Coord":
+        return Coord(self.r + other[0], self.c + other[1])
+
+    def __sub__(self, other: tuple[int, int]) -> "Coord":
+        return Coord(self.r - other[0], self.c - other[1])
+
+
+Coordinates = Coord
 
 
 class Orientation(Enum):
@@ -110,11 +145,23 @@ class State:
         """Kiểm tra khối có đang đứng thẳng tại đúng tọa độ pos hay không."""
         return self.orientation == Orientation.STANDING and (self.r, self.c) == pos
 
-    def to_key(self) -> Tuple[int, int, str, FrozenSet[Coordinates]]:
-        """Đại diện duy nhất của state. Có thể hỗ trợ cho hàm state_key."""
-        split_coord = self.split_pos if self.split_pos is not None else (-1, -1)
+    def to_key(self) -> Tuple:
+        """Đại diện duy nhất của state cho bảng băm và heapq."""
         bridge_tuple = tuple(sorted(self.active_bridges))
 
+        if self.is_split():
+            act = self.get_active_cube_pos()
+            inact = self.get_inactive_cube_pos() or (-1, -1)
+            return (
+                act[0],
+                act[1],
+                self.orientation.value,
+                (inact[0], inact[1]),
+                self.active_cube,
+                bridge_tuple,
+            )
+
+        split_coord = self.split_pos if self.split_pos is not None else (-1, -1)
         return (
             self.r,
             self.c,
