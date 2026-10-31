@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 from core.state import Coordinates, Orientation, State
 
 
@@ -52,7 +52,7 @@ class Block:
             active_cube=self.active_cube,
         )
 
-    def get_occupied_cells(self) -> List[Coordinates]:
+    def get_occupied_cells(self) -> list[Coordinates]:
         """Trả về các ô mà khối đang chiếm giữ (tiện cho GUI vẽ khối)."""
         return self.to_state().get_occupied_cells()
 

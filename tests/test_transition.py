@@ -1,5 +1,11 @@
-# tests/test_transition.py
+import os
+import sys
 import unittest
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from core.block import Direction
 from core.board import TileType
 from core.game import Game, GameStatus, MoveResult
@@ -12,7 +18,6 @@ from core.transition import (
     is_out_of_bounds,
     is_valid_move,
     roll_block,
-    set_active_board,
 )
 
 
@@ -68,7 +73,6 @@ class TestBloxorzTransition(unittest.TestCase):
                 "teleports": [],
             }
         )
-        set_active_board(self.board)
 
     # =========================================================================
     # 1. KIỂM THỬ 12 PHÉP LĂN CƠ BẢN (3 ORIENTATIONS x 4 DIRECTIONS)

@@ -1,4 +1,11 @@
+import os
+import sys
 import unittest
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from core.block import Direction
 from core.game import Game, GameStatus
 from core.map_loader import load_coolmath_stage, parse_level
@@ -9,7 +16,6 @@ from core.transition import (
     get_next_state,
     get_successors,
     is_goal_state,
-    set_active_board,
 )
 
 
@@ -48,7 +54,6 @@ class TestBloxorzAdvancedGameMechanics(unittest.TestCase):
             ],
         }
         self.board = parse_level(self.stage_data)
-        set_active_board(self.board)
 
     def test_01_split_switch_teleports_to_predefined_positions(self):
         """

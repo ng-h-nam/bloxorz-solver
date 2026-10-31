@@ -20,25 +20,23 @@ Thuật toán A* Search cho bài toán Bloxorz.
 import heapq
 import os
 import sys
-import time
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from algorithms.base_solver import ActionType, BaseSolver, Node, SolveResult, replay_path
+from algorithms.base_solver import BaseSolver, Node, SolveResult
 from algorithms.heuristic import (
     CostFunction,
     HeuristicFunction,
     bloxorz_heuristic,
     uniform_cost,
 )
-from core.block import Direction
 from core.board import Board
 from core.map_loader import load_level
-from core.state import Orientation, State
+from core.state import State
 
 
 class AStarSolver(BaseSolver):
@@ -73,9 +71,7 @@ class AStarSolver(BaseSolver):
             node_limit=node_limit,
             time_limit=time_limit,
         )
-        self.heuristic_fn: HeuristicFunction = (
-            heuristic_fn if heuristic_fn is not None else bloxorz_heuristic
-        )
+        self.heuristic_fn: HeuristicFunction = heuristic_fn if heuristic_fn is not None else bloxorz_heuristic
         self.cost_fn: CostFunction = cost_fn if cost_fn is not None else uniform_cost
 
     def solve(self) -> SolveResult:
@@ -112,9 +108,7 @@ class AStarSolver(BaseSolver):
 
         # Min-heap priority queue: (f_score, h_score, tie_breaker_counter, node)
         tie_counter: int = 0
-        frontier: List[Tuple[float, float, int, Node]] = [
-            (f_root, h_root, tie_counter, root_node)
-        ]
+        frontier: List[Tuple[float, float, int, Node]] = [(f_root, h_root, tie_counter, root_node)]
 
         # Bảng ghi nhận chi phí tốt nhất đến mỗi trạng thái: best_g[state_key] = g
         best_g: Dict[State, float] = {root_key: float(root_node.cost)}
@@ -253,8 +247,5 @@ def run_astar_experiments(map_paths: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    test_maps = [
-        os.path.join(PROJECT_ROOT, "data", "maps", f"level{i}.txt") for i in range(4)
-    ]
+    test_maps = [os.path.join(PROJECT_ROOT, "data", "maps", f"level{i}.txt") for i in range(4)]
     run_astar_experiments(test_maps)
-

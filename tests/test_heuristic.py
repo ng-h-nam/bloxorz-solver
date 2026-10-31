@@ -2,7 +2,7 @@
 Bộ kiểm thử tính chấp nhận được (Admissibility) của hàm Heuristic và thuật toán A*.
 
 Khớp 100% với Báo cáo kỹ thuật:
-- Kiểm tra h(s) <= h*(s) ở mọi trạng thái của các map chuẩn (level0, level1, level2, level3).
+- Kiểm tra h(s) <= h*(s) ở mọi trạng thái của các map chuẩn (stage_01..stage_04).
 - Khối đứng tại ô đích có h(s) = 0.
 - Kiểm tra các quy tắc phạt tư thế:
   + d_min == 0 & nằm: phạt +2
@@ -12,35 +12,42 @@ Khớp 100% với Báo cáo kỹ thuật:
 - Thuật toán A* giải ra độ dài đường đi tối ưu trùng khớp 100% với BFS trên toàn bộ các bản đồ.
 """
 
-from collections import deque
-import math
-import os
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
 import unittest
 
 from algorithms.astar import AStarSolver
 from algorithms.bfs import BFSSolver
 from algorithms.heuristic import (
     bloxorz_advanced_heuristic,
-    bloxorz_heuristic,
-    compute_all_true_distances_bfs,
     compute_orientation_penalty,
     get_representative_point,
-    is_direct_goal_predecessor,
-    manhattan_distance,
     manhattan_heuristic,
     split_state_heuristic,
     uniform_cost,
     verify_heuristic_admissibility,
     weighted_switch_cost,
 )
-from core.board import Board, TileType
 from core.map_loader import load_level
 from core.state import Orientation, State
-from core.transition import get_next_state, get_successors, is_goal_state
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+_LEGACY_MAP_ALIASES = {
+    "level0.txt": "stage_01.txt",
+    "level1.txt": "stage_02.txt",
+    "level2.txt": "stage_03.txt",
+    "level3.txt": "stage_04.txt",
+}
+
+
+def _resolve_map_path(map_filename: str) -> Path:
+    direct = PROJECT_ROOT / "data" / "maps" / map_filename
+    if direct.exists():
+        return direct
+    alias = _LEGACY_MAP_ALIASES.get(map_filename)
+    if alias:
+        return PROJECT_ROOT / "data" / "maps" / alias
+    return direct
 
 
 class TestHeuristicAdmissibilitySmallMaps(unittest.TestCase):
@@ -49,7 +56,7 @@ class TestHeuristicAdmissibilitySmallMaps(unittest.TestCase):
     """
 
     def _assert_admissibility_for_map(self, map_filename: str, map_name: str) -> None:
-        map_path = PROJECT_ROOT / "data" / "maps" / map_filename
+        map_path = _resolve_map_path(map_filename)
         self.assertTrue(map_path.exists(), f"Không tìm thấy file map: {map_path}")
 
         board = load_level(str(map_path))
@@ -60,7 +67,8 @@ class TestHeuristicAdmissibilitySmallMaps(unittest.TestCase):
         self.assertEqual(
             report_h2["violations_count"],
             0,
-            f"Phát hiện {report_h2['violations_count']} trạng thái vi phạm h(s) > h*(s) tại {map_name}: {report_h2['violations'][:3]}",
+            f"Phát hiện {report_h2['violations_count']} trạng thái vi phạm h(s) > h*(s) tại {map_name}: "
+            f"{report_h2['violations'][:3]}",
         )
         self.assertEqual(report_h1["violations_count"], 0, f"H1 vi phạm trên {map_name}")
         self.assertTrue(report_h2["is_admissible"], f"{map_name} không đạt tính chấp nhận được!")
@@ -79,20 +87,20 @@ class TestHeuristicAdmissibilitySmallMaps(unittest.TestCase):
         self.assertEqual(manhattan_heuristic(goal_state, board.goal_pos), 0)
 
     def test_admissibility_level0(self):
-        """Kiểm tra tính chấp nhận được trên Level 0 (kích thước 6x5, 29 trạng thái)."""
-        self._assert_admissibility_for_map("level0.txt", "Level 0")
+        """Kiểm tra tính chấp nhận được trên Stage 01."""
+        self._assert_admissibility_for_map("stage_01.txt", "Stage 01")
 
     def test_admissibility_level1(self):
-        """Kiểm tra tính chấp nhận được trên Level 1 (kích thước 6x17, 114 trạng thái)."""
-        self._assert_admissibility_for_map("level1.txt", "Level 1")
+        """Kiểm tra tính chấp nhận được trên Stage 02."""
+        self._assert_admissibility_for_map("stage_02.txt", "Stage 02")
 
     def test_admissibility_level2(self):
-        """Kiểm tra tính chấp nhận được trên Level 2 (kích thước 10x15, 116 trạng thái)."""
-        self._assert_admissibility_for_map("level2.txt", "Level 2")
+        """Kiểm tra tính chấp nhận được trên Stage 03."""
+        self._assert_admissibility_for_map("stage_03.txt", "Stage 03")
 
     def test_admissibility_level3(self):
-        """Kiểm tra tính chấp nhận được trên Level 3 (kích thước 9x17, 102 trạng thái)."""
-        self._assert_admissibility_for_map("level3.txt", "Level 3")
+        """Kiểm tra tính chấp nhận được trên Stage 04."""
+        self._assert_admissibility_for_map("stage_04.txt", "Stage 04")
 
 
 class TestHeuristicComponents(unittest.TestCase):
@@ -153,11 +161,6 @@ class TestHeuristicComponents(unittest.TestCase):
         """Kiểm tra heuristic trạng thái tách khối: h_split = max(d_merge, d_goal)."""
         goal = (5, 5)
 
-        # Khối cách nhau và cách đích:
-        # C1=(0, 0), C2=(10, 10), goal=(5, 5)
-        # d_merge = max(0, |0 - 10| + |0 - 10| - 1) = 19
-        # d1 = |0-5| + |0-5| = 10, d2 = |10-5| + |10-5| = 10 -> d_goal = ceil(10/2) = 5
-        # h_split = max(19, 5) = 19
         s_split = State(r=0, c=0, orientation=Orientation.SPLIT, split_pos=(10, 10))
         self.assertEqual(split_state_heuristic(s_split, goal), 19)
 
@@ -183,7 +186,7 @@ class TestAStarSolverWithHeuristic(unittest.TestCase):
     """
 
     def _test_astar_and_bfs_match(self, map_filename: str) -> None:
-        map_path = PROJECT_ROOT / "data" / "maps" / map_filename
+        map_path = _resolve_map_path(map_filename)
         board = load_level(str(map_path))
 
         # Giải bằng BFS
@@ -208,20 +211,20 @@ class TestAStarSolverWithHeuristic(unittest.TestCase):
         self.assertTrue(valid, f"Phát lại lời giải A* thất bại trên {map_filename}: {msg}")
 
     def test_astar_level0(self):
-        """A* giải tối ưu Level 0 (7 bước)."""
-        self._test_astar_and_bfs_match("level0.txt")
+        """A* giải tối ưu Stage 01 (7 bước)."""
+        self._test_astar_and_bfs_match("stage_01.txt")
 
     def test_astar_level1(self):
-        """A* giải tối ưu Level 1 (21 bước)."""
-        self._test_astar_and_bfs_match("level1.txt")
+        """A* giải tối ưu Stage 02 (17 bước)."""
+        self._test_astar_and_bfs_match("stage_02.txt")
 
     def test_astar_level2(self):
-        """A* giải tối ưu Level 2 (35 bước)."""
-        self._test_astar_and_bfs_match("level2.txt")
+        """A* giải tối ưu Stage 03 (19 bước)."""
+        self._test_astar_and_bfs_match("stage_03.txt")
 
     def test_astar_level3(self):
-        """A* giải tối ưu Level 3 (33 bước)."""
-        self._test_astar_and_bfs_match("level3.txt")
+        """A* giải tối ưu Stage 04 (28 bước)."""
+        self._test_astar_and_bfs_match("stage_04.txt")
 
 
 if __name__ == "__main__":
