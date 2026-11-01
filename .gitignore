@@ -51,3 +51,6 @@ docs/Resources/
 # User data
 data/players.json
 data/players.json.bak
+
+# Hint baseline
+baseline/
