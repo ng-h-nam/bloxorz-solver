@@ -47,3 +47,7 @@ texture/
 *.bbl
 *.blg
 docs/Resources/
+
+# User data
+data/players.json
+data/players.json.bak
